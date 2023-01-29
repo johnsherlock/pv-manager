@@ -7,8 +7,6 @@ import 'react-datepicker/dist/react-datepicker.css';
 import './App.css'
 import DailyEnergyUsageLineGraph from './DailyEnergyUsageLineGraph';
 
-
-const today = moment().startOf('day');
 const dawnOfTime = moment(new Date("2023-01-20")).startOf('day');
 
 const dayRate = 0.4330;
@@ -28,30 +26,35 @@ const initialTotals = () => {
   }
 }
 
+const formatDate = (date) => {
+  return moment(date).startOf('day').format("YYYY-MM-DD");
+}
+
+const initialState = () => {
+  const today = moment().startOf('day');
+  return {
+    today: today,
+    selectedDate: today,
+    formattedSelectedDate: formatDate(today),
+    data: {},
+    totals: {},
+  }
+}
+
 function App() {
-  const [data, setData] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(moment());
-  const [totals, setTotals] = useState(initialTotals());
+  const [state, setState] = useState(initialState());
 
   useEffect(() => {
-    const targetDate = moment(selectedDate).format("YYYY-MM-DD");
-    console.log(`Retrieving data for ${targetDate}`)
-    const url = `http://localhost:3001/data?date=${targetDate}`;
-    axios.get(url)
-      .then(response => {
-        const data = response.data.U21494842;
-        setData(data);
-        // setTotals(initialTotals);
-      })
-      .catch(error => {
-        console.log(error);
-      });    
-  }, [selectedDate]);
+    // retrieve data for today.
+    getDataForDate(state.selectedDate);
+  }, []);
 
-  useEffect(() => {
+  const convertJoulesToKwh = joules => joules ? (joules / 3600000) : '';
+  const formatDecimal = number => Math.round(number * 100) / 100;
+
+  const recalculateTotals = (data) => {
     console.log('Recaculating totals')
-
-    setTotals(data.reduce((totals, item) => {
+    const totals = data.reduce((totals, item) => {
       totals.impTotal = totals.impTotal + (formatDecimal(item.imp) || 0);
       totals.genTotal = totals.genTotal + (formatDecimal(item.gep) || 0);
       totals.expTotal = totals.expTotal + (formatDecimal(item.exp) || 0);
@@ -61,12 +64,9 @@ function App() {
       totals.exportValueTotal = totals.exportValueTotal + calculateExportValue(item.exp);
 
       return totals;
-    }, initialTotals()));
-  
-  }, [data]);
-
-  const convertJoulesToKwh = joules => joules ? (joules / 3600000) : '';
-  const formatDecimal = number => Math.round(number * 100) / 100;
+    }, initialTotals());
+    return totals;
+  }
 
   const calculateCost = (hour = 0, dow, joules) => {
     if (joules) {
@@ -113,12 +113,48 @@ function App() {
     return amount ? `€${amount.toFixed(2)}` : '';
   }
 
+  const getDataForDate = (targetDate) => {
+    document.body.style.cursor = 'progress';
+    const formattedTargetDate = formatDate(targetDate);
+    if (state.data[formattedTargetDate] && targetDate.isBefore(state.today)) {
+      console.log(`Data for ${formattedTargetDate} already in cache`);
+      setState({
+        ...state,
+        today: moment().startOf('day'),
+        selectedDate: targetDate,
+        formattedSelectedDate: formattedTargetDate,
+      });
+    }
+    else {
+      console.log(`Retrieving data for ${formattedTargetDate}`)
+      const url = `http://localhost:3001/data?date=${formattedTargetDate}`;
+      axios.get(url)
+        .then(response => {
+          const selectedDateData = response.data.U21494842;
+          const newState = { 
+            ...state,
+            selectedDate: targetDate,
+            formattedSelectedDate: formattedTargetDate,
+          };
+          newState.data[formattedTargetDate] = selectedDateData;
+          newState.totals[formattedTargetDate] = recalculateTotals(selectedDateData);
+          setState(newState);
+          console.log('State set');
+          document.body.style.cursor = 'auto';
+        })
+        .catch(error => {
+          console.log('Error retrieving remote data', error);
+          document.body.style.cursor = 'auto';
+        });    
+    }
+  }
+
   const goToPreviousDay = () => {
-    setSelectedDate(new moment(selectedDate.subtract(1, 'day')).startOf('day'));
+    getDataForDate(new moment(state.selectedDate.subtract(1, 'day')));
   }
 
   const goToNextDay = () => {
-    setSelectedDate(new moment(selectedDate.add(1, 'day')).startOf('day'));
+    getDataForDate(new moment(state.selectedDate.add(1, 'day')));
   }
 
   const calculateGrossCost = (netCost) => {
@@ -142,7 +178,6 @@ function App() {
     return formatDecimal(grossCost);
   }
 
-
   const CustomDatePicker = forwardRef(({ value, onClick }, ref) => (
     <div className="custom-date-picker" onClick={onClick} ref={ref}>
       {value}
@@ -152,16 +187,16 @@ function App() {
   return (
     <div className="container grid-container">
       <div className="row justify-content-center">
-        <div className="col-12 col-md-8">
+        <div className="col-12 col-md-9">
           <div className="navigation">
             <h1>
               <div className="navPrev">
-                {selectedDate.isAfter(dawnOfTime) ? <div className="navigationButton" onClick={goToPreviousDay}>&lt;&lt;</div> : null}
+                {state.selectedDate.isAfter(dawnOfTime) ? <div className="navigationButton" onClick={goToPreviousDay}>&lt;&lt;</div> : null}
               </div>
               <div className="date">
                 <DatePicker
-                  selected={selectedDate.toDate()}
-                  onChange={date => setSelectedDate(new moment(date).startOf('day'))}
+                  selected={state.selectedDate.toDate()}
+                  onChange={date => getDataForDate(new moment(date))}
                   placeholderText="Select a date"
                   dateFormat="EEE Do MMM yyyy"
                   minDate={new Date(2023, 0, 20)}
@@ -170,7 +205,7 @@ function App() {
                 />
               </div>
               <div className="navNext">
-                {selectedDate.isBefore(today) ? <div className="navigationButton" onClick={goToNextDay}>&gt;&gt;</div> : null}
+                {state.selectedDate.isBefore(state.today) ? <div className="navigationButton" onClick={goToNextDay}>&gt;&gt;</div> : null}
               </div>
             </h1>
           </div>
@@ -188,7 +223,7 @@ function App() {
             </div>
             <div className="table-container">
               <div className="table-body">
-                {data.map((item, index) => (
+                {state.data[state.formattedSelectedDate]?.map((item, index) => (
                   <div key={item.yr + item.mon + item.dom + item.hr} className={`table-row ${index % 2 === 0 ? 'table-primary' : ''}`}>
                     <div className="table-cell">{item.hr ? item.hr.toString().padStart(2, '0') : "00"}</div>
                     <div className="table-cell">{formatDecimal(convertJoulesToKwh(item.imp)).toFixed(2)}</div>
@@ -204,20 +239,20 @@ function App() {
             <div className="table-footer">
               <div className="table-row">
                 <span className="table-cell">Total</span>
-                <span className="table-cell">{formatDecimal(convertJoulesToKwh(totals.impTotal))}</span>
+                <span className="table-cell">{formatDecimal(convertJoulesToKwh(state.totals[state.formattedSelectedDate]?.impTotal))} kWh</span>
                 <span className="table-cell">
-                  {formatToEuro(calculateGrossCostIncStandingCharges(totals.netCostTotal))}&nbsp;
-                  {totals.saturdayNetSavingTotal ? `(${formatToEuro(calculateGrossCost(totals.saturdayNetSavingTotal))})` : ''}
+                  {formatToEuro(calculateGrossCostIncStandingCharges(state.totals[state.formattedSelectedDate]?.netCostTotal))}&nbsp;
+                  {state.totals[state.formattedSelectedDate]?.saturdayNetSavingTotal ? `(${formatToEuro(calculateGrossCost(state.totals[state.formattedSelectedDate]?.saturdayNetSavingTotal))})` : ''}
                 </span>
-                <span className="table-cell">{formatDecimal(convertJoulesToKwh(totals.genTotal))}</span>
-                <span className="table-cell">{formatToEuro(calculateGrossCost(totals.netSavingTotal)) || '€0.00'}</span>
-                <span className="table-cell">{formatDecimal(convertJoulesToKwh(totals.expTotal))}</span>
-                <span className="table-cell">{formatToEuro(totals.netExportValueTotal) || '€0.00'}</span>
+                <span className="table-cell">{formatDecimal(convertJoulesToKwh(state.totals[state.formattedSelectedDate]?.genTotal))} kWh</span>
+                <span className="table-cell">{formatToEuro(calculateGrossCost(state.totals[state.formattedSelectedDate]?.netSavingTotal)) || '€0.00'}</span>
+                <span className="table-cell">{formatDecimal(convertJoulesToKwh(state.totals[state.formattedSelectedDate]?.expTotal))} kWh</span>
+                <span className="table-cell">{formatToEuro(state.totals[state.formattedSelectedDate]?.exportValueTotal) || '€0.00'}</span>
               </div>
             </div>
           </div>
           <div className="chart">
-            <DailyEnergyUsageLineGraph data={data} />
+            <DailyEnergyUsageLineGraph data={state.data[state.formattedSelectedDate] || []} />
           </div>
         </div>
       </div>
