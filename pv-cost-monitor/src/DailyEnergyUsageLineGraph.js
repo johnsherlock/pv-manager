@@ -81,7 +81,7 @@ const DailyEnergyUsageLineGraph = ({ data }) => {
 }
 
 DailyEnergyUsageLineGraph.propTypes = {
-  data: PropTypes.object,
+  data: PropTypes.array,
 };
 
 export default DailyEnergyUsageLineGraph;
