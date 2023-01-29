@@ -16,16 +16,22 @@ const peakRate = 0.5289;
 const nightRate = 0.3182;
 const exportRate = 0.1850;
 
+const initialTotals = () => {
+  return {
+    impTotal: 0,
+    genTotal: 0,
+    expTotal: 0,
+    netCostTotal: 0,
+    netSavingTotal: 0,
+    saturdayNetSavingTotal: 0,
+    exportValueTotal: 0,
+  }
+}
+
 function App() {
   const [data, setData] = useState([]);
   const [selectedDate, setSelectedDate] = useState(moment());
-  const [impTotal, setImpTotal] = useState(0);
-  const [genTotal, setGenTotal] = useState(0);
-  const [expTotal, setExpTotal] = useState(0);
-  const [totalNetCost, setTotalNetCost] = useState(0);
-  const [totalNetSaving, setTotalNetSaving] = useState(0);
-  const [saturdayNetSaving, setSaturdayNetSaving] = useState(0);
-  const [totalNetExportValue, setTotalExportValue] = useState(0);
+  const [totals, setTotals] = useState(initialTotals());
 
   useEffect(() => {
     const targetDate = moment(selectedDate).format("YYYY-MM-DD");
@@ -35,21 +41,28 @@ function App() {
       .then(response => {
         const data = response.data.U21494842;
         setData(data);
+        // setTotals(initialTotals);
       })
       .catch(error => {
         console.log(error);
-      });
+      });    
   }, [selectedDate]);
 
   useEffect(() => {
     console.log('Recaculating totals')
-    setImpTotal(data.reduce((acc, item) => acc + (formatDecimal(item.imp) || 0), 0));
-    setGenTotal(data.reduce((acc, item) => acc + (formatDecimal(item.gep) || 0), 0));
-    setExpTotal(data.reduce((acc, item) => acc + (formatDecimal(item.exp) || 0), 0));
-    setTotalNetCost(data.reduce((acc, item) => acc + calculateCost(item.hr, item.dow, item.imp), 0));
-    setTotalNetSaving(data.reduce((acc, item) => acc + calculateCost(item.hr, item.dow, item.gep), 0));
-    setSaturdayNetSaving(data.reduce((acc, item) => acc + calculateSaturdaySaving(item.hr, item.dow, item.imp), 0));
-    setTotalExportValue(data.reduce((acc, item) => acc + calculateExportValue(item.exp), 0));
+
+    setTotals(data.reduce((totals, item) => {
+      totals.impTotal = totals.impTotal + (formatDecimal(item.imp) || 0);
+      totals.genTotal = totals.genTotal + (formatDecimal(item.gep) || 0);
+      totals.expTotal = totals.expTotal + (formatDecimal(item.exp) || 0);
+      totals.netCostTotal = totals.netCostTotal + calculateCost(item.hr, item.dow, item.imp);
+      totals.netSavingTotal = totals.netSavingTotal + calculateCost(item.hr, item.dow, item.gep);
+      totals.saturdayNetSavingTotal = totals.saturdayNetSavingTotal + calculateSaturdaySaving(item.hr, item.dow, item.imp);
+      totals.exportValueTotal = totals.exportValueTotal + calculateExportValue(item.exp);
+
+      return totals;
+    }, initialTotals()));
+  
   }, [data]);
 
   const convertJoulesToKwh = joules => joules ? (joules / 3600000) : '';
@@ -191,15 +204,15 @@ function App() {
             <div className="table-footer">
               <div className="table-row">
                 <span className="table-cell">Total</span>
-                <span className="table-cell">{formatDecimal(convertJoulesToKwh(impTotal))}</span>
+                <span className="table-cell">{formatDecimal(convertJoulesToKwh(totals.impTotal))}</span>
                 <span className="table-cell">
-                  {formatToEuro(calculateGrossCostIncStandingCharges(totalNetCost))}&nbsp;
-                  {saturdayNetSaving ? `(${formatToEuro(calculateGrossCost(saturdayNetSaving))})` : ''}
+                  {formatToEuro(calculateGrossCostIncStandingCharges(totals.netCostTotal))}&nbsp;
+                  {totals.saturdayNetSavingTotal ? `(${formatToEuro(calculateGrossCost(totals.saturdayNetSavingTotal))})` : ''}
                 </span>
-                <span className="table-cell">{formatDecimal(convertJoulesToKwh(genTotal))}</span>
-                <span className="table-cell">{formatToEuro(calculateGrossCost(totalNetSaving)) || '€0.00'}</span>
-                <span className="table-cell">{formatDecimal(convertJoulesToKwh(expTotal))}</span>
-                <span className="table-cell">{formatToEuro(totalNetExportValue) || '€0.00'}</span>
+                <span className="table-cell">{formatDecimal(convertJoulesToKwh(totals.genTotal))}</span>
+                <span className="table-cell">{formatToEuro(calculateGrossCost(totals.netSavingTotal)) || '€0.00'}</span>
+                <span className="table-cell">{formatDecimal(convertJoulesToKwh(totals.expTotal))}</span>
+                <span className="table-cell">{formatToEuro(totals.netExportValueTotal) || '€0.00'}</span>
               </div>
             </div>
           </div>
