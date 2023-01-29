@@ -5,17 +5,8 @@ import 'bootswatch/dist/cosmo/bootstrap.min.css';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './App.css'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import DailyEnergyUsageLineGraph from './DailyEnergyUsageLineGraph';
+
 
 const today = moment().startOf('day');
 const dawnOfTime = moment(new Date("2023-01-20")).startOf('day');
@@ -145,73 +136,6 @@ function App() {
     </div>
   ));
 
-  ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend
-  );
-
-  const LineGraph = ({ data }) => {
-    console.log(`Rendering line graph for ${data[0]?.dom}/${data[0]?.mon}/${data[0]?.yr}`);
-    const lineData = {
-      labels: data.map(item => item.hr ? item.hr.toString().padStart(2, '0') : "00"),
-      datasets: [
-        {
-          label: 'Imported kWh',
-          data: data.map(item => convertJoulesToKwh(item.imp)),
-          fill: false,
-          borderColor: 'rgb(255, 99, 132)',
-          backgroundColor: 'rgba(255, 99, 132, 0.5)',
-          pointBackgroundColor: 'rgba(255, 99, 132, 1)',
-          pointBorderColor: '#fff',
-          pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
-        },
-        {
-          label: 'Generated kWh',
-          data: data.map(item => convertJoulesToKwh(item.gep)),
-          fill: false,
-          borderColor: 'rgb(51, 153, 102)',
-          backgroundColor: 'rgba(51, 153, 102, 0.5)',
-          pointBackgroundColor: 'rgba(51, 153, 102, 1)',
-          pointBorderColor: '#fff',
-          pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgba(51, 153, 102, 1)'
-        },
-        {
-          label: 'Exported kWh',
-          data: data.map(item => convertJoulesToKwh(item.exp)),
-          fill: false,
-          borderColor: 'rgb(53, 162, 235)',
-          backgroundColor: 'rgba(53, 162, 235, 0.5)',
-          pointBackgroundColor: 'rgba(53, 162, 235, 1)',
-          pointBorderColor: '#fff',
-          pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
-        },
-      ]
-    };
-
-    const options = {
-      scales: {
-        y: {
-          title: { display: true, text: 'kWh' }
-        },
-        x: {
-          title: { display: true, text: 'Hour of Day' }
-        }
-      },
-    };
-
-    return (
-      <Line options={options} data={lineData}/>
-    );
-  }
-
   return (
     <div className="container grid-container">
       <div className="row justify-content-center">
@@ -280,7 +204,7 @@ function App() {
             </div>
           </div>
           <div className="chart">
-            <LineGraph data={data} />
+            <DailyEnergyUsageLineGraph data={data} />
           </div>
         </div>
       </div>
