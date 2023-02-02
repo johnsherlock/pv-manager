@@ -6,21 +6,18 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './App.css'
 import DailyEnergyUsageLineGraph from './DailyEnergyUsageLineGraph';
+import * as numUtils from './lib/numUtils';
+import * as costUtils from './lib/costUtils';
 
 const dawnOfTime = moment(new Date("2023-01-20")).startOf('day');
-
-const dayRate = 0.4330;
-const peakRate = 0.5289;
-const nightRate = 0.3182;
-const exportRate = 0.1850;
 
 const initialTotals = () => {
   return {
     impTotal: 0,
     genTotal: 0,
     expTotal: 0,
-    netCostTotal: 0,
-    netSavingTotal: 0,
+    grossCostTotal: 0,
+    grossSavingTotal: 0,
     saturdayNetSavingTotal: 0,
     exportValueTotal: 0,
   }
@@ -41,7 +38,7 @@ const initialState = () => {
   }
 }
 
-function App() {
+const App =() => {
   const [state, setState] = useState(initialState());
 
   useEffect(() => {
@@ -49,68 +46,20 @@ function App() {
     getDataForDate(state.selectedDate);
   }, []);
 
-  const convertJoulesToKwh = joules => joules ? (joules / 3600000) : '';
-  const formatDecimal = number => Math.round(number * 100) / 100;
-
   const recalculateTotals = (data) => {
     console.log('Recaculating totals')
     const totals = data.reduce((totals, item) => {
-      totals.impTotal = totals.impTotal + (formatDecimal(item.imp) || 0);
-      totals.genTotal = totals.genTotal + (formatDecimal(item.gep) || 0);
-      totals.expTotal = totals.expTotal + (formatDecimal(item.exp) || 0);
-      totals.netCostTotal = totals.netCostTotal + calculateCost(item.hr, item.dow, item.imp);
-      totals.netSavingTotal = totals.netSavingTotal + calculateCost(item.hr, item.dow, item.gep);
-      totals.saturdayNetSavingTotal = totals.saturdayNetSavingTotal + calculateSaturdaySaving(item.hr, item.dow, item.imp);
-      totals.exportValueTotal = totals.exportValueTotal + calculateExportValue(item.exp);
+      totals.impTotal = totals.impTotal + (numUtils.formatDecimal(item.imp) || 0);
+      totals.genTotal = totals.genTotal + (numUtils.formatDecimal(item.gep) || 0);
+      totals.expTotal = totals.expTotal + (numUtils.formatDecimal(item.exp) || 0);
+      totals.grossCostTotal = totals.grossCostTotal + costUtils.calculateHourlyGrossCostIncStdChgAndDiscount(item.hr, item.dow, item.imp);
+      totals.grossSavingTotal = totals.grossSavingTotal + costUtils.calculateDiscountedHourlyGrossCost(item.hr, item.dow, item.gep);
+      totals.saturdayNetSavingTotal = totals.saturdayNetSavingTotal + costUtils.calculateSaturdaySaving(item.hr, item.dow, item.imp);
+      totals.exportValueTotal = totals.exportValueTotal + costUtils.calculateExportValue(item.exp);
 
       return totals;
     }, initialTotals());
     return totals;
-  }
-
-  const calculateCost = (hour = 0, dow, joules) => {
-    if (joules) {
-      let multiplier = dayRate;
-
-      if ((hour >= 0 && hour <= 8) || hour === 23) {
-        multiplier = nightRate;
-      } else if (hour >= 17 && hour <= 19) {
-        multiplier = peakRate;
-      }
-
-      if (dow === 'Sat' && hour >= 8 && hour <= 17) {
-        multiplier = 0;
-      }
-
-      const kWh = convertJoulesToKwh(joules);
-      const cost = kWh * multiplier;
-
-      return formatDecimal(cost);
-    }
-    return 0;
-  }
-
-  const calculateSaturdaySaving = (hour = 0, dow, joules) => {
-    if (joules && dow === 'Sat' && hour >= 9 && hour <= 17) {
-      const kWh = convertJoulesToKwh(joules);
-      const cost = kWh * dayRate;
-      return formatDecimal(cost);
-    } else {
-      return 0;
-    }
-  }
-
-  const calculateExportValue = (joules) => {
-    if (joules) {
-      const kWh = convertJoulesToKwh(joules);
-      return formatDecimal(kWh * exportRate);
-    } else {
-      return 0;
-    }
-  }
-
-  const formatToEuro = (amount) => {
-    return amount ? `€${amount.toFixed(2)}` : '';
   }
 
   const getDataForDate = (targetDate) => {
@@ -124,6 +73,7 @@ function App() {
         selectedDate: targetDate,
         formattedSelectedDate: formattedTargetDate,
       });
+      document.body.style.cursor = 'auto';
     }
     else {
       console.log(`Retrieving data for ${formattedTargetDate}`)
@@ -133,6 +83,7 @@ function App() {
           const selectedDateData = response.data.U21494842;
           const newState = { 
             ...state,
+            today: moment().startOf('day'),
             selectedDate: targetDate,
             formattedSelectedDate: formattedTargetDate,
           };
@@ -157,27 +108,6 @@ function App() {
     getDataForDate(new moment(state.selectedDate.add(1, 'day')));
   }
 
-  const calculateGrossCost = (netCost) => {
-
-    const discount = 1 - 0.15;
-    const vatRate = 1.09;
-
-    const grossCost = (netCost * discount) * vatRate;
-
-    return formatDecimal(grossCost);
-  }
-
-  const calculateGrossCostIncStandingCharges = (netCost) => {
-
-    const discount = 1 - 0.15;
-    const standingCharge = 0.7704;
-    const vatRate = 1.09;
-
-    const grossCost = ((netCost * discount) + standingCharge) * vatRate;
-
-    return formatDecimal(grossCost);
-  }
-
   const CustomDatePicker = forwardRef(({ value, onClick }, ref) => (
     <div className="custom-date-picker" onClick={onClick} ref={ref}>
       {value}
@@ -196,9 +126,9 @@ function App() {
               <div className="date">
                 <DatePicker
                   selected={state.selectedDate.toDate()}
-                  onChange={date => getDataForDate(new moment(date))}
+                  onChange={date => { console.log(date); getDataForDate(new moment(date)) }}
                   placeholderText="Select a date"
-                  dateFormat="EEE Do MMM yyyy"
+                  dateFormat="EEE do MMM yyyy"
                   minDate={new Date(2023, 0, 20)}
                   maxDate={new Date()}
                   customInput={<CustomDatePicker />}
@@ -226,12 +156,12 @@ function App() {
                 {state.data[state.formattedSelectedDate]?.map((item, index) => (
                   <div key={item.yr + item.mon + item.dom + item.hr} className={`table-row ${index % 2 === 0 ? 'table-primary' : ''}`}>
                     <div className="table-cell">{item.hr ? item.hr.toString().padStart(2, '0') : "00"}</div>
-                    <div className="table-cell">{formatDecimal(convertJoulesToKwh(item.imp)).toFixed(2)}</div>
-                    <div className="table-cell">{formatToEuro(calculateCost(item.hr, item.dow, item.imp))}</div>
-                    <div className="table-cell">{formatDecimal(convertJoulesToKwh(item.gep)).toFixed(2)}</div>
-                    <div className="table-cell">{formatToEuro(calculateCost(item.hr, item.dow, item.gep))}</div>
-                    <div className="table-cell">{formatDecimal(convertJoulesToKwh(item.exp)).toFixed(2)}</div>
-                    <div className="table-cell">{formatDecimal(calculateExportValue(item.exp)).toFixed(2)}</div>
+                    <div className="table-cell">{numUtils.formatDecimal(numUtils.convertJoulesToKwh(item.imp)).toFixed(2)}</div>
+                    <div className="table-cell">{costUtils.formatToEuro(costUtils.calculateHourlyGrossCostIncStdChgAndDiscount(item.hr, item.dow, item.imp))}</div>
+                    <div className="table-cell">{numUtils.formatDecimal(numUtils.convertJoulesToKwh(item.gep)).toFixed(2)}</div>
+                    <div className="table-cell">{costUtils.formatToEuro(costUtils.calculateDiscountedHourlyGrossCost(item.hr, item.dow, item.gep))}</div>
+                    <div className="table-cell">{numUtils.formatDecimal(numUtils.convertJoulesToKwh(item.exp)).toFixed(2)}</div>
+                    <div className="table-cell">{numUtils.formatDecimal(costUtils.calculateExportValue(item.exp)).toFixed(2)}</div>
                   </div>
                 ))}
               </div>
@@ -239,15 +169,15 @@ function App() {
             <div className="table-footer">
               <div className="table-row">
                 <span className="table-cell">Total</span>
-                <span className="table-cell">{formatDecimal(convertJoulesToKwh(state.totals[state.formattedSelectedDate]?.impTotal))} kWh</span>
+                <span className="table-cell">{numUtils.formatDecimal(numUtils.convertJoulesToKwh(state.totals[state.formattedSelectedDate]?.impTotal))} kWh</span>
                 <span className="table-cell">
-                  {formatToEuro(calculateGrossCostIncStandingCharges(state.totals[state.formattedSelectedDate]?.netCostTotal))}&nbsp;
-                  {state.totals[state.formattedSelectedDate]?.saturdayNetSavingTotal ? `(${formatToEuro(calculateGrossCost(state.totals[state.formattedSelectedDate]?.saturdayNetSavingTotal))})` : ''}
+                  {costUtils.formatToEuro(state.totals[state.formattedSelectedDate]?.grossCostTotal)}&nbsp;
+                  {state.totals[state.formattedSelectedDate]?.saturdayNetSavingTotal ? `(${costUtils.formatToEuro(costUtils.calculateDiscountedGrossCostExcludingStdChg(state.totals[state.formattedSelectedDate]?.saturdayNetSavingTotal))})` : ''}
                 </span>
-                <span className="table-cell">{formatDecimal(convertJoulesToKwh(state.totals[state.formattedSelectedDate]?.genTotal))} kWh</span>
-                <span className="table-cell">{formatToEuro(calculateGrossCost(state.totals[state.formattedSelectedDate]?.netSavingTotal)) || '€0.00'}</span>
-                <span className="table-cell">{formatDecimal(convertJoulesToKwh(state.totals[state.formattedSelectedDate]?.expTotal))} kWh</span>
-                <span className="table-cell">{formatToEuro(state.totals[state.formattedSelectedDate]?.exportValueTotal) || '€0.00'}</span>
+                <span className="table-cell">{numUtils.formatDecimal(numUtils.convertJoulesToKwh(state.totals[state.formattedSelectedDate]?.genTotal))} kWh</span>
+                <span className="table-cell">{costUtils.formatToEuro(state.totals[state.formattedSelectedDate]?.grossSavingTotal) || '€0.00'}</span>
+                <span className="table-cell">{numUtils.formatDecimal(numUtils.convertJoulesToKwh(state.totals[state.formattedSelectedDate]?.expTotal))} kWh</span>
+                <span className="table-cell">{costUtils.formatToEuro(state.totals[state.formattedSelectedDate]?.exportValueTotal) || '€0.00'}</span>
               </div>
             </div>
           </div>
@@ -258,6 +188,6 @@ function App() {
       </div>
     </div>
   );
-}
+};
 
 export default App;
