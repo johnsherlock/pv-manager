@@ -69,15 +69,6 @@ export const calculateSaturdaySaving = (hour = 0, dow, joules) => {
   }
 }
 
-export const calculateExportValue = (joules) => {
-  if (joules) {
-    const kWh = numUtils.convertJoulesToKwh(joules);
-    return numUtils.formatDecimal(kWh * exportRate);
-  } else {
-    return 0;
-  }
-}
-
 export const calculateDiscountedGrossCostExcludingStdChg = (netCostAtStandardRate) => {
 
   const grossCost = (netCostAtStandardRate * discount) * vatRate;
@@ -88,4 +79,13 @@ export const calculateGrossCostIncStandingCharges = (netCost) => {
 
   const grossCost = ((netCost * discount) + hourlyStandingCharge) * vatRate;
   return numUtils.formatDecimal(grossCost);
+}
+
+export const calculateExportValue = (joules) => {
+  if (joules) {
+    const kWh = numUtils.convertJoulesToKwh(joules);
+    return numUtils.formatDecimal(kWh * exportRate);
+  } else {
+    return 0;
+  }
 }
