@@ -30,7 +30,7 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx"

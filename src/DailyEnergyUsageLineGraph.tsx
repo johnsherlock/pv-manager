@@ -7,6 +7,8 @@ import {
   Title,
   Tooltip,
   Legend,
+  ChartData,
+  ChartOptions,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -28,7 +30,7 @@ ChartJS.register(
 
 const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageLineGraphProps): JSX.Element => {
   console.log(`Rendering line graph for ${data[0]?.dom}/${data[0]?.mon}/${data[0]?.yr}`);
-  const lineData = {
+  const lineData: ChartData<'line'> = {
     labels: data.map((item: { hr: { toString: () => string } }) => (item.hr ? item.hr.toString().padStart(2, '0') : '00')),
     datasets: [
       {
@@ -67,7 +69,7 @@ const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageLineGraphProps): JS
     ],
   };
 
-  const options = {
+  const options: ChartOptions<'line'> = {
     scales: {
       y: {
         title: { display: true, text: 'kWh' },

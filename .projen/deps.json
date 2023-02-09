@@ -57,12 +57,34 @@
       "type": "build"
     },
     {
+      "name": "identity-obj-proxy",
+      "type": "build"
+    },
+    {
+      "name": "jest",
+      "type": "build"
+    },
+    {
+      "name": "jest-junit",
+      "version": "^13",
+      "type": "build"
+    },
+    {
+      "name": "jsdom",
+      "version": "21",
+      "type": "build"
+    },
+    {
       "name": "npm-check-updates",
       "version": "^16",
       "type": "build"
     },
     {
       "name": "projen",
+      "type": "build"
+    },
+    {
+      "name": "ts-jest",
       "type": "build"
     },
     {
@@ -108,6 +130,10 @@
     {
       "name": "moment",
       "version": "^2",
+      "type": "runtime"
+    },
+    {
+      "name": "next",
       "type": "runtime"
     },
     {
