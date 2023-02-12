@@ -7,14 +7,9 @@ import {
   Title,
   Tooltip,
   Legend,
-  ChartData,
-  ChartOptions,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-
-interface DailyEnergyUsageLineGraphProps {
-  data: any;
-}
+import { DailyEnergyUsageProps } from './lib/pvService';
 
 const convertJoulesToKwh = (joules: number) => (joules ? (joules / 3600000) : '');
 
@@ -28,9 +23,9 @@ ChartJS.register(
   Legend,
 );
 
-const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageLineGraphProps): JSX.Element => {
-  console.log(`Rendering line graph for ${data[0]?.dom}/${data[0]?.mon}/${data[0]?.yr}`);
-  const lineData: ChartData<'line'> = {
+const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageProps): JSX.Element => {
+console.log(`Rendering line graph for ${data[0]?.dom}/${data[0]?.mon}/${data[0]?.yr}`);
+  const lineData = {
     labels: data.map((item: { hr: { toString: () => string } }) => (item.hr ? item.hr.toString().padStart(2, '0') : '00')),
     datasets: [
       {
@@ -69,7 +64,7 @@ const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageLineGraphProps): JS
     ],
   };
 
-  const options: ChartOptions<'line'> = {
+  const options = {
     scales: {
       y: {
         title: { display: true, text: 'kWh' },

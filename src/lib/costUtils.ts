@@ -22,7 +22,29 @@ export const standingCharge = 0.7066;
 export const hourlyStandingCharge = standingCharge / 24;
 export const vatRate = 1.09;
 
-export const formatToEuro = (amount: number) => (amount ? `€${amount.toFixed(2)}` : '');
+export interface Totals {
+  impTotal: number;
+  genTotal: number;
+  expTotal: number;
+  grossCostTotal: number;
+  grossSavingTotal: number;
+  saturdayNetSavingTotal: number;
+  exportValueTotal: number;
+}
+
+const initialTotals = (): Totals => {
+  return {
+    impTotal: 0,
+    genTotal: 0,
+    expTotal: 0,
+    grossCostTotal: 0,
+    grossSavingTotal: 0,
+    saturdayNetSavingTotal: 0,
+    exportValueTotal: 0,
+  }
+};
+
+export const formatToEuro = (amount: number): string => (amount ? `€${amount.toFixed(2)}` : '');
 
 export const calculateHourlyNetCostAtStandardRates = (hour = 0, dow: string, joules: number) => {
   if (joules) {
@@ -84,4 +106,20 @@ export const calculateExportValue = (joules: number) => {
     return numUtils.formatDecimal(kWh * exportRate);
   }
   return 0;
+};
+
+export const recalculateTotals = (data: any[]) => {
+  console.log('Recaculating totals');
+  const totals = data.reduce((_totals, item) => {
+    _totals.impTotal += (numUtils.formatDecimal(item.imp) || 0);
+    _totals.genTotal += (numUtils.formatDecimal(item.gep) || 0);
+    _totals.expTotal += (numUtils.formatDecimal(item.exp) || 0);
+    _totals.grossCostTotal += calculateHourlyGrossCostIncStdChgAndDiscount(item.hr, item.dow, item.imp);
+    _totals.grossSavingTotal += calculateDiscountedHourlyGrossCost(item.hr, item.dow, item.gep);
+    _totals.saturdayNetSavingTotal += calculateSaturdaySaving(item.hr, item.dow, item.imp);
+    _totals.exportValueTotal += calculateExportValue(item.exp);
+
+    return _totals;
+  }, initialTotals());
+  return totals;
 };
