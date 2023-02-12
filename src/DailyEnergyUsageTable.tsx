@@ -1,10 +1,10 @@
 import * as costUtils from './lib/costUtils';
-import * as numUtils from './lib/numUtils';
 import { Totals } from './lib/costUtils';
+import * as numUtils from './lib/numUtils';
 
 export interface DailyEnergyUsageTableProps {
-  data: any,
-  totals: Totals,
+  data: any;
+  totals: Totals;
 }
 
 const DailyEnergyUsageTable = ({ data, totals }: DailyEnergyUsageTableProps): JSX.Element => {
@@ -68,6 +68,6 @@ const DailyEnergyUsageTable = ({ data, totals }: DailyEnergyUsageTableProps): JS
     </div>
 
   );
-}
+};
 
 export default DailyEnergyUsageTable;

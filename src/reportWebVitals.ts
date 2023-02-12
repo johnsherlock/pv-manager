@@ -8,6 +8,8 @@ const reportWebVitals = (onPerfEntry?: ReportHandler) => {
       getFCP(onPerfEntry);
       getLCP(onPerfEntry);
       getTTFB(onPerfEntry);
+    }).catch(() => {
+      console.error('Error reporting web vitals');
     });
   }
 };

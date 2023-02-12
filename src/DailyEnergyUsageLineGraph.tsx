@@ -24,7 +24,7 @@ ChartJS.register(
 );
 
 const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageProps): JSX.Element => {
-console.log(`Rendering line graph for ${data[0]?.dom}/${data[0]?.mon}/${data[0]?.yr}`);
+  console.log(`Rendering line graph for ${data[0]?.dom}/${data[0]?.mon}/${data[0]?.yr}`);
   const lineData = {
     labels: data.map((item: { hr: { toString: () => string } }) => (item.hr ? item.hr.toString().padStart(2, '0') : '00')),
     datasets: [

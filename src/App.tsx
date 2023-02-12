@@ -8,17 +8,17 @@ import DailyEnergyUsageTable from './DailyEnergyUsageTable';
 import * as costUtils from './lib/costUtils';
 import * as dateUtils from './lib/dateUtils';
 import * as pvService from './lib/pvService';
-import * as stateUtils from './lib/stateUtils';
 import { HourlyUsageData } from './lib/pvService';
+import * as stateUtils from './lib/stateUtils';
 
 function App() {
   const [state, setState] = useState(stateUtils.initialState());
 
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      getDataForDate(state.selectedDate);
+    const intervalId = setInterval(async () => {
+      await getDataForDate(state.selectedDate);
     }, 1 * 60 * 1000);
-    
+
     return () => {
       clearInterval(intervalId);
     };
@@ -52,15 +52,17 @@ function App() {
 
   useEffect(() => {
     // retrieve data for today.
-    getDataForDate(state.selectedDate);
+    getDataForDate(state.selectedDate).catch(() => {
+      console.error(`Error retrieving data for ${state.selectedDate}`);
+    });
   }, []);
 
-  const goToPreviousDay = (): any => {
-    getDataForDate(moment(state.selectedDate.subtract(1, 'day')));
+  const goToPreviousDay = async (): Promise<any> => {
+    await getDataForDate(moment(state.selectedDate.subtract(1, 'day')));
   };
 
-  const goToNextDay = () => {
-    getDataForDate(moment(state.selectedDate.add(1, 'day')));
+  const goToNextDay = async () => {
+    await getDataForDate(moment(state.selectedDate.add(1, 'day')));
   };
 
   return (

@@ -41,7 +41,7 @@ const initialTotals = (): Totals => {
     grossSavingTotal: 0,
     saturdayNetSavingTotal: 0,
     exportValueTotal: 0,
-  }
+  };
 };
 
 export const formatToEuro = (amount: number): string => (amount ? `€${amount.toFixed(2)}` : '');

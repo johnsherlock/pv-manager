@@ -12,7 +12,7 @@
   "parserOptions": {
     "ecmaVersion": 2018,
     "sourceType": "module",
-    "project": "./tsconfig.dev.json"
+    "project": "./tsconfig.json"
   },
   "extends": [
     "plugin:import/typescript"
@@ -27,7 +27,7 @@
     "import/resolver": {
       "node": {},
       "typescript": {
-        "project": "./tsconfig.dev.json",
+        "project": "./tsconfig.json",
         "alwaysTryTypes": true
       }
     }
@@ -37,7 +37,8 @@
     "*.d.ts",
     "node_modules/",
     "*.generated.ts",
-    "coverage"
+    "coverage",
+    "src/reportWebVitals.ts"
   ],
   "rules": {
     "indent": [
@@ -215,13 +216,5 @@
         ]
       }
     ]
-  },
-  "overrides": [
-    {
-      "rules": {
-        "@typescript-eslint/no-require-imports": "off",
-        "import/no-extraneous-dependencies": "off"
-      }
-    }
-  ]
+  }
 }
