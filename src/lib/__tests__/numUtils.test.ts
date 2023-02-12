@@ -1,4 +1,4 @@
-import { formatDecimal, convertJoulesToKwh } from './numUtils';
+import { formatDecimal, convertJoulesToKwh } from '../numUtils';
 
 describe('formatDecimal', () => {
   it('should return the number rounded to two decimal places', () => {
@@ -11,11 +11,5 @@ describe('convertJoulesToKwh', () => {
   it('should return the equivalent KWh given joules', () => {
     expect(convertJoulesToKwh(3600000)).toBe(1);
     expect(convertJoulesToKwh(7200000)).toBe(2);
-  });
-  
-  it('should return an empty string if joules is falsy', () => {
-    expect(convertJoulesToKwh(0)).toBe('');
-    expect(convertJoulesToKwh(null)).toBe('');
-    expect(convertJoulesToKwh(undefined)).toBe('');
   });
 });

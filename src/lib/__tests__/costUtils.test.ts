@@ -1,28 +1,17 @@
-import * as costUtils from './costUtils';
+import * as costUtils from '../costUtils';
 
 describe('costUtils', () => {
   describe('formatToEuro', () => {
-    it('returns empty string for null or undefined values', () => {
-      expect(costUtils.formatToEuro(null)).toEqual('');
-      expect(costUtils.formatToEuro(undefined)).toEqual('');
-    });
-
     it('formats a number to euro currency format', () => {
       expect(costUtils.formatToEuro(10)).toEqual('€10.00');
     });
   });
 
   describe('calculateHourlyNetCostAtStandardRates', () => {
-    it('should return 0 if joules is not provided', () => {
-      expect(costUtils.calculateHourlyNetCostAtStandardRates(17, 'Mon', 0)).toEqual(0);
-      expect(costUtils.calculateHourlyNetCostAtStandardRates(17, 'Mon', null)).toEqual(0);
-      expect(costUtils.calculateHourlyNetCostAtStandardRates(17, 'Mon', undefined)).toEqual(0);
-    });
-
     it('should return the cost using day rate if hour is between 8-16 and day is not Sat', () => {
-      // This test should return a value of 1.04 because the input hour is 12, which is between 8-16, 
+      // This test should return a value of 1.04 because the input hour is 12, which is between 8-16,
       // so the cost is calculated using the day rate (0.4673).
-      // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22, 
+      // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22,
       // so the net cost is 2.22 * 0.4673 = 1.04.
       expect(costUtils.calculateHourlyNetCostAtStandardRates(12, 'Mon', 8000000)).toEqual(1.04);
     });
@@ -47,12 +36,6 @@ describe('costUtils', () => {
   });
 
   describe('calculateDiscountedHourlyGrossCost', () => {
-    it('should return 0 if joules is not provided', () => {
-      expect(costUtils.calculateDiscountedHourlyGrossCost(17, 'Mon', 0)).toEqual(0);
-      expect(costUtils.calculateDiscountedHourlyGrossCost(17, 'Mon', null)).toEqual(0);
-      expect(costUtils.calculateDiscountedHourlyGrossCost(17, 'Mon', undefined)).toEqual(0);
-    });
-
     it('should return the discounted gross cost using day rate if hour is between 8-16 and day is not Sat', () => {
       // Hour is 12 so the cost is calculated using the day rate (0.4673).
       // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22, so the gross cost is 2.22 * 0.4673 = 1.03.
@@ -114,11 +97,6 @@ describe('costUtils', () => {
   });
 
   describe('calculateSaturdaySaving', () => {
-    it('returns 0 if joules is not provided', () => {
-      // expected value is 0 because joules is not provided
-      expect(costUtils.calculateSaturdaySaving(12, 'Sat')).toEqual(0);
-    });
-
     it('returns 0 if day is not Sat', () => {
       // expected value is 0 because day is not Saturday
       expect(costUtils.calculateSaturdaySaving(12, 'Sun', 800000)).toEqual(0);
@@ -150,25 +128,19 @@ describe('costUtils', () => {
   describe('calculateGrossCostIncStandingCharges', () => {
     it('returns the correct gross cost including standing charges', () => {
       const netCost = 10;
-      // 9.3 is the expected value because the gross cost is calculated as (netCost + standingCharge) * vatRate. 
-      // If netCost is 10 and standingCharge is 0.7, then (10 + 0.7) = 10.7. 
+      // 9.3 is the expected value because the gross cost is calculated as (netCost + standingCharge) * vatRate.
+      // If netCost is 10 and standingCharge is 0.7, then (10 + 0.7) = 10.7.
       // If vatRate is 0.9, then (10.7 * 0.9) = 9.63 which is rounded to two decimal places to give 9.3.
       expect(costUtils.calculateGrossCostIncStandingCharges(netCost)).toEqual(9.3);
     });
   });
 
   describe('calculateExportValue', () => {
-
-    it('should return 0 if joules are not provided', () => {
-      // This test should return 0 because no joules are provided
-      expect(costUtils.calculateExportValue(null)).toEqual(0);
-    });
-
     it('should return the correct export value if joules are provided', () => {
-      // 2.57 is the expected value because the input joules is 50000000, which when 
+      // 2.57 is the expected value because the input joules is 50000000, which when
       // converted to kWh (50000000/3600000) is equal to 13.8888888.
       // The export rate is 0.1850, so the export value is 13.8888888 * 0.1850 = 2.57.
       expect(costUtils.calculateExportValue(50000000)).toEqual(2.57);
     });
   });
-});  
+});

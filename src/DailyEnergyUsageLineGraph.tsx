@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,8 +9,9 @@ import {
   Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { DailyEnergyUsageProps } from './lib/pvService';
 
-const convertJoulesToKwh = joules => joules ? (joules / 3600000) : '';
+const convertJoulesToKwh = (joules: number) => (joules ? (joules / 3600000) : '');
 
 ChartJS.register(
   CategoryScale,
@@ -20,68 +20,64 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
-const DailyEnergyUsageLineGraph = ({ data }) => {
+const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageProps): JSX.Element => {
   console.log(`Rendering line graph for ${data[0]?.dom}/${data[0]?.mon}/${data[0]?.yr}`);
   const lineData = {
-    labels: data.map(item => item.hr ? item.hr.toString().padStart(2, '0') : "00"),
+    labels: data.map((item: { hr: { toString: () => string } }) => (item.hr ? item.hr.toString().padStart(2, '0') : '00')),
     datasets: [
       {
         label: 'Imported kWh',
-        data: data.map(item => convertJoulesToKwh(item.imp)),
+        data: data.map((item: { imp: any }) => convertJoulesToKwh(item.imp)),
         fill: false,
         borderColor: 'rgb(255, 99, 132)',
         backgroundColor: 'rgba(255, 99, 132, 0.5)',
         pointBackgroundColor: 'rgba(255, 99, 132, 1)',
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
+        pointHoverBorderColor: 'rgba(255, 99, 132, 1)',
       },
       {
         label: 'Generated kWh',
-        data: data.map(item => convertJoulesToKwh(item.gep)),
+        data: data.map((item: { gep: any }) => convertJoulesToKwh(item.gep)),
         fill: false,
         borderColor: 'rgb(51, 153, 102)',
         backgroundColor: 'rgba(51, 153, 102, 0.5)',
         pointBackgroundColor: 'rgba(51, 153, 102, 1)',
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: 'rgba(51, 153, 102, 1)'
+        pointHoverBorderColor: 'rgba(51, 153, 102, 1)',
       },
       {
         label: 'Exported kWh',
-        data: data.map(item => convertJoulesToKwh(item.exp)),
+        data: data.map((item: { exp: any }) => convertJoulesToKwh(item.exp)),
         fill: false,
         borderColor: 'rgb(53, 162, 235)',
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
         pointBackgroundColor: 'rgba(53, 162, 235, 1)',
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
+        pointHoverBorderColor: 'rgba(255, 99, 132, 1)',
       },
-    ]
+    ],
   };
 
   const options = {
     scales: {
       y: {
-        title: { display: true, text: 'kWh' }
+        title: { display: true, text: 'kWh' },
       },
       x: {
-        title: { display: true, text: 'Hour of Day' }
-      }
+        title: { display: true, text: 'Hour of Day' },
+      },
     },
   };
 
   return (
-    <Line options={options} data={lineData}/>
+    <Line options={options} data={lineData} />
   );
-}
-
-DailyEnergyUsageLineGraph.propTypes = {
-  data: PropTypes.array,
 };
 
 export default DailyEnergyUsageLineGraph;
