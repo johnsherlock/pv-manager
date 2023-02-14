@@ -25,6 +25,7 @@ function App() {
   }, []);
 
   const getDataForDate = async (targetDate: moment.Moment) => {
+    console.log(`Getting data for ${targetDate}`);
     document.body.style.cursor = 'progress';
     const formattedTargetDate = dateUtils.formatDate(targetDate);
     if (state.data[formattedTargetDate] && targetDate.isBefore(state.today)) {
@@ -36,6 +37,7 @@ function App() {
       });
       document.body.style.cursor = 'auto';
     } else {
+      console.log('Fetching data from server');
       const data: HourlyUsageData[] = await pvService.getHourlyUsageDataForDate(formattedTargetDate);
       const newState = {
         ...state,

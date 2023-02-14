@@ -22,6 +22,7 @@ export interface HourlyUsageData {
 
 export const getHourlyUsageDataForDate = async (formattedTargetDate: string): Promise<HourlyUsageData[]> => {
   console.log(`Retrieving data for ${formattedTargetDate}`);
+  // const url = `http://192.168.68.143:3001/hour-data?date=${formattedTargetDate}`;
   const url = `http://localhost:3001/hour-data?date=${formattedTargetDate}`;
   try {
     const response = await axios.get(url);

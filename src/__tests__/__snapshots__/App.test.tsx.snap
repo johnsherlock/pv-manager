@@ -1,0 +1,53 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`App renders correctly 1`] = `
+<DocumentFragment>
+  <div
+    class="container grid-container"
+  >
+    <div
+      class="row justify-content-center"
+    >
+      <div
+        class="col-12 col-md-9"
+      >
+        <div
+          class="navigation"
+        >
+          <h1>
+            <div
+              class="navPrev"
+            >
+              <div
+                class="navigationButton"
+              >
+                &lt;&lt;
+              </div>
+            </div>
+            <div
+              class="date"
+            >
+              <div
+                data-testid="CustomDatePicker-mock"
+              />
+            </div>
+            <div
+              class="navNext"
+            />
+          </h1>
+        </div>
+        <div
+          data-testid="DailyEnergyUsageTable-mock"
+        />
+        <div
+          class="chart"
+        >
+          <div
+            data-testid="DailyEnergyUsageLineGraph-mock"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
