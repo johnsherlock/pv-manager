@@ -1,13 +1,13 @@
-import * as costUtils from './lib/costUtils';
-import { Totals } from './lib/costUtils';
-import * as numUtils from './lib/numUtils';
+import { EnergyCalculator, Totals } from './lib/energy-calculator';
+import * as numUtils from './lib/num-utils';
 
 export interface DailyEnergyUsageTableProps {
   data: any;
   totals: Totals;
+  energyCalculator: EnergyCalculator;
 }
 
-const DailyEnergyUsageTable = ({ data, totals }: DailyEnergyUsageTableProps): JSX.Element => {
+const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUsageTableProps): JSX.Element => {
 
   return (
     <div className="table">
@@ -28,11 +28,11 @@ const DailyEnergyUsageTable = ({ data, totals }: DailyEnergyUsageTableProps): JS
             <div key={item.yr + item.mon + item.dom + item.hr} className={`table-row ${index % 2 === 0 ? 'table-primary' : ''}`}>
               <div className="table-cell">{item.hr ? item.hr.toString().padStart(2, '0') : '00'}</div>
               <div className="table-cell">{numUtils.formatDecimal(numUtils.convertJoulesToKwh(item.imp))}</div>
-              <div className="table-cell">{costUtils.formatToEuro(costUtils.calculateHourlyGrossCostIncStdChgAndDiscount(item.hr, item.dow, item.imp)) ?? ''}</div>
+              <div className="table-cell">{numUtils.formatToEuro(energyCalculator.calculateHourlyGrossCostIncStdChgAndDiscount(item.hr, item.dow, item.imp)) ?? ''}</div>
               <div className="table-cell">{numUtils.formatDecimal(numUtils.convertJoulesToKwh(item.gep)) ?? ''}</div>
-              <div className="table-cell">{costUtils.formatToEuro(costUtils.calculateDiscountedHourlyGrossCost(item.hr, item.dow, item.gep))}</div>
+              <div className="table-cell">{numUtils.formatToEuro(energyCalculator.calculateDiscountedHourlyGrossCost(item.hr, item.dow, item.gep))}</div>
               <div className="table-cell">{numUtils.formatDecimal(numUtils.convertJoulesToKwh(item.exp))}</div>
-              <div className="table-cell">{numUtils.formatDecimal(costUtils.calculateExportValue(item.exp))}</div>
+              <div className="table-cell">{numUtils.formatDecimal(energyCalculator.calculateExportValue(item.exp))}</div>
             </div>
           ))}
         </div>
@@ -47,22 +47,22 @@ const DailyEnergyUsageTable = ({ data, totals }: DailyEnergyUsageTableProps): JS
             kWh
           </span>
           <span className="table-cell">
-            {costUtils.formatToEuro(totals?.grossCostTotal)}
+            {numUtils.formatToEuro(totals?.grossCostTotal)}
             &nbsp;
-            {totals?.saturdayNetSavingTotal ? `(${costUtils.formatToEuro(costUtils.calculateDiscountedGrossCostExcludingStdChg(totals?.saturdayNetSavingTotal))})` : ''}
+            {totals?.saturdayNetSavingTotal ? `(${numUtils.formatToEuro(energyCalculator.calculateDiscountedGrossCostExcludingStdChg(totals?.saturdayNetSavingTotal))})` : ''}
           </span>
           <span className="table-cell">
             {numUtils.formatDecimal(numUtils.convertJoulesToKwh(totals?.genTotal))}
             {' '}
             kWh
           </span>
-          <span className="table-cell">{costUtils.formatToEuro(totals?.grossSavingTotal) || '€0.00'}</span>
+          <span className="table-cell">{numUtils.formatToEuro(totals?.grossSavingTotal) || '€0.00'}</span>
           <span className="table-cell">
             {numUtils.formatDecimal(numUtils.convertJoulesToKwh(totals?.expTotal))}
             {' '}
             kWh
           </span>
-          <span className="table-cell">{costUtils.formatToEuro(totals?.exportValueTotal) || '€0.00'}</span>
+          <span className="table-cell">{numUtils.formatToEuro(totals?.exportValueTotal) || '€0.00'}</span>
         </div>
       </div>
     </div>

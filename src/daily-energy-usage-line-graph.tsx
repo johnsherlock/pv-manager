@@ -9,7 +9,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { DailyEnergyUsageProps } from './lib/pvService';
+import { DailyEnergyUsageProps } from './lib/pv-service';
 
 const convertJoulesToKwh = (joules: number) => (joules ? (joules / 3600000) : '');
 

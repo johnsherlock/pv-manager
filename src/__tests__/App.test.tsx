@@ -1,10 +1,10 @@
 import { render, act, waitFor } from '@testing-library/react';
 import moment from 'moment';
 import React from 'react';
-import App from '../App';
-import * as pvService from '../lib/pvService';
+import App from '../app';
+import { getHourlyUsageDataForDate } from '../lib/pv-service';
 
-jest.mock('../lib/pvService', () => ({
+jest.mock('../lib/pv-service', () => ({
   getHourlyUsageDataForDate: jest.fn().mockResolvedValue([
     { yr: 2023, mon: 1, dom: 31, imp: 1895904, gen: 7190, dow: 'Tue' },
     { yr: 2023, mon: 1, dom: 31, hr: 1, imp: 2525323, gen: 5515, dow: 'Tue' },
@@ -35,28 +35,18 @@ jest.mock('../lib/pvService', () => ({
 
 const mockMoment = moment('2023-02-13');
 
-jest.mock('../lib/costUtils', () => ({
-  initialState: jest.fn().mockReturnValue({
-    today: mockMoment,
-    selectedDate: mockMoment,
-    formattedSelectedDate: '2023-02-13',
-    data: [],
-    totals: [],
-  }),
-}));
-
-jest.mock('../lib/dateUtils', () => ({
-  ...jest.requireActual('../lib/dateUtils'),
+jest.mock('../lib/date-utils', () => ({
+  ...jest.requireActual('../lib/date-utils'),
   formatDate: jest.fn().mockReturnValue('2023-02-13'),
 }));
 
-jest.mock('../lib/costUtils', () => ({
+jest.mock('../lib/energy-calculator', () => ({
   recalculateTotals: jest.fn(),
 }));
 
-jest.mock('../CustomDatePicker', () => () => <div data-testid="CustomDatePicker-mock" />);
-jest.mock('../DailyEnergyUsageLineGraph', () => () => <div data-testid="DailyEnergyUsageLineGraph-mock" />);
-jest.mock('../DailyEnergyUsageTable', () => () => <div data-testid="DailyEnergyUsageTable-mock" />);
+jest.mock('../custom-date-picker', () => () => <div data-testid="CustomDatePicker-mock" />);
+jest.mock('../daily-energy-usage-line-graph', () => () => <div data-testid="DailyEnergyUsageLineGraph-mock" />);
+jest.mock('../daily-energy-usage-table', () => () => <div data-testid="DailyEnergyUsageTable-mock" />);
 
 describe('App', () => {
   it('renders correctly', async () => {
@@ -69,7 +59,7 @@ describe('App', () => {
     });
 
     await waitFor(() => {
-      expect(pvService.getHourlyUsageDataForDate).toHaveBeenCalledWith(formattedSelectedDate);
+      expect(getHourlyUsageDataForDate).toHaveBeenCalledWith(formattedSelectedDate);
     });
 
     expect(renderResult!.asFragment()).toMatchSnapshot();

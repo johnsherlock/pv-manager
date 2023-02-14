@@ -1,15 +1,15 @@
 import moment from 'moment';
 import { useState, useEffect } from 'react';
 import 'bootswatch/dist/cosmo/bootstrap.min.css';
-import './App.css';
-import CustomDatePicker from './CustomDatePicker';
-import DailyEnergyUsageLineGraph from './DailyEnergyUsageLineGraph';
-import DailyEnergyUsageTable from './DailyEnergyUsageTable';
-import * as costUtils from './lib/costUtils';
-import * as dateUtils from './lib/dateUtils';
-import * as pvService from './lib/pvService';
-import { HourlyUsageData } from './lib/pvService';
-import * as stateUtils from './lib/stateUtils';
+import './app.css';
+import CustomDatePicker from './custom-date-picker';
+import DailyEnergyUsageLineGraph from './daily-energy-usage-line-graph';
+import DailyEnergyUsageTable from './daily-energy-usage-table';
+import * as dateUtils from './lib/date-utils';
+import { EnergyCalculator } from './lib/energy-calculator';
+import * as pvService from './lib/pv-service';
+import { HourlyUsageData } from './lib/pv-service';
+import * as stateUtils from './lib/state-utils';
 
 function App() {
   const [state, setState] = useState(stateUtils.initialState());
@@ -23,6 +23,16 @@ function App() {
       clearInterval(intervalId);
     };
   }, []);
+
+  // TODO: Initialise this dynamically (from props or per user)
+  const energyCalculator = new EnergyCalculator({
+    dayRate: 0.4673,
+    peakRate: 0.5709,
+    nightRate: 0.3434,
+    exportRate: 0.1850,
+    discountPercentage: 0.15,
+    standingCharge: 0.7066,
+  });
 
   const getDataForDate = async (targetDate: moment.Moment) => {
     console.log(`Getting data for ${targetDate}`);
@@ -46,7 +56,7 @@ function App() {
         formattedSelectedDate: formattedTargetDate,
       };
       newState.data[formattedTargetDate] = data;
-      newState.totals[formattedTargetDate] = costUtils.recalculateTotals(data);
+      newState.totals[formattedTargetDate] = energyCalculator.recalculateTotals(data);
       setState(newState);
       document.body.style.cursor = 'auto';
     }
@@ -54,8 +64,8 @@ function App() {
 
   useEffect(() => {
     // retrieve data for today.
-    getDataForDate(state.selectedDate).catch(() => {
-      console.error(`Error retrieving data for ${state.selectedDate}`);
+    getDataForDate(state.selectedDate).catch((error) => {
+      console.error(`Error retrieving data for ${state.selectedDate}`, error);
     });
   }, []);
 
@@ -87,7 +97,11 @@ function App() {
               </div>
             </h1>
           </div>
-          <DailyEnergyUsageTable data={state.data[state.formattedSelectedDate] || []} totals={state.totals[state.formattedSelectedDate] || []} />
+          <DailyEnergyUsageTable
+            data={state.data[state.formattedSelectedDate] || []}
+            totals={state.totals[state.formattedSelectedDate] || []}
+            energyCalculator={energyCalculator}
+          />
           <div className="chart">
             <DailyEnergyUsageLineGraph data={state.data[state.formattedSelectedDate] || []} />
           </div>

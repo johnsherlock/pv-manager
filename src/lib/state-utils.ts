@@ -1,5 +1,5 @@
 import moment from 'moment';
-import * as dateUtils from './dateUtils';
+import * as dateUtils from './date-utils';
 
 interface AppState {
   today: moment.Moment;
