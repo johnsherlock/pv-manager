@@ -56,7 +56,7 @@ function App() {
         formattedSelectedDate: formattedTargetDate,
       };
       newState.data[formattedTargetDate] = data;
-      newState.totals[formattedTargetDate] = energyCalculator.recalculateTotals(data);
+      // newState.totals[formattedTargetDate] = energyCalculator.recalculateTotals(data);
       setState(newState);
       document.body.style.cursor = 'auto';
     }

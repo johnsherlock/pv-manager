@@ -133,12 +133,3 @@ export class EnergyCalculator {
   };
 
 }
-
-export const DEFAULT_ENERGY_CALCULATOR = new EnergyCalculator({
-  dayRate: 0.4673,
-  peakRate: 0.5709,
-  nightRate: 0.3434,
-  exportRate: 0.1850,
-  discountPercentage: 0.15,
-  standingCharge: 0.7066,
-});

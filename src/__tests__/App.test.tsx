@@ -1,4 +1,4 @@
-import { render, act, waitFor } from '@testing-library/react';
+import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
 import moment from 'moment';
 import React from 'react';
 import App from '../app';
@@ -40,17 +40,20 @@ jest.mock('../lib/date-utils', () => ({
   formatDate: jest.fn().mockReturnValue('2023-02-13'),
 }));
 
-jest.mock('../lib/energy-calculator', () => ({
-  recalculateTotals: jest.fn(),
-}));
+jest.mock('../lib/energy-calculator', () => {
+  return {
+    EnergyCalculator: jest.fn(),
+  };
+});
 
 jest.mock('../custom-date-picker', () => () => <div data-testid="CustomDatePicker-mock" />);
 jest.mock('../daily-energy-usage-line-graph', () => () => <div data-testid="DailyEnergyUsageLineGraph-mock" />);
 jest.mock('../daily-energy-usage-table', () => () => <div data-testid="DailyEnergyUsageTable-mock" />);
 
 describe('App', () => {
+
   it('renders correctly', async () => {
-    const selectedDate = moment().subtract(1, 'day');
+    const selectedDate = moment('2023-02-13');
     const formattedSelectedDate = selectedDate.format('YYYY-MM-DD');
 
     let renderResult: any;
