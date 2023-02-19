@@ -24,7 +24,7 @@ const CustomDatePicker = ({ selectedDate, onChange }: CustomDatePickerProps) => 
   return (
     <DatePicker
       selected={selectedDate.toDate()}
-      onChange={(date) => { console.log(date); onChange(moment(date)); }}
+      onChange={(date) => { onChange(moment(date)); }}
       placeholderText="Select a date"
       dateFormat="EEE do MMM yyyy"
       minDate={new Date(2023, 0, 20)}
