@@ -1,11 +1,12 @@
 import moment from 'moment';
 import * as dateUtils from './date-utils';
+import { HourlyUsageData } from './pv-service';
 
 interface AppState {
   today: moment.Moment;
   selectedDate: moment.Moment;
   formattedSelectedDate: string;
-  data: any;
+  data: Map<string, HourlyUsageData[]>;
   totals: any;
 }
 
@@ -15,7 +16,7 @@ export const initialState = (): AppState => {
     today: today,
     selectedDate: today,
     formattedSelectedDate: dateUtils.formatDate(today),
-    data: {},
+    data: new Map(),
     totals: {},
   };
 };

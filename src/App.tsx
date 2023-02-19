@@ -16,7 +16,7 @@ function App() {
 
   useEffect(() => {
     const intervalId = setInterval(async () => {
-      await getDataForDate(state.selectedDate);
+      await goToDay(state.selectedDate);
     }, 1 * 60 * 1000);
 
     return () => {
@@ -34,11 +34,11 @@ function App() {
     standingCharge: 0.7066,
   });
 
-  const getDataForDate = async (targetDate: moment.Moment) => {
+  const goToDay = async (targetDate: moment.Moment) => {
     console.log(`Getting data for ${targetDate}`);
     document.body.style.cursor = 'progress';
     const formattedTargetDate = dateUtils.formatDate(targetDate);
-    if (state.data[formattedTargetDate] && targetDate.isBefore(state.today)) {
+    if (state.data.get(formattedTargetDate) && targetDate.isBefore(state.today)) {
       setState({
         ...state,
         today: moment().startOf('day'),
@@ -55,7 +55,7 @@ function App() {
         selectedDate: targetDate,
         formattedSelectedDate: formattedTargetDate,
       };
-      newState.data[formattedTargetDate] = data;
+      newState.data.set(formattedTargetDate, data);
       newState.totals[formattedTargetDate] = energyCalculator.recalculateTotals(data);
       setState(newState);
       document.body.style.cursor = 'auto';
@@ -64,17 +64,17 @@ function App() {
 
   useEffect(() => {
     // retrieve data for today.
-    getDataForDate(state.selectedDate).catch((error) => {
+    goToDay(state.selectedDate).catch((error) => {
       console.error(`Error retrieving data for ${state.selectedDate}`, error);
     });
   }, []);
 
   const goToPreviousDay = async (): Promise<any> => {
-    await getDataForDate(moment(state.selectedDate.subtract(1, 'day')));
+    await goToDay(moment(state.selectedDate.subtract(1, 'day')));
   };
 
   const goToNextDay = async () => {
-    await getDataForDate(moment(state.selectedDate.add(1, 'day')));
+    await goToDay(moment(state.selectedDate.add(1, 'day')));
   };
 
   return (
@@ -89,7 +89,7 @@ function App() {
               <div className="date">
                 <CustomDatePicker
                   selectedDate={state.selectedDate}
-                  onChange={getDataForDate}
+                  onChange={goToDay}
                 />
               </div>
               <div className="navNext">
@@ -98,12 +98,12 @@ function App() {
             </h1>
           </div>
           <DailyEnergyUsageTable
-            data={state.data[state.formattedSelectedDate] || []}
+            data={state.data.get(state.formattedSelectedDate) || []}
             totals={state.totals[state.formattedSelectedDate] || []}
             energyCalculator={energyCalculator}
           />
           <div className="chart">
-            <DailyEnergyUsageLineGraph data={state.data[state.formattedSelectedDate] || []} />
+            <DailyEnergyUsageLineGraph data={state.data.get(state.formattedSelectedDate) || []} />
           </div>
         </div>
       </div>
