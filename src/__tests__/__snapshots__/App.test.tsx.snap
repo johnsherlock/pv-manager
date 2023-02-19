@@ -33,7 +33,13 @@ exports[`App renders correctly 1`] = `
             </div>
             <div
               class="navNext"
-            />
+            >
+              <div
+                class="navigationButton"
+              >
+                &gt;&gt;
+              </div>
+            </div>
           </h1>
         </div>
         <div

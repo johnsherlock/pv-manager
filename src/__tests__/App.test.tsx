@@ -1,8 +1,7 @@
-import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
+import { render, act, waitFor } from '@testing-library/react';
 import moment from 'moment';
-import React from 'react';
 import App from '../app';
-import { getHourlyUsageDataForDate } from '../lib/pv-service';
+import * as pvService from '../lib/pv-service';
 
 jest.mock('../lib/pv-service', () => ({
   getHourlyUsageDataForDate: jest.fn().mockResolvedValue([
@@ -33,7 +32,9 @@ jest.mock('../lib/pv-service', () => ({
   ]),
 }));
 
-const mockMoment = moment('2023-02-13');
+
+const mockMoment = moment('2023-02-13').startOf('day');
+const mockFormattedDate = '2023-02-13';
 
 jest.mock('../lib/date-utils', () => ({
   ...jest.requireActual('../lib/date-utils'),
@@ -42,9 +43,25 @@ jest.mock('../lib/date-utils', () => ({
 
 jest.mock('../lib/energy-calculator', () => {
   return {
-    EnergyCalculator: jest.fn(),
+    EnergyCalculator: jest.fn().mockImplementation(() => {
+      return {
+        recalculateTotals: jest.fn(),
+      };
+    }),
   };
 });
+
+jest.mock('../lib/state-utils', () => ({
+  initialState: jest.fn().mockImplementation(() => {
+    return {
+      today: mockMoment,
+      selectedDate: mockMoment,
+      formattedSelectedDate: mockFormattedDate,
+      data: {},
+      totals: {},
+    };
+  }),
+}));
 
 jest.mock('../custom-date-picker', () => () => <div data-testid="CustomDatePicker-mock" />);
 jest.mock('../daily-energy-usage-line-graph', () => () => <div data-testid="DailyEnergyUsageLineGraph-mock" />);
@@ -62,7 +79,7 @@ describe('App', () => {
     });
 
     await waitFor(() => {
-      expect(getHourlyUsageDataForDate).toHaveBeenCalledWith(formattedSelectedDate);
+      expect(pvService.getHourlyUsageDataForDate).toHaveBeenCalledWith(formattedSelectedDate);
     });
 
     expect(renderResult!.asFragment()).toMatchSnapshot();

@@ -53,7 +53,6 @@ export class EnergyCalculator {
     this.vatRate = props.vatRate ?? 1.09;
   }
 
-
   public calculateHourlyNetCostAtStandardRates = (hour = 0, dow: string, joules: number) => {
     if (joules) {
       let multiplier = this.dayRate;
