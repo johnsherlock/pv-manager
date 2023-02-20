@@ -1,9 +1,10 @@
 import { EnergyCalculator, Totals } from './lib/energy-calculator';
 import * as numUtils from './lib/num-utils';
+import { HourlyUsageData } from './lib/pv-service';
 
 export interface DailyEnergyUsageTableProps {
-  data: any;
-  totals: Totals;
+  data?: HourlyUsageData[];
+  totals?: Totals;
   energyCalculator: EnergyCalculator;
 }
 
@@ -41,12 +42,12 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
         <div className="table-row">
           <span className="table-cell">Total</span>
           <span className="table-cell">
-            {numUtils.convertJoulesToKwh(totals.impTotal)}
+            {numUtils.convertJoulesToKwh(totals?.impTotal)}
             {' '}
             kWh
           </span>
           <span className="table-cell">
-            {numUtils.formatToEuro(totals?.grossCostTotal)}
+            {numUtils.formatToEuro(totals?.grossCostTotal ?? 0)}
             &nbsp;
             {totals?.saturdayNetSavingTotal ? `(${numUtils.formatToEuro(energyCalculator.calculateDiscountedGrossCostExcludingStdChg(totals?.saturdayNetSavingTotal))})` : ''}
           </span>
@@ -55,13 +56,13 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
             {' '}
             kWh
           </span>
-          <span className="table-cell">{numUtils.formatToEuro(totals?.grossSavingTotal) || '€0.00'}</span>
+          <span className="table-cell">{numUtils.formatToEuro(totals?.grossSavingTotal ?? 0)}</span>
           <span className="table-cell">
             {numUtils.convertJoulesToKwh(totals?.expTotal)}
             {' '}
             kWh
           </span>
-          <span className="table-cell">{numUtils.formatToEuro(totals?.exportValueTotal) || '€0.00'}</span>
+          <span className="table-cell">{numUtils.formatToEuro(totals?.exportValueTotal ?? 0)}</span>
         </div>
       </div>
     </div>

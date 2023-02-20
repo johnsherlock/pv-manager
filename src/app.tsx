@@ -67,7 +67,7 @@ function App() {
         intervalId: null,
       };
       newState.data.set(formattedTargetDate, data);
-      newState.totals[formattedTargetDate] = energyCalculator.recalculateTotals(data);
+      newState.totals.set(formattedTargetDate, energyCalculator.recalculateTotals(data));
       setState(newState);
       if (!intervalRef.current) {
         startAutoRefresh(state.today);
@@ -95,12 +95,12 @@ function App() {
     if (nextDayData.length > 0) {
       console.log('Adding next day data to state');
       state.data.set(formattedNextDay, nextDayData);
-      state.totals[formattedNextDay] = energyCalculator.recalculateTotals(nextDayData);
+      state.totals.set(formattedNextDay, energyCalculator.recalculateTotals(nextDayData));
     }
     if (previousDayData.length > 0) {
       console.log('Adding previous day data to state');
       state.data.set(formattedPreviousDay, previousDayData);
-      state.totals[formattedPreviousDay] = energyCalculator.recalculateTotals(previousDayData);
+      state.totals.set(formattedPreviousDay, energyCalculator.recalculateTotals(previousDayData));
     }
   };
 
@@ -145,8 +145,8 @@ function App() {
             </h1>
           </div>
           <DailyEnergyUsageTable
-            data={state.data.get(state.formattedSelectedDate) || []}
-            totals={state.totals[state.formattedSelectedDate] || []}
+            data={state.data.get(state.formattedSelectedDate)}
+            totals={state.totals.get(state.formattedSelectedDate)}
             energyCalculator={energyCalculator}
           />
           <div className="chart">

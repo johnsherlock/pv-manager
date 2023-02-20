@@ -119,9 +119,7 @@ Object {
             </span>
             <span
               class="table-cell"
-            >
-              €0.00
-            </span>
+            />
             <span
               class="table-cell"
             >
@@ -130,9 +128,7 @@ Object {
             </span>
             <span
               class="table-cell"
-            >
-              €0.00
-            </span>
+            />
           </div>
         </div>
       </div>
@@ -253,9 +249,7 @@ Object {
           </span>
           <span
             class="table-cell"
-          >
-            €0.00
-          </span>
+          />
           <span
             class="table-cell"
           >
@@ -264,9 +258,7 @@ Object {
           </span>
           <span
             class="table-cell"
-          >
-            €0.00
-          </span>
+          />
         </div>
       </div>
     </div>

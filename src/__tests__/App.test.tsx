@@ -57,8 +57,8 @@ jest.mock('../lib/state-utils', () => ({
       today: mockMoment,
       selectedDate: mockMoment,
       formattedSelectedDate: mockFormattedDate,
-      data: {},
-      totals: {},
+      data: new Map(),
+      totals: new Map(),
     };
   }),
 }));
