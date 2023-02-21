@@ -61,16 +61,27 @@ tbody {
 }
 
 .table-container {
-  display: grid;
   grid-row: 1;
   min-height: 300px;
   max-height: 400px;
   overflow-y: scroll;
 }
+.display {
+  display: grid;
+}
+.hide {
+  display: none;
+}
 
-.table-header, .table-footer {
+.table-header {
   flex-direction: row;
   background-color: #eee;
+  font-weight: 600;
+}
+
+.table-footer {
+  flex-direction: row;
+  background-color: #ddd;
   font-weight: 600;
 }
 

@@ -20,23 +20,24 @@ export interface DailyEnergyUsageProps {
  * hsk: Hestsink temperature
  */
 export interface HourlyUsageData {
-  'yr': number;
-  'mon': number;
-  'dom': number;
-  'dow': 'Sun' | 'Mon' | 'Tues' | 'Wed' | 'Thurs' | 'Fri' | 'Sat';
-  'hr': number;
-  'min': number;
-  'imp'?: number;
-  'gep'?: number;
-  'exp'?: number;
-  'h1d'?: number;
-  'h1b'?: number;
-  'pect1'?: number;
-  'pect2'?: number;
-  'hsk?': number;
-  'v1'?: number;
-  'frq'?: number;
-  'conp'?: number;
+  yr: number;
+  mon: number;
+  dom: number;
+  dow: 'Sun' | 'Mon' | 'Tues' | 'Wed' | 'Thurs' | 'Fri' | 'Sat';
+  hr: number;
+  min: number;
+  imp?: number;
+  gep?: number;
+  exp?: number;
+  h1d?: number;
+  h1b?: number;
+  pect1?: number;
+  pect2?: number;
+  hsk?: number;
+  v1?: number;
+  frq?: number;
+  conp?: number;
+  gepc?: number;
 }
 
 const calculateHourlyEnergyConsumptionKwh = (
@@ -48,6 +49,18 @@ const calculateHourlyEnergyConsumptionKwh = (
   return importedJoules + generatedJoules - immersionDivertedJoules - exportedJoules;
 };
 
+const calculateGreenEnergyPercentage = (importedJoules: number = 0, consumedJoules: number = 0): number => {
+  if (importedJoules === 0) {
+    return 100;
+  }
+  const greenJoules = consumedJoules - importedJoules;
+  if (greenJoules <= 0) {
+    return 0;
+  }
+  const percentage = Math.round((greenJoules / consumedJoules) * 100);
+  return percentage;
+};
+
 export const getHourlyUsageDataForDate = async (formattedTargetDate: string): Promise<HourlyUsageData[]> => {
   console.log(`Retrieving data for ${formattedTargetDate}`);
   // const url = `http://192.168.68.143:3001/hour-data?date=${formattedTargetDate}`;
@@ -56,9 +69,12 @@ export const getHourlyUsageDataForDate = async (formattedTargetDate: string): Pr
     const response = await axios.get(url);
     const data = await Promise.resolve(response.data.U21494842 as HourlyUsageData[]);
     return data.map((item: HourlyUsageData) => {
+      const conp = calculateHourlyEnergyConsumptionKwh(item.imp, item.gep, item.h1d, item.exp);
+      const gepc = calculateGreenEnergyPercentage(item.imp, conp);
       return {
         ...item,
-        conp: calculateHourlyEnergyConsumptionKwh(item.imp, item.gep, item.h1d, item.exp),
+        conp,
+        gepc,
       };
     });
   } catch (error) {
