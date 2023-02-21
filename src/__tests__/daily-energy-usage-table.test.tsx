@@ -41,7 +41,7 @@ describe('DailyEnergyUsageTable', () => {
       nightRate: 0.3434,
       exportRate: 0.1850,
       discountPercentage: 0.15,
-      standingCharge: 0.7066,
+      annualStandingCharge: 0.7066,
     });
 
     const component = render(

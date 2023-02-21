@@ -18,6 +18,7 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
           <div className="table-cell">Imported kWh</div>
           <div className="table-cell">Cost</div>
           <div className="table-cell">Generated kWh</div>
+          <div className="table-cell">Consumed kWh</div>
           <div className="table-cell">Saving</div>
           <div className="table-cell">Exported kWh</div>
           <div className="table-cell">Value</div>
@@ -31,6 +32,7 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
               <div className="table-cell">{numUtils.convertJoulesToKwh(item.imp)}</div>
               <div className="table-cell">{numUtils.formatToEuro(energyCalculator.calculateHourlyGrossCostIncStdChgAndDiscount(item.hr, item.dow, item.imp)) ?? ''}</div>
               <div className="table-cell">{numUtils.convertJoulesToKwh(item.gep) ?? ''}</div>
+              <div className="table-cell">{numUtils.convertJoulesToKwh(item.conp) ?? ''}</div>
               <div className="table-cell">{numUtils.formatToEuro(energyCalculator.calculateDiscountedHourlyGrossCost(item.hr, item.dow, item.gep))}</div>
               <div className="table-cell">{numUtils.convertJoulesToKwh(item.exp)}</div>
               <div className="table-cell">{energyCalculator.calculateExportValue(item.exp)}</div>
@@ -53,6 +55,11 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
           </span>
           <span className="table-cell">
             {numUtils.convertJoulesToKwh(totals?.genTotal)}
+            {' '}
+            kWh
+          </span>
+          <span className="table-cell">
+            {numUtils.convertJoulesToKwh(totals?.conpTotal)}
             {' '}
             kWh
           </span>

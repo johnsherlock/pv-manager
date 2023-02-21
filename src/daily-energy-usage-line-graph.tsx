@@ -30,18 +30,19 @@ const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageProps): JSX.Element
       {
         label: 'Imported kWh',
         data: data.map((item: { imp: any }) => convertJoulesToKwh(item.imp)),
-        fill: false,
-        borderColor: 'rgb(255, 99, 132)',
-        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-        pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+        fill: true,
+        borderColor: 'rgb(255, 99, 888)',
+        backgroundColor: 'rgba(255, 99, 888, 0.5)',
+        pointBackgroundColor: 'rgba(255, 99, 888, 1)',
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: 'rgba(255, 99, 132, 1)',
+        pointHoverBorderColor: 'rgba(255, 99, 888, 1)',
+
       },
       {
         label: 'Generated kWh',
         data: data.map((item: { gep: any }) => convertJoulesToKwh(item.gep)),
-        fill: false,
+        fill: true,
         borderColor: 'rgb(51, 153, 102)',
         backgroundColor: 'rgba(51, 153, 102, 0.5)',
         pointBackgroundColor: 'rgba(51, 153, 102, 1)',
@@ -50,9 +51,20 @@ const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageProps): JSX.Element
         pointHoverBorderColor: 'rgba(51, 153, 102, 1)',
       },
       {
+        label: 'Consumed kWh',
+        data: data.map((item: { conp: any }) => convertJoulesToKwh(item.conp)),
+        fill: true,
+        borderColor: 'rgb(255, 153, 102)',
+        backgroundColor: 'rgba(255, 153, 102, 0.5)',
+        pointBackgroundColor: 'rgba(255, 153, 102, 1)',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(255, 153, 102, 1)',
+      },
+      {
         label: 'Exported kWh',
         data: data.map((item: { exp: any }) => convertJoulesToKwh(item.exp)),
-        fill: false,
+        fill: true,
         borderColor: 'rgb(53, 162, 235)',
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
         pointBackgroundColor: 'rgba(53, 162, 235, 1)',
@@ -64,6 +76,7 @@ const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageProps): JSX.Element
   };
 
   const options = {
+    responsive: true,
     scales: {
       y: {
         title: { display: true, text: 'kWh' },

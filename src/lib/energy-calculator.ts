@@ -6,7 +6,7 @@ export interface EnergyCalculatorProps {
   readonly nightRate: number;
   readonly exportRate: number;
   readonly discountPercentage: number;
-  readonly standingCharge: number;
+  readonly annualStandingCharge: number;
   readonly vatRate?: number;
 }
 
@@ -14,6 +14,7 @@ export interface Totals {
   impTotal: number;
   genTotal: number;
   expTotal: number;
+  conpTotal: number;
   grossCostTotal: number;
   grossSavingTotal: number;
   saturdayNetSavingTotal: number;
@@ -25,6 +26,7 @@ const initialTotals = (): Totals => {
     impTotal: 0,
     genTotal: 0,
     expTotal: 0,
+    conpTotal: 0,
     grossCostTotal: 0,
     grossSavingTotal: 0,
     saturdayNetSavingTotal: 0,
@@ -33,12 +35,14 @@ const initialTotals = (): Totals => {
 };
 
 export class EnergyCalculator {
+
   readonly dayRate: number;
   readonly peakRate: number;
   readonly nightRate: number;
   readonly exportRate: number;
   readonly discountPercentage: number;
-  readonly standingCharge: number;
+  readonly annualStandingCharge: number;
+  readonly dailyStandingCharge: number;
   readonly hourlyStandingCharge: number;
   readonly vatRate: number;
 
@@ -48,8 +52,9 @@ export class EnergyCalculator {
     this.nightRate = props.nightRate;
     this.exportRate = props.exportRate;
     this.discountPercentage = 1 - props.discountPercentage;
-    this.standingCharge = props.standingCharge;
-    this.hourlyStandingCharge = this.standingCharge / 24;
+    this.annualStandingCharge = props.annualStandingCharge;
+    this.dailyStandingCharge = props.annualStandingCharge / 365;
+    this.hourlyStandingCharge = this.dailyStandingCharge / 24;
     this.vatRate = props.vatRate ?? 1.09;
   }
 
@@ -121,6 +126,7 @@ export class EnergyCalculator {
       _totals.impTotal += (numUtils.formatDecimal(item.imp) || 0);
       _totals.genTotal += (numUtils.formatDecimal(item.gep) || 0);
       _totals.expTotal += (numUtils.formatDecimal(item.exp) || 0);
+      _totals.conpTotal += (numUtils.formatDecimal(item.conp) || 0);
       _totals.grossCostTotal += this.calculateHourlyGrossCostIncStdChgAndDiscount(item.hr, item.dow, item.imp);
       _totals.grossSavingTotal += this.calculateDiscountedHourlyGrossCost(item.hr, item.dow, item.gep);
       _totals.saturdayNetSavingTotal += this.calculateSaturdaySaving(item.hr, item.dow, item.imp);
