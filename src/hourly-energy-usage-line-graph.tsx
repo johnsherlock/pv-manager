@@ -10,7 +10,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { convertJoulesToKwh } from './lib/num-utils';
-import { DailyEnergyUsageProps } from './lib/pv-service';
+import { DailyEnergyUsageProps, PVData } from './lib/pv-service';
 
 ChartJS.register(
   CategoryScale,
@@ -22,27 +22,26 @@ ChartJS.register(
   Legend,
 );
 
-const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageProps): JSX.Element => {
+const HourlyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageProps): JSX.Element => {
   console.log(`Rendering line graph for ${data[0]?.dom}/${data[0]?.mon}/${data[0]?.yr}`);
   const lineData = {
     labels: data.map((item: { hr: { toString: () => string } }) => (item.hr ? item.hr.toString().padStart(2, '0') : '00')),
     datasets: [
       {
         label: 'Imported kWh',
-        data: data.map((item: { imp: any }) => convertJoulesToKwh(item.imp)),
-        fill: true,
+        data: data.map((item: PVData) => convertJoulesToKwh(item.imp)),
+        fill: false,
         borderColor: 'rgb(255, 99, 888)',
-        backgroundColor: 'rgba(255, 99, 888, 0.5)',
+        backgroundColor: 'rgba(255, 99, 255, 0.5)',
         pointBackgroundColor: 'rgba(255, 99, 888, 1)',
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: 'rgba(255, 99, 888, 1)',
-
       },
       {
         label: 'Generated kWh',
-        data: data.map((item: { gep: any }) => convertJoulesToKwh(item.gep)),
-        fill: true,
+        data: data.map((item: PVData) => convertJoulesToKwh(item.gep)),
+        fill: false,
         borderColor: 'rgb(51, 153, 102)',
         backgroundColor: 'rgba(51, 153, 102, 0.5)',
         pointBackgroundColor: 'rgba(51, 153, 102, 1)',
@@ -52,8 +51,8 @@ const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageProps): JSX.Element
       },
       {
         label: 'Consumed kWh',
-        data: data.map((item: { conp: any }) => convertJoulesToKwh(item.conp)),
-        fill: true,
+        data: data.map((item: PVData) => convertJoulesToKwh(item.conp)),
+        fill: false,
         borderColor: 'rgb(255, 153, 102)',
         backgroundColor: 'rgba(255, 153, 102, 0.5)',
         pointBackgroundColor: 'rgba(255, 153, 102, 1)',
@@ -62,9 +61,20 @@ const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageProps): JSX.Element
         pointHoverBorderColor: 'rgba(255, 153, 102, 1)',
       },
       {
+        label: 'Immersion kWh',
+        data: data.map((item: PVData) => convertJoulesToKwh(item.h1d)),
+        fill: false,
+        borderColor: 'rgb(179, 0, 0)',
+        backgroundColor: 'rgba(179, 0, 0, 0.5)',
+        pointBackgroundColor: 'rgba(179, 0, 0, 1)',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(179, 0, 0, 1)',
+      },
+      {
         label: 'Exported kWh',
-        data: data.map((item: { exp: any }) => convertJoulesToKwh(item.exp)),
-        fill: true,
+        data: data.map((item: PVData) => convertJoulesToKwh(item.exp)),
+        fill: false,
         borderColor: 'rgb(53, 162, 235)',
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
         pointBackgroundColor: 'rgba(53, 162, 235, 1)',
@@ -92,4 +102,4 @@ const DailyEnergyUsageLineGraph = ({ data }: DailyEnergyUsageProps): JSX.Element
   );
 };
 
-export default DailyEnergyUsageLineGraph;
+export default HourlyEnergyUsageLineGraph;

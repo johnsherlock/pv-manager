@@ -64,7 +64,7 @@ jest.mock('../lib/state-utils', () => ({
 }));
 
 jest.mock('../custom-date-picker', () => () => <div data-testid="CustomDatePicker-mock" />);
-jest.mock('../daily-energy-usage-line-graph', () => () => <div data-testid="DailyEnergyUsageLineGraph-mock" />);
+jest.mock('../hourly-energy-usage-line-graph', () => () => <div data-testid="DailyEnergyUsageLineGraph-mock" />);
 jest.mock('../daily-energy-usage-table', () => () => <div data-testid="DailyEnergyUsageTable-mock" />);
 
 describe('App', () => {

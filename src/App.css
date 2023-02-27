@@ -62,8 +62,8 @@ tbody {
 
 .table-container {
   grid-row: 1;
-  min-height: 300px;
-  max-height: 400px;
+  min-height: 250px;
+  max-height: 330px;
   overflow-y: scroll;
 }
 .display {
@@ -103,7 +103,7 @@ tbody {
 .chart {
   display: grid;
   grid-row: 2;
-  height: 430px;  
+  height: 480px;
 }
 
 .navigationButton, .date {

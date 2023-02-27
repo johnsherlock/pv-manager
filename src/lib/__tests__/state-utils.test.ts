@@ -17,7 +17,8 @@ describe('initialState', () => {
     expect(state).toHaveProperty('selectedDate');
     expect(state.selectedDate.format('YYYY-MM-DD')).toBe('2023-02-19');
     expect(state).toHaveProperty('formattedSelectedDate', '2023-02-19');
-    expect(state).toHaveProperty('data', new Map());
+    expect(state).toHaveProperty('hourData', new Map());
+    expect(state).toHaveProperty('minuteData', new Map());
     expect(state).toHaveProperty('totals', new Map());
   });
 });

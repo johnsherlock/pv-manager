@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { Line } from 'react-chartjs-2';
-import DailyEnergyUsageLineGraph from '../daily-energy-usage-line-graph';
+import HourlyEnergyUsageLineGraph from '../hourly-energy-usage-line-graph';
 
 jest.mock('react-chartjs-2', () => ({
   Line: jest.fn(() => null),
@@ -14,7 +14,7 @@ describe('DailyEnergyUsageLineGraph', () => {
       { hr: 2, imp: 3000000, gep: 4000000, exp: 5000000 },
     ];
 
-    render(<DailyEnergyUsageLineGraph data={data} />);
+    render(<HourlyEnergyUsageLineGraph data={data} />);
 
     expect(Line).toHaveBeenCalledTimes(1);
     expect(Line).toHaveBeenCalledWith({

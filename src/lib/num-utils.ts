@@ -5,4 +5,11 @@ export const formatDecimal = (number: number = 0, decimalPlaces: number = 2): nu
 
 export const convertJoulesToKwh = (joules: number = 0): number => formatDecimal((joules / 3600000));
 
+export const convertJoulesToKw = (energy: number): number => {
+  // Calculate power in watts
+  const powerWatts = energy / 60;
+  // Convert power to kilowatts
+  return powerWatts / 1000;
+};
+
 export const formatToEuro = (amount: number = 0): string => `€${amount.toFixed(2)}`;

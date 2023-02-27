@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { EnergyCalculator, Totals } from './lib/energy-calculator';
 import * as numUtils from './lib/num-utils';
-import { HourlyUsageData } from './lib/pv-service';
+import { PVData } from './lib/pv-service';
 
 export interface DailyEnergyUsageTableProps {
-  data?: HourlyUsageData[];
+  data?: PVData[];
   totals?: Totals;
   energyCalculator: EnergyCalculator;
 }
@@ -25,7 +25,7 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
           <div className="table-cell">Generated kWh</div>
           <div className="table-cell">Consumed kWh</div>
           <div className="table-cell">Exported kWh</div>
-          <div className="table-cell">Consumed Energy Green</div>
+          <div className="table-cell">Green Energy Coverage</div>
           <div className="table-cell">Import Cost</div>
           <div className="table-cell">Green Energy Saving</div>
           <div className="table-cell">Export Value</div>
@@ -72,7 +72,8 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
             kWh
           </span>
           <span className="table-cell">
-            {totals?.greenEnergyPercentageTotal}%
+            {/* {totals?.greenEnergyPercentageTotal}% */}
+            {100-numUtils.formatDecimal(totals?.impTotal!/totals?.conpTotal!)*100}%
           </span>
           <span className="table-cell">
             {numUtils.formatToEuro(totals?.grossCostTotal ?? 0)}

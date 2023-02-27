@@ -1,5 +1,5 @@
 import * as numUtils from './num-utils';
-import { HourlyUsageData } from './pv-service';
+import { PVData } from './pv-service';
 
 export interface EnergyCalculatorProps {
   readonly dayRate: number;
@@ -21,6 +21,8 @@ export interface Totals {
   grossSavingTotal: number;
   saturdayNetSavingTotal: number;
   exportValueTotal: number;
+  immersionRunTime: number;
+  immersionTotal: number;
 }
 
 const initialTotals = (): Totals => {
@@ -34,6 +36,8 @@ const initialTotals = (): Totals => {
     grossSavingTotal: 0,
     saturdayNetSavingTotal: 0,
     exportValueTotal: 0,
+    immersionRunTime: 0,
+    immersionTotal: 0,
   };
 };
 
@@ -122,18 +126,20 @@ export class EnergyCalculator {
     return numUtils.formatDecimal(kWh * this.exportRate);
   };
 
-  public recalculateTotals = (data: HourlyUsageData[]) => {
+  public recalculateTotals = (data: PVData[]) => {
     console.log('Recaculating totals');
     const totals = data.reduce((_totals, item) => {
-      _totals.impTotal += (numUtils.formatDecimal(item.imp) || 0);
-      _totals.genTotal += (numUtils.formatDecimal(item.gep) || 0);
-      _totals.expTotal += (numUtils.formatDecimal(item.exp) || 0);
-      _totals.conpTotal += (numUtils.formatDecimal(item.conp) || 0);
-      _totals.greenEnergyPercentageTotal += (item.gepc || 50);
+      _totals.impTotal += (numUtils.formatDecimal(item.imp) ?? 0);
+      _totals.genTotal += (numUtils.formatDecimal(item.gep) ?? 0);
+      _totals.expTotal += (numUtils.formatDecimal(item.exp) ?? 0);
+      _totals.conpTotal += (numUtils.formatDecimal(item.conp) ?? 0);
+      _totals.greenEnergyPercentageTotal += (item.gepc ?? 50);
       _totals.grossCostTotal += this.calculateHourlyGrossCostIncStdChgAndDiscount(item.hr, item.dow, item.imp);
       _totals.grossSavingTotal += this.calculateHourlySaving(item.hr, item.dow, item.imp, item.conp);
       _totals.saturdayNetSavingTotal += this.calculateSaturdaySaving(item.hr, item.dow, item.imp);
       _totals.exportValueTotal += this.calculateExportValue(item.exp);
+      _totals.immersionRunTime += (item.h1b || item.h1d) ? 1 : 0;
+      _totals.immersionTotal += item.h1d ?? 0;
       return _totals;
     }, initialTotals());
     return {

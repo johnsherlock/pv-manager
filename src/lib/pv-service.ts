@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as numUtils from './num-utils';
 
 export interface DailyEnergyUsageProps {
-  data: any;
+  data: PVData[];
 }
 
 /**
@@ -19,13 +19,13 @@ export interface DailyEnergyUsageProps {
  * ctn:Current Transformer
  * hsk: Hestsink temperature
  */
-export interface HourlyUsageData {
+export interface PVData {
   yr: number;
   mon: number;
   dom: number;
   dow: 'Sun' | 'Mon' | 'Tues' | 'Wed' | 'Thurs' | 'Fri' | 'Sat';
   hr: number;
-  min: number;
+  min?: number;
   imp?: number;
   gep?: number;
   exp?: number;
@@ -61,14 +61,14 @@ const calculateGreenEnergyPercentage = (importedJoules: number = 0, consumedJoul
   return percentage;
 };
 
-export const getHourlyUsageDataForDate = async (formattedTargetDate: string): Promise<HourlyUsageData[]> => {
-  console.log(`Retrieving data for ${formattedTargetDate}`);
+export const getPVDataForDate = async (formattedTargetDate: string): Promise<PVData[]> => {
+  console.log(`Retrieving per minute data for ${formattedTargetDate}`);
   // const url = `http://192.168.68.143:3001/hour-data?date=${formattedTargetDate}`;
-  const url = `http://localhost:3001/hour-data?date=${formattedTargetDate}`;
+  const url = `http://localhost:3001/minute-data?date=${formattedTargetDate}`;
   try {
     const response = await axios.get(url);
-    const data = await Promise.resolve(response.data.U21494842 as HourlyUsageData[]);
-    return data.map((item: HourlyUsageData) => {
+    const data = await Promise.resolve(response.data.U21494842 as PVData[]);
+    return data.map((item: PVData) => {
       const conp = calculateHourlyEnergyConsumptionKwh(item.imp, item.gep, item.h1d, item.exp);
       const gepc = calculateGreenEnergyPercentage(item.imp, conp);
       return {
@@ -82,4 +82,21 @@ export const getHourlyUsageDataForDate = async (formattedTargetDate: string): Pr
     document.body.style.cursor = 'auto';
     return [];
   };
+};
+
+export const convertMinuteDataToHourlyData = (minuteData: PVData[] = []): PVData[] => {
+  const hourlyTotals: { [hour: number]: PVData } = {};
+
+  for (const minuteItem of minuteData) {
+    const { yr, mon, dom, dow, hr = 0, min = 0, imp = 0, gep = 0, exp = 0, h1d = 0, h1b = 0, conp = 0, gepc = 0 } = minuteItem;
+    hourlyTotals[hr] ??= { yr, mon, dom, dow, hr, imp, gep, exp, h1d, h1b, conp, gepc };
+    hourlyTotals[hr].imp! += imp;
+    hourlyTotals[hr].gep! += gep;
+    hourlyTotals[hr].exp! += exp;
+    hourlyTotals[hr].h1d! += h1d;
+    hourlyTotals[hr].h1b! += h1b;
+    hourlyTotals[hr].conp! += conp;
+    hourlyTotals[hr].gepc! += gepc;
+  }
+  return Object.values(hourlyTotals);
 };

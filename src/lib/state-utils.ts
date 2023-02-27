@@ -1,14 +1,15 @@
 import moment from 'moment';
 import * as dateUtils from './date-utils';
 import { Totals } from './energy-calculator';
-import { HourlyUsageData } from './pv-service';
+import { PVData } from './pv-service';
 
 interface AppState {
   today: moment.Moment;
   selectedDate: moment.Moment;
   formattedSelectedDate: string;
-  data: Map<string, HourlyUsageData[]>;
+  pvDataCache: Map<string, PVData[]>;
   totals: Map<string, Totals>;
+  energyUsageLineGraphScale: 'hour' | 'minute';
 }
 
 export const initialState = (): AppState => {
@@ -17,7 +18,8 @@ export const initialState = (): AppState => {
     today: today,
     selectedDate: today,
     formattedSelectedDate: dateUtils.formatDate(today),
-    data: new Map(),
+    pvDataCache: new Map(),
     totals: new Map(),
+    energyUsageLineGraphScale: 'hour',
   };
 };

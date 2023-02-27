@@ -3,12 +3,13 @@ import { useState, useEffect, useRef } from 'react';
 import 'bootswatch/dist/cosmo/bootstrap.min.css';
 import './app.css';
 import CustomDatePicker from './custom-date-picker';
-import DailyEnergyUsageLineGraph from './daily-energy-usage-line-graph';
 import DailyEnergyUsageTable from './daily-energy-usage-table';
+import EnergyUsageLineGraph from './energy-usage-line-graph';
+import Dashboard from './dashboard';
 import * as dateUtils from './lib/date-utils';
 import { EnergyCalculator } from './lib/energy-calculator';
 import * as pvService from './lib/pv-service';
-import { HourlyUsageData } from './lib/pv-service';
+import { convertMinuteDataToHourlyData, PVData } from './lib/pv-service';
 import * as stateUtils from './lib/state-utils';
 
 function App() {
@@ -23,7 +24,7 @@ function App() {
     nightRate: 0.3434,
     exportRate: 0.1850,
     discountPercentage: 0.15,
-    annualStandingCharge: 0.7066,
+    annualStandingCharge: 257.91,
   });
 
   const startAutoRefresh = (selectedDate: moment.Moment) => {
@@ -46,7 +47,7 @@ function App() {
     console.log(`Getting data for ${targetDate}`);
     document.body.style.cursor = 'progress';
     const formattedTargetDate = dateUtils.formatDate(targetDate);
-    if (state.data.get(formattedTargetDate) && targetDate.isBefore(state.today)) {
+    if (state.pvDataCache.get(formattedTargetDate) && targetDate.isBefore(state.today)) {
       stopAutoRefresh();
       setState({
         ...state,
@@ -57,7 +58,7 @@ function App() {
       document.body.style.cursor = 'auto';
     } else {
       console.log('Fetching data from server');
-      const data: HourlyUsageData[] = await pvService.getHourlyUsageDataForDate(formattedTargetDate);
+      const pvData: PVData[] = await pvService.getPVDataForDate(formattedTargetDate);
       console.log('State: ', state);
       const newState = {
         ...state,
@@ -66,8 +67,8 @@ function App() {
         formattedSelectedDate: formattedTargetDate,
         intervalId: null,
       };
-      newState.data.set(formattedTargetDate, data);
-      newState.totals.set(formattedTargetDate, energyCalculator.recalculateTotals(data));
+      newState.pvDataCache.set(formattedTargetDate, pvData);
+      newState.totals.set(formattedTargetDate, energyCalculator.recalculateTotals(pvData));
       setState(newState);
       if (!intervalRef.current) {
         startAutoRefresh(state.today);
@@ -83,23 +84,23 @@ function App() {
     const formattedNextDay = dateUtils.formatDate(nextDay);
     const previousDay = moment(targetDate).subtract(1, 'day');
     const formattedPreviousDay = dateUtils.formatDate(previousDay);
-    let nextDayData: HourlyUsageData[] = [];
-    let previousDayData: HourlyUsageData[] = [];
+    let nextDayData: PVData[] = [];
+    let previousDayData: PVData[] = [];
 
-    if (nextDay.isBefore(state.today) && !state.data.get(formattedNextDay)) {
-      nextDayData = await pvService.getHourlyUsageDataForDate(formattedNextDay);
+    if (nextDay.isBefore(state.today) && !state.pvDataCache.get(formattedNextDay)) {
+      nextDayData = await pvService.getPVDataForDate(formattedNextDay);
     }
-    if (!state.data.get(formattedPreviousDay)) {
-      previousDayData = await pvService.getHourlyUsageDataForDate(formattedPreviousDay);
+    if (!state.pvDataCache.get(formattedPreviousDay)) {
+      previousDayData = await pvService.getPVDataForDate(formattedPreviousDay);
     }
     if (nextDayData.length > 0) {
       console.log('Adding next day data to state');
-      state.data.set(formattedNextDay, nextDayData);
+      state.pvDataCache.set(formattedNextDay, nextDayData);
       state.totals.set(formattedNextDay, energyCalculator.recalculateTotals(nextDayData));
     }
     if (previousDayData.length > 0) {
       console.log('Adding previous day data to state');
-      state.data.set(formattedPreviousDay, previousDayData);
+      state.pvDataCache.set(formattedPreviousDay, previousDayData);
       state.totals.set(formattedPreviousDay, energyCalculator.recalculateTotals(previousDayData));
     }
   };
@@ -125,36 +126,17 @@ function App() {
   };
 
   return (
-    <div className="container grid-container">
-      <div className="row justify-content-center">
-        <div className="col-12 col-md-9">
-          <div className="navigation">
-            <h1>
-              <div className="navPrev">
-                {state.selectedDate.isAfter(dateUtils.dawnOfTime) ? <div className="navigationButton" onClick={goToPreviousDay}>&lt;&lt;</div> : null}
-              </div>
-              <div className="date">
-                <CustomDatePicker
-                  selectedDate={state.selectedDate}
-                  onChange={goToDay}
-                />
-              </div>
-              <div className="navNext">
-                {state.selectedDate.isBefore(state.today) ? <div className="navigationButton" onClick={goToNextDay}>&gt;&gt;</div> : null}
-              </div>
-            </h1>
-          </div>
-          <DailyEnergyUsageTable
-            data={state.data.get(state.formattedSelectedDate)}
-            totals={state.totals.get(state.formattedSelectedDate)}
-            energyCalculator={energyCalculator}
-          />
-          <div className="chart">
-            <DailyEnergyUsageLineGraph data={state.data.get(state.formattedSelectedDate) || []} />
-          </div>
-        </div>
-      </div>
-    </div>
+    <Dashboard
+      selectedDate={state.selectedDate}
+      today={state.today}
+      minuteData={state.pvDataCache.get(state.formattedSelectedDate)}
+      hourData={convertMinuteDataToHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
+      totals={state.totals.get(state.formattedSelectedDate)}
+      energyCalculator={energyCalculator}
+      goToPreviousDay={goToPreviousDay}
+      goToNextDay={goToNextDay}
+      goToDay={goToDay}
+    />
   );
 }
 
