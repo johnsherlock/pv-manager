@@ -34,16 +34,16 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
       <div className={`table-container ${state.expanded ? 'show' : 'hide'}`}>
         <div className="table-body">
           {data?.map((item: any, index: number) => (
-            <div key={item.yr + item.mon + item.dom + item.hr} className={`table-row ${index % 2 === 0 ? 'table-primary' : ''}`}>
-              <div className="table-cell">{item.hr ? item.hr.toString().padStart(2, '0') : '00'}</div>
-              <div className="table-cell">{numUtils.convertJoulesToKwh(item.imp)}</div>
-              <div className="table-cell">{numUtils.convertJoulesToKwh(item.gep)}</div>
-              <div className="table-cell">{numUtils.convertJoulesToKwh(item.conp)}</div>
-              <div className="table-cell">{numUtils.convertJoulesToKwh(item.exp)}</div>
-              <div className="table-cell">{item.gepc}%</div>
-              <div className="table-cell">{numUtils.formatToEuro(energyCalculator.calculateHourlyGrossCostIncStdChgAndDiscount(item.hr, item.dow, item.imp))}</div>
-              <div className="table-cell">{numUtils.formatToEuro(energyCalculator.calculateHourlySaving(item.hr, item.dow, item.imp, item.conp))}</div>
-              <div className="table-cell">{energyCalculator.calculateExportValue(item.exp)}</div>
+            <div key={item.yr + item.mon + item.dom + item.hr + item.min} className={`table-row ${index % 2 === 0 ? 'table-primary' : ''}`}>
+              <div className="table-cell time">{item.hr.toString().padStart(2, '0')}:{item.min.toString().padStart(2, '0')}</div>
+              <div className="table-cell imp">{item.imp.toFixed(2)}</div>
+              <div className="table-cell gep">{item.gep.toFixed(2)}</div>
+              <div className="table-cell comp">{item.conp.toFixed(2)}</div>
+              <div className="table-cell exp">{item.exp.toFixed(2)}</div>
+              <div className="table-cell gepc">{item.gepc}%</div>
+              <div className="table-cell impCost">{numUtils.formatToEuro(energyCalculator.calculateGrossCostPerHalfHourIncStdChgAndDiscount(item.hr, item.dow, item.imp))}</div>
+              <div className="table-cell saving">{numUtils.formatToEuro(energyCalculator.calculateSaving(item.hr, item.dow, item.imp, item.conp))}</div>
+              <div className="table-cell expValue">{energyCalculator.calculateExportValue(item.exp)}</div>
             </div>
           ))}
         </div>
@@ -52,22 +52,22 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
         <div className="table-row">
           <span className="table-cell">Total</span>
           <span className="table-cell">
-            {numUtils.convertJoulesToKwh(totals?.impTotal)}
+            {numUtils.convertJoulesToKwh(totals?.impTotal, true)}
             {' '}
             kWh
           </span>
           <span className="table-cell">
-            {numUtils.convertJoulesToKwh(totals?.genTotal)}
+            {numUtils.convertJoulesToKwh(totals?.genTotal, true)}
             {' '}
             kWh
           </span>
           <span className="table-cell">
-            {numUtils.convertJoulesToKwh(totals?.conpTotal)}
+            {numUtils.convertJoulesToKwh(totals?.conpTotal, true)}
             {' '}
             kWh
           </span>
           <span className="table-cell">
-            {numUtils.convertJoulesToKwh(totals?.expTotal)}
+            {numUtils.convertJoulesToKwh(totals?.expTotal, true)}
             {' '}
             kWh
           </span>
@@ -76,12 +76,12 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
             {100-numUtils.formatDecimal(totals?.impTotal!/totals?.conpTotal!)*100}%
           </span>
           <span className="table-cell">
-            {numUtils.formatToEuro(totals?.grossCostTotal ?? 0)}
+            {energyCalculator.calculateDailyGrossImportTotal(totals)}
             &nbsp;
-            {totals?.saturdayNetSavingTotal ? `(${numUtils.formatToEuro(energyCalculator.calculateDiscountedGrossCostExcludingStdChg(totals?.saturdayNetSavingTotal))})` : ''}
+            {totals?.freeImpTotal ? `(${energyCalculator.calculateFreeImportGrossTotal(totals)})` : ''}
           </span>
-          <span className="table-cell">{numUtils.formatToEuro(totals?.grossSavingTotal ?? 0)}</span>
-          <span className="table-cell">{numUtils.formatToEuro(totals?.exportValueTotal ?? 0)}</span>
+          <span className="table-cell">0</span>
+          <span className="table-cell">{energyCalculator.calculateDailyExportTotal(totals)}</span>
         </div>
       </div>
     </div>

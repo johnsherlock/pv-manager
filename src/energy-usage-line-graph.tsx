@@ -51,7 +51,7 @@ const EnergyUsageLineGraph = ({ data, type }: EnergyUsageLineGraphProps): JSX.El
 
   const fill = type === 'minute';
   const borderWidth = type === 'minute' ? 1 : 2;
-  const unit = type === 'minute' ? 'joules' : 'kWh';
+  const unit = type === 'minute' ? 'kw' : 'kWh';
 
   const lineData = {
     datasets: [
@@ -63,7 +63,7 @@ const EnergyUsageLineGraph = ({ data, type }: EnergyUsageLineGraphProps): JSX.El
         backgroundColor: 'rgba(255, 99, 255, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: false,
+        hidden: type === 'minute',
       },
       {
         label: `Generated ${unit}`,
@@ -73,7 +73,7 @@ const EnergyUsageLineGraph = ({ data, type }: EnergyUsageLineGraphProps): JSX.El
         backgroundColor: 'rgba(51, 153, 102, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: type === 'minute',
+        hidden: false,
       },
       {
         label: `Consumed ${unit}`,
@@ -138,7 +138,7 @@ const EnergyUsageLineGraph = ({ data, type }: EnergyUsageLineGraphProps): JSX.El
     },
     scales: {
       y: {
-        title: { display: true, text: type === 'minute' ? 'KW' : 'kW' },
+        title: { display: true, text: type === 'minute' ? 'kw' : 'kWh' },
       },
       x: {
         type: 'time' as const,

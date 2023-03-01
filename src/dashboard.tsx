@@ -11,6 +11,7 @@ interface DashboardProps {
   selectedDate: moment.Moment;
   today: moment.Moment;
   minuteData?: PVData[];
+  halfHourData?: PVData[];
   hourData?: PVData[];
   totals?: Totals;
   energyCalculator: EnergyCalculator;
@@ -20,8 +21,9 @@ interface DashboardProps {
 }
 
 
-const Dashboard = ({
-  selectedDate, today, minuteData, hourData, totals, energyCalculator, goToPreviousDay, goToNextDay, goToDay }: DashboardProps): JSX.Element => {
+const Dashboard = (
+  { selectedDate, today, minuteData, halfHourData, hourData, totals, energyCalculator, goToPreviousDay, goToNextDay, goToDay }:
+  DashboardProps): JSX.Element => {
 
   const [state, setState] = useState({ energyUsageLineGraphScale: 'hour' as 'hour' | 'minute' });
 
@@ -48,7 +50,7 @@ const Dashboard = ({
             </h1>
           </div>
           <DailyEnergyUsageTable
-            data={hourData}
+            data={halfHourData}
             totals={totals}
             energyCalculator={energyCalculator}
           />

@@ -2,14 +2,11 @@ import moment from 'moment';
 import { useState, useEffect, useRef } from 'react';
 import 'bootswatch/dist/cosmo/bootstrap.min.css';
 import './app.css';
-import CustomDatePicker from './custom-date-picker';
-import DailyEnergyUsageTable from './daily-energy-usage-table';
-import EnergyUsageLineGraph from './energy-usage-line-graph';
 import Dashboard from './dashboard';
 import * as dateUtils from './lib/date-utils';
 import { EnergyCalculator } from './lib/energy-calculator';
 import * as pvService from './lib/pv-service';
-import { convertMinuteDataToHourlyData, PVData } from './lib/pv-service';
+import { convertMinuteDataToHalfHourlyData, convertMinuteDataToHourlyData, PVData } from './lib/pv-service';
 import * as stateUtils from './lib/state-utils';
 
 function App() {
@@ -130,6 +127,7 @@ function App() {
       selectedDate={state.selectedDate}
       today={state.today}
       minuteData={state.pvDataCache.get(state.formattedSelectedDate)}
+      halfHourData={convertMinuteDataToHalfHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
       hourData={convertMinuteDataToHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
       totals={state.totals.get(state.formattedSelectedDate)}
       energyCalculator={energyCalculator}
