@@ -116,8 +116,8 @@ export const convertMinuteDataToHourlyData = (minuteData: PVData[] = []): PVData
 
   for (const minuteItem of minuteData) {
     const { yr, mon, dom, dow, hr = 0, min = 0, imp = 0, gep = 0, exp = 0, h1d = 0, h1b = 0, conp = 0, gepc = 0 } = minuteItem;
-    hourlyTotals[hr] ??= { yr, mon, dom, dow, hr, min, imp, gep, exp, h1d, h1b, conp, gepc };
-    hourlyTotals[hr].imp! += convertJoulesToKwh(imp);
+    hourlyTotals[hr] ??= { yr, mon, dom, dow, hr, min, imp: 0, gep: 0, exp: 0, h1d: 0, h1b: 0, conp: 0, gepc: 0 };
+    hourlyTotals[hr].imp += convertJoulesToKwh(imp);
     hourlyTotals[hr].gep += convertJoulesToKwh(gep);
     hourlyTotals[hr].exp += convertJoulesToKwh(exp);
     hourlyTotals[hr].h1d += convertJoulesToKwh(h1d);

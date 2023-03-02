@@ -36,15 +36,16 @@ const toMoment = (hr: number = 0, min: number = 0): moment.Moment => {
 };
 
 const mapToXY = (
-  type: 'hour' | 'minute',
+  type: 'hour' | 'halfHour' | 'minute',
   item: PVData, dataPoint: 'imp' | 'gep' | 'conp' | 'h1d' | 'exp'): { x: moment.Moment; y: number } => {
-  const convert = type === 'hour' ? convertJoulesToKwh : convertJoulesToKw;
-  return { x: toMoment(item.hr, item.min), y: convert(item[dataPoint] ?? 0) };
+  // const convert = type === 'hour' || type === 'halfHour' ? convertJoulesToKwh : convertJoulesToKw;
+  const yValue = type === 'minute' ? convertJoulesToKw(item[dataPoint]) : item[dataPoint];
+  return { x: toMoment(item.hr, item.min), y: yValue };
 };
 
 export interface EnergyUsageLineGraphProps {
   data: PVData[];
-  type: 'hour' | 'minute';
+  type: 'hour' | 'halfHour' | 'minute';
 }
 
 const EnergyUsageLineGraph = ({ data, type }: EnergyUsageLineGraphProps): JSX.Element => {

@@ -25,9 +25,14 @@ const Dashboard = (
   { selectedDate, today, minuteData, halfHourData, hourData, totals, energyCalculator, goToPreviousDay, goToNextDay, goToDay }:
   DashboardProps): JSX.Element => {
 
-  const [state, setState] = useState({ energyUsageLineGraphScale: 'hour' as 'hour' | 'minute' });
+  const [state, setState] = useState({ energyUsageLineGraphScale: 'hour' as 'hour' | 'halfHour' | 'minute' });
 
-  const pvData = state.energyUsageLineGraphScale === 'hour' ? hourData : minuteData;
+  let pvData;
+  switch (state.energyUsageLineGraphScale) {
+    case 'hour': pvData = hourData; break;
+    case 'halfHour': pvData = halfHourData; break;
+    case 'minute': pvData = minuteData; break;
+  }
 
   return (
     <div className="container grid-container">
@@ -56,6 +61,7 @@ const Dashboard = (
           />
           <div>Scale:&nbsp;
             <a href="#" onClick={() => setState({ energyUsageLineGraphScale: 'hour' })}>Hour</a> |&nbsp;
+            <a href="#" onClick={() => setState({ energyUsageLineGraphScale: 'halfHour' })}>Half Hour</a> |&nbsp;
             <a href="#" onClick={() => setState({ energyUsageLineGraphScale: 'minute' })}>Minute</a>
           </div>
           <div className="chart">
