@@ -1,13 +1,13 @@
 import moment from 'moment';
 import * as dateUtils from './date-utils';
 import { Totals } from './energy-calculator';
-import { PVData } from './pv-service';
+import { MinutePVData } from './pv-service';
 
 interface AppState {
   today: moment.Moment;
   selectedDate: moment.Moment;
   formattedSelectedDate: string;
-  pvDataCache: Map<string, PVData[]>;
+  pvDataCache: Map<string, MinutePVData[]>;
   totals: Map<string, Totals>;
   energyUsageLineGraphScale: 'hour' | 'minute';
 }

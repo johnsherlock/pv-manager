@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { EnergyCalculator, Totals } from './lib/energy-calculator';
 import * as numUtils from './lib/num-utils';
-import { PVData } from './lib/pv-service';
+import { HalfHourlyPVData } from './lib/pv-service';
 
 export interface DailyEnergyUsageTableProps {
-  data?: PVData[];
+  data: HalfHourlyPVData[];
   totals?: Totals;
   energyCalculator: EnergyCalculator;
 }
 
-const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUsageTableProps): JSX.Element => {
+const DailyEnergyUsageTable = ({ data, energyCalculator }: DailyEnergyUsageTableProps): JSX.Element => {
 
   const [state, setState] = useState({ expanded: false });
 
@@ -33,17 +33,17 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
       </div>
       <div className={`table-container ${state.expanded ? 'show' : 'hide'}`}>
         <div className="table-body">
-          {data?.map((item: any, index: number) => (
-            <div key={item.yr + item.mon + item.dom + item.hr + item.min} className={`table-row ${index % 2 === 0 ? 'table-primary' : ''}`}>
-              <div className="table-cell time">{item.hr.toString().padStart(2, '0')}:{item.min.toString().padStart(2, '0')}</div>
-              <div className="table-cell imp">{item.imp.toFixed(2)}</div>
-              <div className="table-cell gep">{item.gep.toFixed(2)}</div>
-              <div className="table-cell comp">{item.conp.toFixed(2)}</div>
-              <div className="table-cell exp">{item.exp.toFixed(2)}</div>
-              <div className="table-cell gepc">{item.gepc}%</div>
-              <div className="table-cell impCost">{numUtils.formatToEuro(energyCalculator.calculateGrossCostPerHalfHourIncStdChgAndDiscount(item.hr, item.dow, item.imp))}</div>
-              <div className="table-cell saving">{numUtils.formatToEuro(energyCalculator.calculateSaving(item.hr, item.dow, item.imp, item.conp))}</div>
-              <div className="table-cell expValue">{energyCalculator.calculateExportValue(item.exp)}</div>
+          {data?.map((item: HalfHourlyPVData, index: number) => (
+            <div key={item.year + item.month + item.dayOfMonth + item.hour + item.minute} className={`table-row ${index % 2 === 0 ? 'table-primary' : ''}`}>
+              <div className="table-cell time">{item.hour.toString().padStart(2, '0')}:{item.minute.toString().padStart(2, '0')}</div>
+              <div className="table-cell imp">{item.importedKwH.toFixed(2)}</div>
+              <div className="table-cell gep">{item.generatedKwH.toFixed(2)}</div>
+              <div className="table-cell comp">{item.consumedKwH.toFixed(2)}</div>
+              <div className="table-cell exp">{item.exportedKwH.toFixed(2)}</div>
+              <div className="table-cell gepc">{item.greenEnergyPercentage}%</div>
+              <div className="table-cell impCost">{numUtils.formatToEuro(energyCalculator.calculateGrossCostPerHalfHourIncStdChgAndDiscount(item.hour, item.dayOfWeek, item.importedKwH))}</div>
+              <div className="table-cell saving">{numUtils.formatToEuro(energyCalculator.calculateSaving(item.hour, item.dayOfWeek, item.importedKwH, item.consumedKwH))}</div>
+              <div className="table-cell expValue">{energyCalculator.calculateExportValue(item.exportedKwH)}</div>
             </div>
           ))}
         </div>
@@ -52,36 +52,35 @@ const DailyEnergyUsageTable = ({ data, totals, energyCalculator }: DailyEnergyUs
         <div className="table-row">
           <span className="table-cell">Total</span>
           <span className="table-cell">
-            {numUtils.convertJoulesToKwh(totals?.impTotal, true)}
+            {energyCalculator.calculateTotalImportedKwH(data)}
             {' '}
             kWh
           </span>
           <span className="table-cell">
-            {numUtils.convertJoulesToKwh(totals?.genTotal, true)}
+            {energyCalculator.calculateTotalGeneratedKwH(data)}
             {' '}
             kWh
           </span>
           <span className="table-cell">
-            {numUtils.convertJoulesToKwh(totals?.conpTotal, true)}
+            {energyCalculator.calculateTotalConsumedKwH(data)}
             {' '}
             kWh
           </span>
           <span className="table-cell">
-            {numUtils.convertJoulesToKwh(totals?.expTotal, true)}
+            {energyCalculator.calculateTotalExportedKwH(data)}
             {' '}
             kWh
           </span>
           <span className="table-cell">
-            {/* {totals?.greenEnergyPercentageTotal}% */}
-            {100-numUtils.formatDecimal(totals?.impTotal!/totals?.conpTotal!)*100}%
+            {energyCalculator.calculaterTotalGreenEnergyCoverage(data)}%
           </span>
           <span className="table-cell">
-            {energyCalculator.calculateDailyGrossImportTotal(totals)}
+            {numUtils.formatToEuro(energyCalculator.calculateTotalGrossImportCost(data))}
             &nbsp;
-            {totals?.freeImpTotal ? `(${energyCalculator.calculateFreeImportGrossTotal(totals)})` : ''}
+            {data[0]?.dayOfWeek === 'Sat' ? `(${energyCalculator.calculateFreeImportGrossTotal(data)})` : ''}
           </span>
-          <span className="table-cell">0</span>
-          <span className="table-cell">{energyCalculator.calculateDailyExportTotal(totals)}</span>
+          <span className="table-cell">{numUtils.formatToEuro(energyCalculator.calculateTotalGrossSavings(data))}</span>
+          <span className="table-cell">{numUtils.formatToEuro(energyCalculator.calculateTotalExportValue(data))}</span>
         </div>
       </div>
     </div>

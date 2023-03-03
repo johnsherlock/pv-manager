@@ -1,5 +1,5 @@
 import * as numUtils from './num-utils';
-import { PVData } from './pv-service';
+import { MinutePVData, HalfHourlyPVData, calculateGreenEnergyPercentage } from './pv-service';
 
 export interface EnergyCalculatorProps {
   readonly dayRate: number;
@@ -22,11 +22,7 @@ export interface Totals {
   freeImpTotal: number;
   immersionTotal: number;
   immersionRunTime: number;
-  // greenEnergyPercentageTotal: number;
-  // grossCostTotal: number;
-  // grossSavingTotal: number;
-  // saturdayNetSavingTotal: number;
-  // exportValueTotal: number;
+  grossSavingTotal: number;
 }
 
 const initialTotals = (): Totals => {
@@ -41,11 +37,7 @@ const initialTotals = (): Totals => {
     freeImpTotal: 0,
     immersionRunTime: 0,
     immersionTotal: 0,
-    // grossCostTotal: 0,
-    // greenEnergyPercentageTotal: 0,
-    // grossSavingTotal: 0,
-    // saturdayNetSavingTotal: 0,
-    // exportValueTotal: 0,
+    grossSavingTotal: 0,
   };
 };
 
@@ -103,7 +95,7 @@ export class EnergyCalculator {
 
   public calculateSaving = (hour: number = 0, dow: string, importedkWh: number = 0, consumedkWh: number = 0, round = true) => {
     const greenkWh = consumedkWh - importedkWh;
-    return this.calculateDiscountedCostIncludingVat(hour, dow, greenkWh, round);
+    return greenkWh > 0 ? this.calculateDiscountedCostIncludingVat(hour, dow, greenkWh, round) : 0;
   };
 
   public calculateGrossCostPerHourIncStdChgAndDiscount = (hour: number = 0, dow: string, kWh: number = 0, round = true) => {
@@ -144,9 +136,8 @@ export class EnergyCalculator {
     return numUtils.formatDecimal(grossCost);
   };
 
-  public calculateExportValue = (joules: number = 0) => {
-    const kWh = numUtils.convertJoulesToKwh(joules);
-    return numUtils.formatDecimal(kWh * this.exportRate);
+  public calculateExportValue = (exportKwH: number = 0) => {
+    return numUtils.formatDecimal(exportKwH * this.exportRate);
   };
 
   public calculateDailyGrossImportTotal = (totals: Totals = initialTotals()) => {
@@ -159,35 +150,92 @@ export class EnergyCalculator {
     return numUtils.formatToEuro(grossImportTotal);
   };
 
-  public calculateFreeImportGrossTotal = (totals: Totals = initialTotals()) => {
-    const freeImportGrossTotal = (numUtils.convertJoulesToKwh(totals.freeImpTotal) * this.dayRate) * this.vatRate;
-    return numUtils.formatToEuro(freeImportGrossTotal);
-  };
+  // public calculateFreeImportGrossTotal = (totals: Totals = initialTotals()) => {
+  //   const freeImportGrossTotal = (numUtils.convertJoulesToKwh(totals.freeImpTotal) * this.dayRate) * this.vatRate;
+  //   return numUtils.formatToEuro(freeImportGrossTotal);
+  // };
 
   public calculateDailyExportTotal = (totals: Totals = initialTotals()) => {
     const grossExportTotal = (numUtils.convertJoulesToKwh(totals.expTotal) * this.exportRate);
     return numUtils.formatToEuro(grossExportTotal);
   };
 
-  public calculateDailySavingsGrossTotal = (totals: Totals = initialTotals()) => {
-
+  public calculateDailyGreenEnergyCoverage = (totals: Totals = initialTotals()) => {
+    return numUtils.formatDecimal(100 - ((totals.impTotal/totals.conpTotal) * 100));
   };
 
-  public recalculateTotals = (perMinuteData: PVData[]): Totals => {
+  public calculateTotalImportedKwH = (pvData: HalfHourlyPVData[] = []) => {
+    return numUtils.formatDecimal(pvData.reduce((acc, item) => acc + item.importedKwH, 0));
+  };
+
+  public calculateTotalGeneratedKwH = (pvData: HalfHourlyPVData[] = []) => {
+    return numUtils.formatDecimal(pvData.reduce((acc, item) => acc + item.generatedKwH, 0));
+  };
+
+  public calculateTotalConsumedKwH = (pvData: HalfHourlyPVData[] = []) => {
+    return numUtils.formatDecimal(pvData.reduce((acc, item) => acc + item.consumedKwH, 0));
+  };
+
+  public calculateTotalExportedKwH = (pvData: HalfHourlyPVData[] = []) => {
+    return numUtils.formatDecimal(pvData.reduce((acc, item) => acc + item.exportedKwH, 0));
+  };
+
+  public calculateTotalImmersionDivertedKwH = (pvData: HalfHourlyPVData[] = []) => {
+    return numUtils.formatDecimal(pvData.reduce((acc, item) => acc + item.immersionDivertedKwH, 0));
+  };
+
+  public calculateTotalImmersionBoostedKwH = (pvData: HalfHourlyPVData[] = []) => {
+    return numUtils.formatDecimal(pvData.reduce((acc, item) => acc + (item.immersionBoostedKwH ?? 0), 0));
+  };
+
+  public calculateTotalImmersionDivertedMins = (pvData: HalfHourlyPVData[] = []) => {
+    return pvData.reduce((acc, item) => acc + (item.immersionDivertedMins ?? 0), 0);
+  };
+
+  public calculateTotalImmersionBoostedMins = (pvData: HalfHourlyPVData[] = []) => {
+    return pvData.reduce((acc, item) => acc + (item.immersionBoostedMins ?? 0), 0);
+  };
+
+  public calculateTotalGrossImportCost = (pvData: HalfHourlyPVData[] = []) => {
+    return pvData.reduce((acc, item) => acc + this.calculateGrossCostPerHalfHourIncStdChgAndDiscount(item.hour, item.dayOfWeek, item.importedKwH), 0);
+  };
+
+  public calculateTotalGrossSavings = (pvData: HalfHourlyPVData[] = []) => {
+    return pvData.reduce((acc, item) => acc + this.calculateSaving(item.hour, item.dayOfWeek, item.importedKwH, item.consumedKwH), 0);
+  };
+
+  public calculateTotalExportValue = (pvData: HalfHourlyPVData[] = []) => {
+    return pvData.reduce((acc, item) => acc + this.calculateExportValue(item.exportedKwH), 0);
+  };
+
+  public calculateFreeImportGrossTotal = (pvData: HalfHourlyPVData[] = []) => {
+    const freeImportedKwh: HalfHourlyPVData[] = pvData.filter(item => item.dayOfWeek === 'Sat' && item.hour >= 9 && item.hour < 17);
+    return freeImportedKwh.reduce((acc, item) => acc + this.calculateDiscountedCostIncludingVat(item.hour, item.dayOfWeek, item.importedKwH), 0);
+  };
+
+  public calculaterTotalGreenEnergyCoverage = (pvData: HalfHourlyPVData[] = []) => {
+    const totalImportedKwH = this.calculateTotalImportedKwH(pvData);
+    const totalConsumedKwH = this.calculateTotalConsumedKwH(pvData);
+    return calculateGreenEnergyPercentage(totalImportedKwH, totalConsumedKwH);
+  };
+
+  public recalculateTotals = (perMinuteData: MinutePVData[]): Totals => {
     console.log('Recaculating totals');
     const totals: Totals = initialTotals();
-    perMinuteData.forEach((item: PVData) => {
-      totals.impTotal += item.imp ?? 0;
-      totals.genTotal += item.gep ?? 0;
-      totals.expTotal += item.exp ?? 0;
-      totals.conpTotal += item.conp ?? 0;
-      totals.immersionRunTime += (item.h1b || item.h1d) ? 1 : 0;
-      totals.immersionTotal += item.h1d ?? 0;
+    perMinuteData.forEach((item: MinutePVData) => {
+      totals.impTotal += item.importedJoules ?? 0;
+      totals.genTotal += item.generatedJoules ?? 0;
+      totals.expTotal += item.exportedJoules ?? 0;
+      totals.conpTotal += item.consumedJoules ?? 0;
+      totals.immersionRunTime += (item.immersionBoostedJoules || item.immersionDivertedJoules) ? 1 : 0;
+      totals.immersionTotal += item.immersionDivertedJoules ?? 0;
+      totals.grossSavingTotal += this.calculateSaving(
+        item.hour, item.dayOfWeek, item.importedJoules, item.consumedJoules, false);
 
-      if (item.hr >= 17 && item.hr < 19) totals.peakImpTotal += item.imp ?? 0;
-      else if ((item.hr >= 0 && item.hr < 8) || item.hr === 23) totals.nightImpTotal += item.imp ?? 0;
-      else if (item.dow === 'Sat' && item.hr >= 9 && item.hr < 17) totals.freeImpTotal += item.imp ?? 0;
-      else totals.dayImpTotal += item.imp ?? 0;
+      if (item.hour >= 17 && item.hour < 19) totals.peakImpTotal += item.importedJoules ?? 0;
+      else if ((item.hour >= 0 && item.hour < 8) || item.hour === 23) totals.nightImpTotal += item.importedJoules ?? 0;
+      else if (item.dayOfWeek === 'Sat' && item.hour >= 9 && item.hour < 17) totals.freeImpTotal += item.importedJoules ?? 0;
+      else totals.dayImpTotal += item.importedJoules ?? 0;
     });
     return {
       ...totals,

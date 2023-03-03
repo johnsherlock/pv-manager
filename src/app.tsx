@@ -6,7 +6,7 @@ import Dashboard from './dashboard';
 import * as dateUtils from './lib/date-utils';
 import { EnergyCalculator } from './lib/energy-calculator';
 import * as pvService from './lib/pv-service';
-import { convertMinuteDataToHalfHourlyData, convertMinuteDataToHourlyData, PVData } from './lib/pv-service';
+import { convertMinuteDataToHalfHourlyData, convertMinuteDataToHourlyData, MinutePVData } from './lib/pv-service';
 import * as stateUtils from './lib/state-utils';
 
 function App() {
@@ -55,7 +55,7 @@ function App() {
       document.body.style.cursor = 'auto';
     } else {
       console.log('Fetching data from server');
-      const pvData: PVData[] = await pvService.getPVDataForDate(formattedTargetDate);
+      const pvData: MinutePVData[] = await pvService.getPVDataForDate(formattedTargetDate);
       console.log('State: ', state);
       const newState = {
         ...state,
@@ -65,7 +65,7 @@ function App() {
         intervalId: null,
       };
       newState.pvDataCache.set(formattedTargetDate, pvData);
-      newState.totals.set(formattedTargetDate, energyCalculator.recalculateTotals(pvData));
+      // newState.totals.set(formattedTargetDate, energyCalculator.recalculateTotals(pvData));
       setState(newState);
       if (!intervalRef.current) {
         startAutoRefresh(state.today);
@@ -81,8 +81,8 @@ function App() {
     const formattedNextDay = dateUtils.formatDate(nextDay);
     const previousDay = moment(targetDate).subtract(1, 'day');
     const formattedPreviousDay = dateUtils.formatDate(previousDay);
-    let nextDayData: PVData[] = [];
-    let previousDayData: PVData[] = [];
+    let nextDayData: MinutePVData[] = [];
+    let previousDayData: MinutePVData[] = [];
 
     if (nextDay.isBefore(state.today) && !state.pvDataCache.get(formattedNextDay)) {
       nextDayData = await pvService.getPVDataForDate(formattedNextDay);
@@ -93,12 +93,12 @@ function App() {
     if (nextDayData.length > 0) {
       console.log('Adding next day data to state');
       state.pvDataCache.set(formattedNextDay, nextDayData);
-      state.totals.set(formattedNextDay, energyCalculator.recalculateTotals(nextDayData));
+      // state.totals.set(formattedNextDay, energyCalculator.recalculateTotals(nextDayData));
     }
     if (previousDayData.length > 0) {
       console.log('Adding previous day data to state');
       state.pvDataCache.set(formattedPreviousDay, previousDayData);
-      state.totals.set(formattedPreviousDay, energyCalculator.recalculateTotals(previousDayData));
+      // state.totals.set(formattedPreviousDay, energyCalculator.recalculateTotals(previousDayData));
     }
   };
 
@@ -126,10 +126,10 @@ function App() {
     <Dashboard
       selectedDate={state.selectedDate}
       today={state.today}
-      minuteData={state.pvDataCache.get(state.formattedSelectedDate)}
+      minuteData={state.pvDataCache.get(state.formattedSelectedDate) ?? []}
       halfHourData={convertMinuteDataToHalfHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
       hourData={convertMinuteDataToHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
-      totals={state.totals.get(state.formattedSelectedDate)}
+      // totals={state.totals.get(state.formattedSelectedDate)}
       energyCalculator={energyCalculator}
       goToPreviousDay={goToPreviousDay}
       goToNextDay={goToNextDay}

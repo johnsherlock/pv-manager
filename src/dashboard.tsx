@@ -2,17 +2,17 @@ import moment from 'moment';
 import React, { useState } from 'react';
 import CustomDatePicker from './custom-date-picker';
 import DailyEnergyUsageTable from './daily-energy-usage-table';
-import EnergyUsageLineGraph from './energy-usage-line-graph';
+import EnergyUsageLineGraph, { View } from './energy-usage-line-graph';
 import * as dateUtils from './lib/date-utils';
 import { EnergyCalculator, Totals } from './lib/energy-calculator';
-import { PVData } from './lib/pv-service';
+import { MinutePVData, HalfHourlyPVData, HourlyPVData } from './lib/pv-service';
 
 interface DashboardProps {
   selectedDate: moment.Moment;
   today: moment.Moment;
-  minuteData?: PVData[];
-  halfHourData?: PVData[];
-  hourData?: PVData[];
+  minuteData: MinutePVData[];
+  halfHourData: HalfHourlyPVData[];
+  hourData: HourlyPVData[];
   totals?: Totals;
   energyCalculator: EnergyCalculator;
   goToPreviousDay: () => void;
@@ -25,14 +25,7 @@ const Dashboard = (
   { selectedDate, today, minuteData, halfHourData, hourData, totals, energyCalculator, goToPreviousDay, goToNextDay, goToDay }:
   DashboardProps): JSX.Element => {
 
-  const [state, setState] = useState({ energyUsageLineGraphScale: 'hour' as 'hour' | 'halfHour' | 'minute' });
-
-  let pvData;
-  switch (state.energyUsageLineGraphScale) {
-    case 'hour': pvData = hourData; break;
-    case 'halfHour': pvData = halfHourData; break;
-    case 'minute': pvData = minuteData; break;
-  }
+  const [state, setState] = useState({ energyUsageLineGraphScale: 'hour' as View });
 
   return (
     <div className="container grid-container">
@@ -65,7 +58,12 @@ const Dashboard = (
             <a href="#" onClick={() => setState({ energyUsageLineGraphScale: 'minute' })}>Minute</a>
           </div>
           <div className="chart">
-            <EnergyUsageLineGraph type={state.energyUsageLineGraphScale} data={pvData ?? []} />
+            <EnergyUsageLineGraph
+              view={state.energyUsageLineGraphScale}
+              minutePvData={minuteData}
+              halfHourPvData={halfHourData}
+              hourlyPvData={hourData}
+            />
           </div>
         </div>
       </div>
