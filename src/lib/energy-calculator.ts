@@ -210,7 +210,8 @@ export class EnergyCalculator {
 
   public calculateFreeImportGrossTotal = (pvData: HalfHourlyPVData[] = []) => {
     const freeImportedKwh: HalfHourlyPVData[] = pvData.filter(item => item.dayOfWeek === 'Sat' && item.hour >= 9 && item.hour < 17);
-    return freeImportedKwh.reduce((acc, item) => acc + this.calculateDiscountedCostIncludingVat(item.hour, item.dayOfWeek, item.importedKwH), 0);
+    return numUtils.formatDecimal(
+      freeImportedKwh.reduce((acc, item) => acc + this.calculateSaturdaySaving(item.hour, item.dayOfWeek, item.importedKwH), 0));
   };
 
   public calculaterTotalGreenEnergyCoverage = (pvData: HalfHourlyPVData[] = []) => {
@@ -219,23 +220,22 @@ export class EnergyCalculator {
     return calculateGreenEnergyPercentage(totalImportedKwH, totalConsumedKwH);
   };
 
-  public recalculateTotals = (perMinuteData: MinutePVData[]): Totals => {
+  public calculateTotals = (perMinuteData: HalfHourlyPVData[]): Totals => {
     console.log('Recaculating totals');
     const totals: Totals = initialTotals();
-    perMinuteData.forEach((item: MinutePVData) => {
-      totals.impTotal += item.importedJoules ?? 0;
-      totals.genTotal += item.generatedJoules ?? 0;
-      totals.expTotal += item.exportedJoules ?? 0;
-      totals.conpTotal += item.consumedJoules ?? 0;
-      totals.immersionRunTime += (item.immersionBoostedJoules || item.immersionDivertedJoules) ? 1 : 0;
-      totals.immersionTotal += item.immersionDivertedJoules ?? 0;
-      totals.grossSavingTotal += this.calculateSaving(
-        item.hour, item.dayOfWeek, item.importedJoules, item.consumedJoules, false);
+    perMinuteData.forEach((item: HalfHourlyPVData) => {
+      totals.impTotal += item.importedKwH ?? 0;
+      totals.genTotal += item.generatedKwH ?? 0;
+      totals.expTotal += item.exportedKwH ?? 0;
+      totals.conpTotal += item.consumedKwH ?? 0;
+      totals.immersionRunTime += (item.immersionBoostedKwH || item.immersionDivertedKwH) ? 1 : 0;
+      totals.immersionTotal += item.immersionDivertedKwH ?? 0;
+      totals.grossSavingTotal += this.calculateSaving(item.hour, item.dayOfWeek, item.importedKwH, item.consumedKwH, false);
 
-      if (item.hour >= 17 && item.hour < 19) totals.peakImpTotal += item.importedJoules ?? 0;
-      else if ((item.hour >= 0 && item.hour < 8) || item.hour === 23) totals.nightImpTotal += item.importedJoules ?? 0;
-      else if (item.dayOfWeek === 'Sat' && item.hour >= 9 && item.hour < 17) totals.freeImpTotal += item.importedJoules ?? 0;
-      else totals.dayImpTotal += item.importedJoules ?? 0;
+      if (item.hour >= 17 && item.hour < 19) totals.peakImpTotal += item.importedKwH ?? 0;
+      else if ((item.hour >= 0 && item.hour < 8) || item.hour === 23) totals.nightImpTotal += item.importedKwH ?? 0;
+      else if (item.dayOfWeek === 'Sat' && item.hour >= 9 && item.hour < 17) totals.freeImpTotal += item.importedKwH ?? 0;
+      else totals.dayImpTotal += item.importedKwH ?? 0;
     });
     return {
       ...totals,

@@ -118,3 +118,7 @@ tbody {
   clear: both;
   display: table;
 }
+
+.twenty-px-margin-top {
+  margin-top: 20px;
+}

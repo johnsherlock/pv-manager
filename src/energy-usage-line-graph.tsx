@@ -15,7 +15,7 @@ import {
 import moment from 'moment';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
-import { convertJoulesToKw, convertJoulesToKwh } from './lib/num-utils';
+import { convertJoulesToKw } from './lib/num-utils';
 import { HalfHourlyPVData, HourlyPVData, MinutePVData } from './lib/pv-service';
 
 ChartJS.register(
@@ -63,7 +63,6 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
 
   // create a map of the data based on the view type (hour, halfHour, minute).
   // if the view is minute, then we use the minute data, otherwise we use the halfHour or hour data.
-
 
   const lineData = {
     datasets: [
@@ -125,16 +124,6 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
     algorithm: 'lttb',
   };
 
-  const handleClick = (event: any, legendItem: any, legend: any) => {
-
-    legend.chart.getDatasetMeta(0).hidden = legendItem.datasetIndex == 1 || legendItem.datasetIndex == 3 || legendItem.datasetIndex == 4;
-    legend.chart.getDatasetMeta(1).hidden = legendItem.datasetIndex == 0 || legendItem.datasetIndex == 2;
-    legend.chart.getDatasetMeta(2).hidden = legendItem.datasetIndex == 1 || legendItem.datasetIndex == 3 || legendItem.datasetIndex == 4;
-    legend.chart.getDatasetMeta(3).hidden = legendItem.datasetIndex == 0 || legendItem.datasetIndex == 2;
-    legend.chart.getDatasetMeta(4).hidden = legendItem.datasetIndex == 0 || legendItem.datasetIndex == 2;
-    legend.chart.update();
-  };
-
   const options = {
     responsive: true as const,
     interaction: {
@@ -145,7 +134,6 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
     plugins: {
       decimation: decimation,
       legend: {
-        // onClick: handleClick,
       },
     },
     scales: {
