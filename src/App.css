@@ -1,3 +1,15 @@
+/* Light mode */
+body {
+  background-color: #fff;
+  color: #000;
+}
+
+/* Dark mode */
+body.dark {
+  background-color: #444;
+  color: #fff;
+}
+
 .App {
   text-align: center;
 }
@@ -36,23 +48,6 @@
     transform: rotate(360deg);
   }
 }
-
-/* table {
-  width: 100%;
-  border-collapse: collapse;
-  overflow-y: scroll;
-  max-height:600px;
-}
-thead,
-tfoot {
-    display: table;
-    width: 100%;
-}
-tbody {
-    display: block;
-    overflow-y: scroll;
-    max-height: 600px;
-} */
 
 .grid-container {
   display: grid;

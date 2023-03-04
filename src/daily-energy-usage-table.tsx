@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { EnergyCalculator, Totals } from './lib/energy-calculator';
-import * as numUtils from './lib/num-utils';
+import { formatToEuro } from './lib/num-utils';
 import { HalfHourlyPVData } from './lib/pv-service';
 
 export interface DailyEnergyUsageTableProps {
@@ -41,8 +41,8 @@ const DailyEnergyUsageTable = ({ data, energyCalculator }: DailyEnergyUsageTable
               <div className="table-cell comp">{item.consumedKwH.toFixed(2)}</div>
               <div className="table-cell exp">{item.exportedKwH.toFixed(2)}</div>
               <div className="table-cell gepc">{item.greenEnergyPercentage}%</div>
-              <div className="table-cell impCost">{numUtils.formatToEuro(energyCalculator.calculateGrossCostPerHalfHourIncStdChgAndDiscount(item.hour, item.dayOfWeek, item.importedKwH))}</div>
-              <div className="table-cell saving">{numUtils.formatToEuro(energyCalculator.calculateSaving(item.hour, item.dayOfWeek, item.importedKwH, item.consumedKwH))}</div>
+              <div className="table-cell impCost">{formatToEuro(energyCalculator.calculateGrossCostPerHalfHourIncStdChgAndDiscount(item.hour, item.dayOfWeek, item.importedKwH))}</div>
+              <div className="table-cell saving">{formatToEuro(energyCalculator.calculateSaving(item.hour, item.dayOfWeek, item.importedKwH, item.consumedKwH))}</div>
               <div className="table-cell expValue">{energyCalculator.calculateExportValue(item.exportedKwH)}</div>
             </div>
           ))}
@@ -75,12 +75,12 @@ const DailyEnergyUsageTable = ({ data, energyCalculator }: DailyEnergyUsageTable
             {energyCalculator.calculaterTotalGreenEnergyCoverage(data)}%
           </span>
           <span className="table-cell">
-            {numUtils.formatToEuro(energyCalculator.calculateTotalGrossImportCost(data))}
+            {formatToEuro(energyCalculator.calculateTotalGrossImportCost(data))}
             &nbsp;
-            {data[0]?.dayOfWeek === 'Sat' ? `(${energyCalculator.calculateFreeImportGrossTotal(data)})` : ''}
+            {data[0]?.dayOfWeek === 'Sat' ? `(${formatToEuro(energyCalculator.calculateFreeImportGrossTotal(data))})` : ''}
           </span>
-          <span className="table-cell">{numUtils.formatToEuro(energyCalculator.calculateTotalGrossSavings(data))}</span>
-          <span className="table-cell">{numUtils.formatToEuro(energyCalculator.calculateTotalExportValue(data))}</span>
+          <span className="table-cell">{formatToEuro(energyCalculator.calculateTotalGrossSavings(data))}</span>
+          <span className="table-cell">{formatToEuro(energyCalculator.calculateTotalExportValue(data))}</span>
         </div>
       </div>
     </div>

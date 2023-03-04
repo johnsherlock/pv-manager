@@ -1,6 +1,7 @@
 import moment from 'moment';
 import { useState, useEffect, useRef } from 'react';
-import 'bootswatch/dist/cosmo/bootstrap.min.css';
+// import 'bootswatch/dist/cosmo/bootstrap.min.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './app.css';
 import Dashboard from './dashboard';
 import * as dateUtils from './lib/date-utils';
@@ -65,7 +66,6 @@ function App() {
         intervalId: null,
       };
       newState.pvDataCache.set(formattedTargetDate, pvData);
-      // newState.totals.set(formattedTargetDate, energyCalculator.recalculateTotals(pvData));
       setState(newState);
       if (!intervalRef.current) {
         startAutoRefresh(state.today);
@@ -93,12 +93,10 @@ function App() {
     if (nextDayData.length > 0) {
       console.log('Adding next day data to state');
       state.pvDataCache.set(formattedNextDay, nextDayData);
-      // state.totals.set(formattedNextDay, energyCalculator.recalculateTotals(nextDayData));
     }
     if (previousDayData.length > 0) {
       console.log('Adding previous day data to state');
       state.pvDataCache.set(formattedPreviousDay, previousDayData);
-      // state.totals.set(formattedPreviousDay, energyCalculator.recalculateTotals(previousDayData));
     }
   };
 
@@ -129,7 +127,6 @@ function App() {
       minuteData={state.pvDataCache.get(state.formattedSelectedDate) ?? []}
       halfHourData={convertMinuteDataToHalfHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
       hourData={convertMinuteDataToHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
-      // totals={state.totals.get(state.formattedSelectedDate)}
       energyCalculator={energyCalculator}
       goToPreviousDay={goToPreviousDay}
       goToNextDay={goToNextDay}

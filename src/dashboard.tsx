@@ -1,5 +1,5 @@
 import moment from 'moment';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import CustomDatePicker from './custom-date-picker';
 import DailyEnergyUsageTable from './daily-energy-usage-table';
 import EnergyUsageLineGraph, { View } from './energy-usage-line-graph';
@@ -28,9 +28,19 @@ const Dashboard = (
   DashboardProps): JSX.Element => {
 
   const [state, setState] = useState({ energyUsageLineGraphScale: 'hour' as View });
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const body = document.body;
+    if (darkMode) {
+      body.classList.add('dark');
+    } else {
+      body.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   return (
-    <div className="container grid-container">
+    <div className="container grid-container dark">
       <div className="row justify-content-center">
         <div className="col-12 col-md-10">
           <div className="navigation">
