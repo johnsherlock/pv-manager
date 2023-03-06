@@ -17,7 +17,18 @@ Object {
             <div
               class="table-cell"
             >
-              Hour
+              <div>
+                <a
+                  href="#"
+                >
+                  Expand
+                </a>
+              </div>
+              <div
+                class="hide"
+              >
+                Hour
+              </div>
             </div>
             <div
               class="table-cell"
@@ -27,17 +38,12 @@ Object {
             <div
               class="table-cell"
             >
-              Cost
-            </div>
-            <div
-              class="table-cell"
-            >
               Generated kWh
             </div>
             <div
               class="table-cell"
             >
-              Saving
+              Consumed kWh
             </div>
             <div
               class="table-cell"
@@ -47,12 +53,27 @@ Object {
             <div
               class="table-cell"
             >
-              Value
+              Green Energy Coverage
+            </div>
+            <div
+              class="table-cell"
+            >
+              Import Cost
+            </div>
+            <div
+              class="table-cell"
+            >
+              Green Energy Saving
+            </div>
+            <div
+              class="table-cell"
+            >
+              Export Value
             </div>
           </div>
         </div>
         <div
-          class="table-container"
+          class="table-container hide"
         >
           <div
             class="table-body"
@@ -61,29 +82,48 @@ Object {
               class="table-row table-primary"
             >
               <div
-                class="table-cell"
+                class="table-cell time"
               >
                 01
+                :
+                30
               </div>
               <div
-                class="table-cell"
-              />
-              <div
-                class="table-cell"
-              />
-              <div
-                class="table-cell"
-              />
-              <div
-                class="table-cell"
-              />
-              <div
-                class="table-cell"
-              />
-              <div
-                class="table-cell"
+                class="table-cell imp"
               >
-                40
+                1000.00
+              </div>
+              <div
+                class="table-cell gep"
+              >
+                2000.00
+              </div>
+              <div
+                class="table-cell comp"
+              >
+                1000.00
+              </div>
+              <div
+                class="table-cell exp"
+              >
+                500.00
+              </div>
+              <div
+                class="table-cell gepc"
+              >
+                50
+                %
+              </div>
+              <div
+                class="table-cell impCost"
+              />
+              <div
+                class="table-cell saving"
+              />
+              <div
+                class="table-cell expValue"
+              >
+                4
               </div>
             </div>
           </div>
@@ -102,30 +142,45 @@ Object {
             <span
               class="table-cell"
             >
+              8
                
               kWh
+            </span>
+            <span
+              class="table-cell"
+            >
+              9
+               
+              kWh
+            </span>
+            <span
+              class="table-cell"
+            >
+              10
+               
+              kWh
+            </span>
+            <span
+              class="table-cell"
+            >
+              11
+               
+              kWh
+            </span>
+            <span
+              class="table-cell"
+            >
+              12
+              %
             </span>
             <span
               class="table-cell"
             >
                
-              (undefined)
-            </span>
-            <span
-              class="table-cell"
-            >
-               
-              kWh
             </span>
             <span
               class="table-cell"
             />
-            <span
-              class="table-cell"
-            >
-               
-              kWh
-            </span>
             <span
               class="table-cell"
             />
@@ -147,7 +202,18 @@ Object {
           <div
             class="table-cell"
           >
-            Hour
+            <div>
+              <a
+                href="#"
+              >
+                Expand
+              </a>
+            </div>
+            <div
+              class="hide"
+            >
+              Hour
+            </div>
           </div>
           <div
             class="table-cell"
@@ -157,17 +223,12 @@ Object {
           <div
             class="table-cell"
           >
-            Cost
-          </div>
-          <div
-            class="table-cell"
-          >
             Generated kWh
           </div>
           <div
             class="table-cell"
           >
-            Saving
+            Consumed kWh
           </div>
           <div
             class="table-cell"
@@ -177,12 +238,27 @@ Object {
           <div
             class="table-cell"
           >
-            Value
+            Green Energy Coverage
+          </div>
+          <div
+            class="table-cell"
+          >
+            Import Cost
+          </div>
+          <div
+            class="table-cell"
+          >
+            Green Energy Saving
+          </div>
+          <div
+            class="table-cell"
+          >
+            Export Value
           </div>
         </div>
       </div>
       <div
-        class="table-container"
+        class="table-container hide"
       >
         <div
           class="table-body"
@@ -191,29 +267,48 @@ Object {
             class="table-row table-primary"
           >
             <div
-              class="table-cell"
+              class="table-cell time"
             >
               01
+              :
+              30
             </div>
             <div
-              class="table-cell"
-            />
-            <div
-              class="table-cell"
-            />
-            <div
-              class="table-cell"
-            />
-            <div
-              class="table-cell"
-            />
-            <div
-              class="table-cell"
-            />
-            <div
-              class="table-cell"
+              class="table-cell imp"
             >
-              40
+              1000.00
+            </div>
+            <div
+              class="table-cell gep"
+            >
+              2000.00
+            </div>
+            <div
+              class="table-cell comp"
+            >
+              1000.00
+            </div>
+            <div
+              class="table-cell exp"
+            >
+              500.00
+            </div>
+            <div
+              class="table-cell gepc"
+            >
+              50
+              %
+            </div>
+            <div
+              class="table-cell impCost"
+            />
+            <div
+              class="table-cell saving"
+            />
+            <div
+              class="table-cell expValue"
+            >
+              4
             </div>
           </div>
         </div>
@@ -232,30 +327,45 @@ Object {
           <span
             class="table-cell"
           >
+            8
              
             kWh
+          </span>
+          <span
+            class="table-cell"
+          >
+            9
+             
+            kWh
+          </span>
+          <span
+            class="table-cell"
+          >
+            10
+             
+            kWh
+          </span>
+          <span
+            class="table-cell"
+          >
+            11
+             
+            kWh
+          </span>
+          <span
+            class="table-cell"
+          >
+            12
+            %
           </span>
           <span
             class="table-cell"
           >
              
-            (undefined)
-          </span>
-          <span
-            class="table-cell"
-          >
-             
-            kWh
           </span>
           <span
             class="table-cell"
           />
-          <span
-            class="table-cell"
-          >
-             
-            kWh
-          </span>
           <span
             class="table-cell"
           />

@@ -15,88 +15,86 @@ describe('EnergyCalculator', () => {
     it('should return the cost using day rate if hour is between 8-16 and day is not Sat', () => {
       // This test should return a value of 1.04 because the input hour is 12, which is between 8-16,
       // so the cost is calculated using the day rate (0.4673).
-      // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22,
-      // so the net cost is 2.22 * 0.4673 = 1.04.
-      expect(energyCalculator.calculateNetCostAtStandardRates(12, 'Mon', 8000000)).toEqual(1.04);
+      // So the net cost is 2.22 * 0.4673 = 1.04.
+      expect(energyCalculator.calculateNetCostAtStandardRates(12, 'Mon', 2.22)).toEqual(1.04);
     });
 
     it('should return the cost using night rate if hour is 0-8 or 23', () => {
       // This test should return 0.76 for both hours because the input hour is using the night rate (0.3434).
-      // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22, so the net cost is 2.22 * 0.3434 = 0.76.
-      expect(energyCalculator.calculateNetCostAtStandardRates(2, 'Mon', 8000000)).toEqual(0.76);
-      expect(energyCalculator.calculateNetCostAtStandardRates(23, 'Mon', 8000000)).toEqual(0.76);
+      // The net cost is 2.22 * 0.3434 = 0.76.
+      expect(energyCalculator.calculateNetCostAtStandardRates(2, 'Mon', 2.22)).toEqual(0.76);
+      expect(energyCalculator.calculateNetCostAtStandardRates(23, 'Mon', 2.22)).toEqual(0.76);
     });
 
     it('should return the cost using peak rate if hour is 17-19', () => {
       // This test should return 1.27 because the input hour is 18 uses the peak rate (0.5709).
-      // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22,
-      // so the net cost is 2.22 * 0.5709 = 1.27 when rounded to two decimal places.
-      expect(energyCalculator.calculateNetCostAtStandardRates(18, 'Mon', 8000000)).toEqual(1.27);
+      // So the net cost is 2.22 * 0.5709 = 1.27 when rounded to two decimal places.
+      expect(energyCalculator.calculateNetCostAtStandardRates(18, 'Mon', 2.22)).toEqual(1.27);
     });
 
     it('should return 0 if hour is 9-17 and day is Sat', () => {
-      expect(energyCalculator.calculateNetCostAtStandardRates(12, 'Sat', 8000000)).toEqual(0);
+      expect(energyCalculator.calculateNetCostAtStandardRates(12, 'Sat', 2.22)).toEqual(0);
     });
   });
 
   describe('calculateDiscountedHourlyGrossCost', () => {
     it('should return the discounted gross cost using day rate if hour is between 8-16 and day is not Sat', () => {
       // Hour is 12 so the cost is calculated using the day rate (0.4673).
-      // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22, so the gross cost is 2.22 * 0.4673 = 1.03.
+      // The gross cost is 2.22 * 0.4673 = 1.03.
       // A discount of 15% is applied, reducing the gross cost to 1.03 - (1.03 * 0.15) = 0.8771.
       // Finally, VAT of 9% is applied, increasing the cost to 0.8771 + (0.8771 * 0.09) = 0.96
-      expect(energyCalculator.calculateDiscountedCostIncludingVat(12, 'Mon', 8000000)).toEqual(0.96);
+      expect(energyCalculator.calculateDiscountedCostIncludingVat(12, 'Mon', 2.22)).toEqual(0.96);
     });
 
     it('should return the discounted gross cost using night rate if hour is 0-8 or 23', () => {
       // Cost is calculated using the night rate (0.3434).
-      // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22, so the gross cost is 2.22 * 0.3434 = 0.76.
+      // The gross cost is 2.22 * 0.3434 = 0.76.
       // A discount of 15% is applied, reducing the gross cost to 0.76 - (0.76 * 0.15) = 0.646.
       // Finally, VAT of 9% is applied, increasing the cost to 0.646 + (0.646 * 0.09) = 0.70
-      expect(energyCalculator.calculateDiscountedCostIncludingVat(2, 'Mon', 8000000)).toEqual(0.70);
-      expect(energyCalculator.calculateDiscountedCostIncludingVat(23, 'Mon', 8000000)).toEqual(0.70);
+      expect(energyCalculator.calculateDiscountedCostIncludingVat(2, 'Mon', 2.22)).toEqual(0.70);
+      expect(energyCalculator.calculateDiscountedCostIncludingVat(23, 'Mon', 2.22)).toEqual(0.70);
     });
 
     it('should return the discounted gross cost using peak rate if hour is 17-19', () => {
       // Cost is calculated using the peak rate (0.5709).
-      // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22, so the gross cost is 2.22 * 0.5709 = 1.26.
+      // To the gross cost is 2.22 * 0.5709 = 1.26.
       // A discount of 15% is applied, reducing the gross cost to 1.26 - (1.26 * 0.15) = 1.08.
       // Finally, VAT of 9% is applied, increasing the cost to 1.08 + (1.08 * 0.09) = 1.18.
-      expect(energyCalculator.calculateDiscountedCostIncludingVat(18, 'Mon', 8000000)).toEqual(1.18);
+      expect(energyCalculator.calculateDiscountedCostIncludingVat(18, 'Mon', 2.22)).toEqual(1.18);
     });
 
     it('should return 0 if hour is 9-17 and day is Sat', () => {
-      expect(energyCalculator.calculateDiscountedCostIncludingVat(12, 'Sat', 8000000)).toEqual(0);
+      expect(energyCalculator.calculateDiscountedCostIncludingVat(12, 'Sat', 2.22)).toEqual(0);
     });
   });
 
   describe('calculateHourlyGrossCostIncStdChgAndDiscount', () => {
-    it('should return the gross cost using night rate if hour is 0-8 or 23, day is Mon and joules is 8000000', () => {
+    it('should return the gross cost using night rate if hour is 0-8 or 23, day is Mon and joules is 2.22', () => {
       // Cost is calculated using the night rate (0.3434).
-      // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22, so the net cost is 2.22 * 0.3434 = 0.76.
+      // To the net cost is 2.22 * 0.3434 = 0.76.
       // A discount of 15% is applied to the net cost, reducing it to 0.76 - (0.76 * 0.15) = 0.646.
       // The hourly standing charge of 0.0294 is added, making the gross cost 0.675.
       // Finally, VAT of 9% is applied, increasing the cost to 0.675 + (0.675 * 0.09) = 0.74.
-      expect(energyCalculator.calculateGrossCostPerHourIncStdChgAndDiscount(2, 'Mon', 8000000)).toEqual(0.74);
-      expect(energyCalculator.calculateGrossCostPerHourIncStdChgAndDiscount(23, 'Mon', 8000000)).toEqual(0.74);
+      expect(energyCalculator.calculateGrossCostPerHourIncStdChgAndDiscount(2, 'Mon', 2.22)).toEqual(0.74);
+      expect(energyCalculator.calculateGrossCostPerHourIncStdChgAndDiscount(23, 'Mon', 2.22)).toEqual(0.74);
     });
 
-    it('should return the gross cost using peak rate if hour is 17-19, day is Mon and joules is 8000000', () => {
+    it('should return the gross cost using peak rate if hour is 17-19, day is Mon and joules is 2.22', () => {
       // Cost is calculated using the peak rate (0.5709).
-      // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22, so the net cost is 2.22 * 0.5709 = 1.26.
+      // To the net cost is 2.22 * 0.5709 = 1.26.
       // A discount of 15% is applied to the net cost, reducing it to 1.26 - (1.26 * 0.15) = 1.08.
       // The daily standing charge of 0.0294 is applied, making the net cost 1.11.
       // Finally, VAT of 9% is applied, increasing the cost to 1.11 + (1.11 * 0.09) = 1.21.
-      expect(energyCalculator.calculateGrossCostPerHourIncStdChgAndDiscount(18, 'Mon', 8000000)).toEqual(1.21);
+      expect(energyCalculator.calculateGrossCostPerHourIncStdChgAndDiscount(18, 'Mon', 2.22)).toEqual(1.21);
     });
 
-    it('should return the gross cost using day rate if hour is 8-16, day is not Sat and joules is 8000000', () => {
+    it('should return the gross cost using day rate if hour is 8-16, day is not Sat and joules is 2.22', () => {
       // Cost is calculated using the day rate (0.4673).
-      // The input joules is 8000000, which when converted to kWh (8000000/3600000) is equal to 2.22, so the net cost is 2.22 * 0.4673 = 1.03.
+      // To the net cost is 2.22 * 0.4673 = 1.03.
       // A discount of 15% is applied to the net cost, reducing it to 1.03 - (1.03 * 0.15) = 0.8745.
       // The hourly standing charge of 0.0294 is added, making the gross cost 0.904.
       // Finally, VAT of 9% is applied, increasing the cost to 0.904 + (0.904 * 0.09) = 0.9936.
-      expect(energyCalculator.calculateGrossCostPerHourIncStdChgAndDiscount(12, 'Mon', 8000000)).toEqual(1);
+      expect(energyCalculator.calculateGrossCostPerHourIncStdChgAndDiscount(12, 'Mon', 2.22)).toEqual(1);
     });
   });
 
@@ -118,7 +116,7 @@ describe('EnergyCalculator', () => {
 
     it('returns the gross saving at discounted rates if joules, day and hour is provided', () => {
       // expected value is calculated based on given formula
-      expect(energyCalculator.calculateSaturdaySaving(12, 'Sat', 8000000)).toEqual(0.96);
+      expect(energyCalculator.calculateSaturdaySaving(12, 'Sat', 2.22)).toEqual(0.96);
     });
   });
 

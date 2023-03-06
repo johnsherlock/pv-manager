@@ -35,31 +35,46 @@ const toMoment = (hr: number = 0, min: number = 0): moment.Moment => {
   return moment().hour(hr).minute(min);
 };
 
-export type View = 'minute' | 'halfHour' | 'hour';
+export type Scale = 'minute' | 'halfHour' | 'hour';
+export type View = 'cumulative' | 'nonCumulative';
 type DataPoint = 'imported' | 'generated' | 'consumed' | 'immersionDiverted' | 'exported';
 
 export interface EnergyUsageLineGraphProps {
   minutePvData: MinutePVData[];
   halfHourPvData: HalfHourlyPVData[];
   hourlyPvData: HourlyPVData[];
+  scale: Scale;
   view: View;
 }
 
 const getDataForView = (props: EnergyUsageLineGraphProps, dataPoint: DataPoint): { x: moment.Moment; y: number }[] => {
-  if (props.view === 'minute') {
-    return props.minutePvData.map((item) => ({ x: toMoment(item.hour, item.minute), y: convertJoulesToKw(item[`${dataPoint}Joules`]) }));
-  } else if (props.view === 'halfHour') {
-    return props.halfHourPvData.map((item) => ({ x: toMoment(item.hour, item.minute), y: item[`${dataPoint}KwH`] }));
+
+  let data: { x: moment.Moment; y: number }[];
+
+  if (props.scale === 'minute') {
+    data = props.minutePvData.map((item) => ({ x: toMoment(item.hour, item.minute), y: convertJoulesToKw(item[`${dataPoint}Joules`]) }));
+  } else if (props.scale === 'halfHour') {
+    data = props.halfHourPvData.map((item) => ({ x: toMoment(item.hour, item.minute), y: item[`${dataPoint}KwH`] }));
   } else {
-    return props.hourlyPvData.map((item) => ({ x: toMoment(item.hour, item.minute), y: item[`${dataPoint}KwH`] }));
+    data = props.hourlyPvData.map((item) => ({ x: toMoment(item.hour, item.minute), y: item[`${dataPoint}KwH`] }));
   }
+
+  return props.view === 'nonCumulative'? data : convertToCumulativeView(data);
+};
+
+const convertToCumulativeView = (data: { x: moment.Moment; y: number }[]): { x: moment.Moment; y: number }[] => {
+  let cumulativeY = 0;
+  return data.map(item => {
+    cumulativeY += item.y;
+    return { x: item.x, y: cumulativeY };
+  });
 };
 
 const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {
 
-  const fill = props.view === 'minute';
-  const borderWidth = props.view === 'minute' ? 1 : 2;
-  const unit = props.view === 'minute' ? 'kw' : 'kWh';
+  const fill = props.scale === 'minute' && props.view !== 'cumulative';
+  const borderWidth = props.scale === 'minute' && props.view !== 'cumulative' ? 1 : 2;
+  const unit = props.scale === 'minute' ? 'kw' : 'kWh';
 
   // create a map of the data based on the view type (hour, halfHour, minute).
   // if the view is minute, then we use the minute data, otherwise we use the halfHour or hour data.
@@ -74,7 +89,7 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
         backgroundColor: 'rgba(255, 99, 255, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: props.view === 'minute',
+        hidden: props.scale === 'minute' && props.view !== 'cumulative',
       },
       {
         label: `Generated ${unit}`,
@@ -104,7 +119,7 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
         backgroundColor: 'rgba(179, 0, 0, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: props.view === 'minute',
+        hidden: props.scale === 'minute' && props.view !== 'cumulative',
       },
       {
         label: `Exported ${unit}`,
@@ -114,7 +129,7 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: props.view === 'minute',
+        hidden: props.scale === 'minute' && props.view !== 'cumulative',
       },
     ],
   };
@@ -138,7 +153,7 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
     },
     scales: {
       y: {
-        title: { display: true, text: props.view === 'minute' ? 'kw' : 'kWh' },
+        title: { display: true, text: props.scale === 'minute' ? 'kw' : 'kWh' },
       },
       x: {
         type: 'time' as const,
