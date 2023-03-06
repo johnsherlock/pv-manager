@@ -2,7 +2,7 @@ import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import CustomDatePicker from './custom-date-picker';
 import DailyEnergyUsageTable from './daily-energy-usage-table';
-import EnergyUsageLineGraph, { View } from './energy-usage-line-graph';
+import EnergyUsageLineGraph, { Scale, View } from './energy-usage-line-graph';
 import GreenEnergyPercentageLineGraph from './green-energy-percentage-line-graph';
 import * as dateUtils from './lib/date-utils';
 import { EnergyCalculator, Totals } from './lib/energy-calculator';
@@ -27,7 +27,10 @@ const Dashboard = (
   { selectedDate, today, minuteData, halfHourData, hourData, totals, energyCalculator, goToPreviousDay, goToNextDay, goToDay }:
   DashboardProps): JSX.Element => {
 
-  const [state, setState] = useState({ energyUsageLineGraphScale: 'hour' as View });
+  const [state, setState] = useState({
+    energyUsageLineGraphScale: 'hour' as Scale,
+    energyUsageLineGraphView: 'nonCumulative' as View,
+  });
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
@@ -66,15 +69,22 @@ const Dashboard = (
               energyCalculator={energyCalculator}
             />
           </div>
-          <div>Scale:&nbsp;
-            <a href="#" onClick={() => setState({ energyUsageLineGraphScale: 'hour' })}>Hour</a> |&nbsp;
-            <a href="#" onClick={() => setState({ energyUsageLineGraphScale: 'halfHour' })}>Half Hour</a> |&nbsp;
-            <a href="#" onClick={() => setState({ energyUsageLineGraphScale: 'minute' })}>Minute</a>
+          <div className="row">
+            <div className="col-sm-3">Scale:&nbsp;
+              <a href="#" onClick={() => setState({ ...state, energyUsageLineGraphScale: 'hour' })}>Hour</a> |&nbsp;
+              <a href="#" onClick={() => setState({ ...state, energyUsageLineGraphScale: 'halfHour' })}>Half Hour</a> |&nbsp;
+              <a href="#" onClick={() => setState({ ...state, energyUsageLineGraphScale: 'minute' })}>Minute</a>
+            </div>
+            <div className="col-sm-6">View:&nbsp;
+              <a href="#" onClick={() => setState({ ...state, energyUsageLineGraphView: 'nonCumulative' })}>Straight</a> |&nbsp;
+              <a href="#" onClick={() => setState({ ...state, energyUsageLineGraphView: 'cumulative' })}>Cumulative</a>
+            </div>
           </div>
           <div className="row twenty-px-margin-top">
             <div className="col-md-10 offset-md-1 text-center">
               <EnergyUsageLineGraph
-                view={state.energyUsageLineGraphScale}
+                scale={state.energyUsageLineGraphScale}
+                view={state.energyUsageLineGraphView}
                 minutePvData={minuteData}
                 halfHourPvData={halfHourData}
                 hourlyPvData={hourData}
