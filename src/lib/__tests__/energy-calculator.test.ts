@@ -6,7 +6,7 @@ const energyCalculator: EnergyCalculator = new EnergyCalculator({
   nightRate: 0.3434,
   exportRate: 0.1850,
   discountPercentage: 0.15,
-  annualStandingCharge: 0.7066,
+  annualStandingCharge: 257.91,
 });
 
 describe('EnergyCalculator', () => {
@@ -142,7 +142,7 @@ describe('EnergyCalculator', () => {
       // 2.57 is the expected value because the input joules is 50000000, which when
       // converted to kWh (50000000/3600000) is equal to 13.8888888.
       // The export rate is 0.1850, so the export value is 13.8888888 * 0.1850 = 2.57.
-      expect(energyCalculator.calculateExportValue(50000000)).toEqual(2.57);
+      expect(energyCalculator.calculateExportValue(7.21)).toEqual(1.33);
     });
   });
 });

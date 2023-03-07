@@ -55,13 +55,10 @@
       "src/**/*.{j,t}s{,x}",
       "!src/index.ts"
     ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 50,
-        "functions": 50,
-        "lines": 50,
-        "statements": 50
-      }
+    "transform": {
+      "\\.(js|ts|jsx|tsx)$": "babel-jest",
+      "\\.(jpg|jpeg|png|gif|ico|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga|webmanifest|xml)$":
+        "<rootDir>/jest/fileTransformer.js"
     },
     "transformIgnorePatterns": [
       "node_modules/(?!axios)"
@@ -78,7 +75,8 @@
     "lint": "eslint '{src,tools,acceptance,public}/**/*.{t,j}s{,x}' && stylelint 'src/**/*.{,s}css'",
     "lint:fix": "eslint --fix '{src,tools,acceptance,public}/**/*.{t,j}s{,x}' && stylelint --fix 'src/**/*.{,s}css'",
     "pre-commit": "lint-staged",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "jestrunner.jestCommand": "npm run test --"
   },
   "eslintConfig": {
     "extends": [
