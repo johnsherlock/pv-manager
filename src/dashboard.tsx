@@ -1,13 +1,15 @@
 import moment from 'moment';
-import React, { useEffect, useState } from 'react';
+import React, { useReducer } from 'react';
 import CustomDatePicker from './custom-date-picker';
 import DailyEnergyUsageTable from './daily-energy-usage-table';
-import EnergyUsageLineGraph, { Scale, View } from './energy-usage-line-graph';
+import EnergyUsageLineGraph from './energy-usage-line-graph';
 import GreenEnergyPercentageLineGraph from './green-energy-percentage-line-graph';
 import * as dateUtils from './lib/date-utils';
 import { EnergyCalculator, Totals } from './lib/energy-calculator';
 import { MinutePVData, HalfHourlyPVData, HourlyPVData } from './lib/pv-service';
 import LiveEnergyBarGraph from './live-energy-bar-graph';
+import OptionLink from './option-link';
+import { dashboardReducer, initialState } from './reducers/dashboardReducer';
 
 interface DashboardProps {
   selectedDate: moment.Moment;
@@ -22,25 +24,11 @@ interface DashboardProps {
   goToDay: (targetDate: moment.Moment) => void;
 }
 
-
 const Dashboard = (
   { selectedDate, today, minuteData, halfHourData, hourData, totals, energyCalculator, goToPreviousDay, goToNextDay, goToDay }:
   DashboardProps): JSX.Element => {
 
-  const [state, setState] = useState({
-    energyUsageLineGraphScale: 'hour' as Scale,
-    energyUsageLineGraphView: 'nonCumulative' as View,
-  });
-  const [darkMode, setDarkMode] = useState(false);
-
-  useEffect(() => {
-    const body = document.body;
-    if (darkMode) {
-      body.classList.add('dark');
-    } else {
-      body.classList.remove('dark');
-    }
-  }, [darkMode]);
+  const [state, dispatch] = useReducer(dashboardReducer, initialState);
 
   return (
     <div className="container grid-container dark">
@@ -71,13 +59,13 @@ const Dashboard = (
           </div>
           <div className="row">
             <div className="col-sm-3">Scale:&nbsp;
-              <a href="#" onClick={() => setState({ ...state, energyUsageLineGraphScale: 'hour' })}>Hour</a> |&nbsp;
-              <a href="#" onClick={() => setState({ ...state, energyUsageLineGraphScale: 'halfHour' })}>Half Hour</a> |&nbsp;
-              <a href="#" onClick={() => setState({ ...state, energyUsageLineGraphScale: 'minute' })}>Minute</a>
+              <OptionLink dispatch={dispatch} type="SET_SCALE" payload="hour" selected={state.energyUsageLineGraphScale === 'hour'} text="Hour" />&nbsp;|&nbsp;
+              <OptionLink dispatch={dispatch} type="SET_SCALE" payload="halfHour" selected={state.energyUsageLineGraphScale === 'halfHour'} text="Half Hour" />&nbsp;|&nbsp;
+              <OptionLink dispatch={dispatch} type="SET_SCALE" payload="minute" selected={state.energyUsageLineGraphScale === 'minute'} text="Minute" />
             </div>
             <div className="col-sm-6">View:&nbsp;
-              <a href="#" onClick={() => setState({ ...state, energyUsageLineGraphView: 'nonCumulative' })}>Straight</a> |&nbsp;
-              <a href="#" onClick={() => setState({ ...state, energyUsageLineGraphView: 'cumulative' })}>Cumulative</a>
+              <OptionLink dispatch={dispatch} type="SET_VIEW" payload="nonCumulative" selected={state.energyUsageLineGraphView === 'nonCumulative'} text="Straight" />&nbsp;|&nbsp;
+              <OptionLink dispatch={dispatch} type="SET_VIEW" payload="cumulative" selected={state.energyUsageLineGraphView === 'cumulative'} text="Cumulative" />
             </div>
           </div>
           <div className="row twenty-px-margin-top">

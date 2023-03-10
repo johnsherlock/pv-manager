@@ -117,3 +117,9 @@ body.dark {
 .twenty-px-margin-top {
   margin-top: 20px;
 }
+
+.option-link {
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+}
