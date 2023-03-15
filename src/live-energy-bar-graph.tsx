@@ -77,7 +77,7 @@ const LiveEnergyBarGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {
     },
     scales: {
       y: {
-        title: { display: true, text: 'kWh' },
+        title: { display: true, text: 'kw' },
       },
     },
   };

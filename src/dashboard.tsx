@@ -31,7 +31,7 @@ const Dashboard = (
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
 
   return (
-    <div className="container grid-container dark">
+    <div className="container grid-container dashboard dark">
       <div className="row justify-content-center">
         <div className="col-12 col-md-10">
           <div className="navigation">
@@ -58,14 +58,16 @@ const Dashboard = (
             />
           </div>
           <div className="row">
-            <div className="col-sm-3">Scale:&nbsp;
+            <div className="col-sm-3">
+              <span className="title">Scale:</span>&nbsp;
               <OptionLink dispatch={dispatch} type="SET_SCALE" payload="hour" selected={state.energyUsageLineGraphScale === 'hour'} text="Hour" />&nbsp;|&nbsp;
               <OptionLink dispatch={dispatch} type="SET_SCALE" payload="halfHour" selected={state.energyUsageLineGraphScale === 'halfHour'} text="Half Hour" />&nbsp;|&nbsp;
               <OptionLink dispatch={dispatch} type="SET_SCALE" payload="minute" selected={state.energyUsageLineGraphScale === 'minute'} text="Minute" />
             </div>
-            <div className="col-sm-6">View:&nbsp;
-              <OptionLink dispatch={dispatch} type="SET_VIEW" payload="nonCumulative" selected={state.energyUsageLineGraphView === 'nonCumulative'} text="Straight" />&nbsp;|&nbsp;
-              <OptionLink dispatch={dispatch} type="SET_VIEW" payload="cumulative" selected={state.energyUsageLineGraphView === 'cumulative'} text="Cumulative" />
+            <div className="col-sm-6">
+              <span className="title">View:</span>&nbsp;
+              <OptionLink dispatch={dispatch} type="SET_VIEW" payload="line" selected={state.energyUsageLineGraphView === 'line'} text="Line" />&nbsp;|&nbsp;
+              <OptionLink dispatch={dispatch} type="SET_VIEW" payload="cumulative" selected={state.energyUsageLineGraphView === 'cumulative'} text="Cumulative Line" />
             </div>
           </div>
           <div className="row twenty-px-margin-top">

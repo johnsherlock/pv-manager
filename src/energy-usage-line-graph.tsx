@@ -36,7 +36,7 @@ const toMoment = (hr: number = 0, min: number = 0): moment.Moment => {
 };
 
 export type Scale = 'minute' | 'halfHour' | 'hour';
-export type View = 'cumulative' | 'nonCumulative';
+export type View = 'line' | 'cumulative';
 type DataPoint = 'imported' | 'generated' | 'consumed' | 'immersionDiverted' | 'exported';
 
 export interface EnergyUsageLineGraphProps {
@@ -59,7 +59,7 @@ const getDataForView = (props: EnergyUsageLineGraphProps, dataPoint: DataPoint):
     data = props.hourlyPvData.map((item) => ({ x: toMoment(item.hour, item.minute), y: item[`${dataPoint}KwH`] }));
   }
 
-  return props.view === 'nonCumulative'? data : convertToCumulativeView(data);
+  return props.view === 'line'? data : convertToCumulativeView(data);
 };
 
 const convertToCumulativeView = (data: { x: moment.Moment; y: number }[]): { x: moment.Moment; y: number }[] => {

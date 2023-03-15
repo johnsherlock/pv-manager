@@ -13,7 +13,7 @@ export interface DashboardState {
 
 export const initialState: DashboardState = {
   energyUsageLineGraphScale: 'hour',
-  energyUsageLineGraphView: 'nonCumulative',
+  energyUsageLineGraphView: 'line',
   darkMode: false,
 };
 

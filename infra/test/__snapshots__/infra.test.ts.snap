@@ -1,0 +1,105 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Account Governer Stack matches snapshot 1`] = `
+{
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "pvmanager7AB39DE7": {
+      "Properties": {
+        "BasicAuthConfig": {
+          "EnableBasicAuth": false,
+        },
+        "BuildSpec": "version: "1.0"
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: src
+    files: .nan
+  cache:
+    paths: .nan
+",
+        "IAMServiceRole": {
+          "Fn::GetAtt": [
+            "pvmanagerRole57D61FC7",
+            "Arn",
+          ],
+        },
+        "Name": "pv-manager ",
+        "OauthToken": "{{resolve:secretsmanager:pvm:SecretString:github-token::}}",
+        "Repository": "https://github.com/johnsherlock/pv-manager",
+      },
+      "Type": "AWS::Amplify::App",
+    },
+    "pvmanagerRole57D61FC7": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "amplify.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "pvmanagermain16482FDF": {
+      "Properties": {
+        "AppId": {
+          "Fn::GetAtt": [
+            "pvmanager7AB39DE7",
+            "AppId",
+          ],
+        },
+        "BranchName": "main",
+        "EnableAutoBuild": true,
+        "EnablePullRequestPreview": true,
+      },
+      "Type": "AWS::Amplify::Branch",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;
