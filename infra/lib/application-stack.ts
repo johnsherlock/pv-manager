@@ -31,13 +31,13 @@ export class ApplicationStack extends cdk.Stack {
             },
           },
           artifacts: {
-            baseDirectory: 'src',
+            baseDirectory: 'build',
             files:
-              - '**/*',
+            - '**/*',
           },
           cache: {
             paths:
-              - 'node_modules/**/*',
+            - 'node_modules/**/*',
           },
         },
       }),

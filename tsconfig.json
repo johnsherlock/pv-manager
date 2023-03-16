@@ -22,6 +22,7 @@
   },
   "include": [
     "src",
-    "infra"
+    "infra",
+    "pv-proxy"
   ]
 }
