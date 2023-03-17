@@ -15,7 +15,7 @@ export async function handler(event: any, context: any) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Missing date parameter' }) };
     }
 
-    const url = `${myenergiAPIEndpoint}/cgi-jdayhour-E21494842-${date}`;
+    const url = `${myenergiAPIEndpoint}/cgi-jday-E21494842-${date}`;
 
     const digestAuth = new AxiosDigestAuth({ password: password!, username: username! });
 
@@ -26,7 +26,15 @@ export async function handler(event: any, context: any) {
     });
 
     const data = response.data;
-    return { statusCode: 200, body: JSON.stringify(data) };
+    return { 
+      statusCode: 200, 
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET,OPTIONS',        
+      },
+      body: JSON.stringify(data),
+    };
   } catch (error) {
     console.error(error);
     return { statusCode: 500, body: JSON.stringify({ error: 'Error fetching data' }) };

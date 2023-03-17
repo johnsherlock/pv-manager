@@ -52,7 +52,15 @@ export class ApplicationStack extends cdk.Stack {
 
   private createRestApi(): apigateway.RestApi {
 
-    const api = new apigateway.RestApi(this, 'PV Manager API');
+    const domain = `https://${this.amplifyApp.defaultDomain}`;
+
+    const api = new apigateway.RestApi(this, 'PV Manager API', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: ['*'],
+        allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key'],
+      },
+    });
 
     // Configure the default path to return a 404 response
     const defaultIntegration = new apigateway.MockIntegration({

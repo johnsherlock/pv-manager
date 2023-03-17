@@ -1,8 +1,8 @@
 import moment from 'moment';
 import { useState, useEffect, useRef } from 'react';
-// import 'bootswatch/dist/cosmo/bootstrap.min.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './app.css';
+import Visibility from 'visibilityjs';
 import Dashboard from './dashboard';
 import * as dateUtils from './lib/date-utils';
 import { EnergyCalculator } from './lib/energy-calculator';
@@ -13,7 +13,7 @@ import * as stateUtils from './lib/state-utils';
 function App() {
   const [state, setState] = useState(stateUtils.initialState());
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef(-1);
 
   // TODO: Initialise this dynamically (from props or per user)
   const energyCalculator = new EnergyCalculator({
@@ -26,23 +26,24 @@ function App() {
   });
 
   const startAutoRefresh = (selectedDate: moment.Moment) => {
-    console.log('Setting up interval to refresh data every minute');
-    intervalRef.current = setInterval(async () => {
+    console.log('Page visible - refreshing data every minute. Interval ID: ', intervalRef.current);
+    intervalRef.current = Visibility.every(1 * 60 * 1000, async () => {
       await goToDay(selectedDate);
-    }, 1 * 60 * 1000);
+    });
     console.log(`Interval ID: ${intervalRef.current}`);
   };
 
   const stopAutoRefresh = () => {
-    if (intervalRef.current) {
-      console.log(`Clearing interval ${intervalRef.current}`);
-      clearInterval(intervalRef.current as NodeJS.Timeout);
-      intervalRef.current = null;
+    console.log('Stop auto refresh');
+    if (intervalRef.current > -1) {
+      console.log(`Stopping interval ${intervalRef.current}`);
+      Visibility.stop(intervalRef.current);
+      intervalRef.current = -1;
     }
   };
 
   const goToDay = async (targetDate: moment.Moment) => {
-    console.log(`Getting data for ${targetDate}`);
+    console.log(`Getting data for ${targetDate}`, new Date());
     document.body.style.cursor = 'progress';
     const formattedTargetDate = dateUtils.formatDate(targetDate);
     if (state.pvDataCache.get(formattedTargetDate) && targetDate.isBefore(state.today)) {
@@ -67,7 +68,8 @@ function App() {
       };
       newState.pvDataCache.set(formattedTargetDate, pvData);
       setState(newState);
-      if (!intervalRef.current) {
+      console.log('IntervalRef: ', intervalRef.current);
+      if (intervalRef.current == -1) {
         startAutoRefresh(state.today);
       }
       document.body.style.cursor = 'auto';
@@ -107,8 +109,8 @@ function App() {
       console.error(`Error retrieving data for ${state.selectedDate}`, error);
     });
     return () => {
-      console.log(`Clearing interval ${intervalRef.current}`);
-      clearInterval(intervalRef.current as NodeJS.Timeout);
+      console.log(`Stopping refresh with id: ${intervalRef.current}`);
+      Visibility.stop(intervalRef.current);
     };
   }, []);
 
