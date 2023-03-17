@@ -110,12 +110,14 @@ export class ApplicationStack extends cdk.Stack {
         },
         artifacts: {
           baseDirectory: 'build',
-          files:
-          - '**/*',
+          files: [
+            '**/*',
+          ],
         },
         cache: {
-          paths:
-          - 'node_modules/**/*',
+          paths: [
+            'node_modules/**/*',
+          ],
         },
       },
     });
