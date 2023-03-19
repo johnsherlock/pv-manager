@@ -31,9 +31,9 @@ const Dashboard = (
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
 
   return (
-    <div className="container grid-container dashboard dark">
-      <div className="row justify-content-center">
-        <div className="col-12 col-md-10">
+    <div className="container dashboard">
+      <div className="row">
+        <div className="col">
           <div className="navigation">
             <h1>
               <div className="navPrev">
@@ -50,28 +50,30 @@ const Dashboard = (
               </div>
             </h1>
           </div>
-          <div className="row justify-content-center">
-            <DailyEnergyUsageTable
-              data={halfHourData}
-              totals={totals}
-              energyCalculator={energyCalculator}
-            />
+          <div className="row">
+            <div className="col">
+              <DailyEnergyUsageTable
+                data={halfHourData}
+                totals={totals}
+                energyCalculator={energyCalculator}
+              />
+            </div>
           </div>
           <div className="row">
-            <div className="col-sm-3">
+            <div className="col-md-3">
               <span className="title">Scale:</span>&nbsp;
               <OptionLink dispatch={dispatch} type="SET_SCALE" payload="hour" selected={state.energyUsageLineGraphScale === 'hour'} text="Hour" />&nbsp;|&nbsp;
               <OptionLink dispatch={dispatch} type="SET_SCALE" payload="halfHour" selected={state.energyUsageLineGraphScale === 'halfHour'} text="Half Hour" />&nbsp;|&nbsp;
               <OptionLink dispatch={dispatch} type="SET_SCALE" payload="minute" selected={state.energyUsageLineGraphScale === 'minute'} text="Minute" />
             </div>
-            <div className="col-sm-6">
+            <div className="col-md-3">
               <span className="title">View:</span>&nbsp;
               <OptionLink dispatch={dispatch} type="SET_VIEW" payload="line" selected={state.energyUsageLineGraphView === 'line'} text="Line" />&nbsp;|&nbsp;
               <OptionLink dispatch={dispatch} type="SET_VIEW" payload="cumulative" selected={state.energyUsageLineGraphView === 'cumulative'} text="Cumulative Line" />
             </div>
           </div>
-          <div className="row twenty-px-margin-top">
-            <div className="col-md-10 offset-md-1 text-center">
+          <div className="row">
+            <div className="col-12 col-lg-12 energy-line-graph">
               <EnergyUsageLineGraph
                 scale={state.energyUsageLineGraphScale}
                 view={state.energyUsageLineGraphView}
@@ -81,7 +83,7 @@ const Dashboard = (
               />
             </div>
           </div>
-          <div className="row twenty-px-margin-top">
+          <div className="row">
             <div className="col-sm-6">
               <LiveEnergyBarGraph minutePvData={minuteData[minuteData.length-1] ?? {}} />
             </div>

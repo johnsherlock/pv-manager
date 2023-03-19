@@ -14,7 +14,7 @@ const DailyEnergyUsageTable = ({ data, energyCalculator }: DailyEnergyUsageTable
   const [state, setState] = useState({ expanded: false });
 
   return (
-    <div className="table">
+    <div className="table d-md-block d-none">
       <div className="table-header">
         <div className="table-row">
           <div className="table-cell">

@@ -73,7 +73,7 @@ const convertToCumulativeView = (data: { x: moment.Moment; y: number }[]): { x: 
 const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {
 
   const fill = props.scale === 'minute' && props.view !== 'cumulative';
-  const borderWidth = props.scale === 'minute' && props.view !== 'cumulative' ? 1 : 2;
+  const borderWidth = props.scale === 'minute' && props.view !== 'cumulative' ? 1 : 1;
   const unit = props.scale === 'minute' ? 'kw' : 'kWh';
 
   // create a map of the data based on the view type (hour, halfHour, minute).
@@ -82,7 +82,7 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
   const lineData = {
     datasets: [
       {
-        label: `Imported ${unit}`,
+        label: `Imp ${unit}`,
         data: getDataForView(props, 'imported'),
         fill,
         borderColor: 'rgb(255, 99, 888)',
@@ -92,7 +92,7 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
         hidden: props.scale === 'minute' && props.view !== 'cumulative',
       },
       {
-        label: `Generated ${unit}`,
+        label: `Gen ${unit}`,
         data: getDataForView(props, 'generated'),
         fill,
         borderColor: 'rgb(51, 153, 102)',
@@ -100,6 +100,16 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
         borderWidth,
         radius: 0,
         hidden: false,
+      },
+      {
+        label: `Exp ${unit}`,
+        data: getDataForView(props, 'exported'),
+        fill,
+        borderColor: 'rgb(53, 162, 235)',
+        backgroundColor: 'rgba(53, 162, 235, 0.5)',
+        borderWidth,
+        radius: 0,
+        hidden: props.scale === 'minute' && props.view !== 'cumulative',
       },
       {
         label: `Consumed ${unit}`,
@@ -121,16 +131,6 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
         radius: 0,
         hidden: props.scale === 'minute' && props.view !== 'cumulative',
       },
-      {
-        label: `Exported ${unit}`,
-        data: getDataForView(props, 'exported'),
-        fill,
-        borderColor: 'rgb(53, 162, 235)',
-        backgroundColor: 'rgba(53, 162, 235, 0.5)',
-        borderWidth,
-        radius: 0,
-        hidden: props.scale === 'minute' && props.view !== 'cumulative',
-      },
     ],
   };
 
@@ -140,6 +140,7 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
   };
 
   const options = {
+    maintainAspectRatio: false as const,
     responsive: true as const,
     interaction: {
       mode: 'nearest' as const,
@@ -152,9 +153,9 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
       },
     },
     scales: {
-      y: {
-        title: { display: true, text: props.scale === 'minute' ? 'kw' : 'kWh' },
-      },
+      // y: {
+      //   title: { display: true, text: props.scale === 'minute' ? 'kw' : 'kWh' },
+      // },
       x: {
         type: 'time' as const,
         time: {

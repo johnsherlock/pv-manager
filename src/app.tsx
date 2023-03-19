@@ -123,17 +123,19 @@ function App() {
   };
 
   return (
-    <Dashboard
-      selectedDate={state.selectedDate}
-      today={state.today}
-      minuteData={state.pvDataCache.get(state.formattedSelectedDate) ?? []}
-      halfHourData={convertMinuteDataToHalfHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
-      hourData={convertMinuteDataToHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
-      energyCalculator={energyCalculator}
-      goToPreviousDay={goToPreviousDay}
-      goToNextDay={goToNextDay}
-      goToDay={goToDay}
-    />
+    <div>
+      <Dashboard
+        selectedDate={state.selectedDate}
+        today={state.today}
+        minuteData={state.pvDataCache.get(state.formattedSelectedDate) ?? []}
+        halfHourData={convertMinuteDataToHalfHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
+        hourData={convertMinuteDataToHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
+        energyCalculator={energyCalculator}
+        goToPreviousDay={goToPreviousDay}
+        goToNextDay={goToNextDay}
+        goToDay={goToDay}
+      />
+    </div>
   );
 }
 
