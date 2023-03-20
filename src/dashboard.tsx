@@ -10,6 +10,7 @@ import { MinutePVData, HalfHourlyPVData, HourlyPVData } from './lib/pv-service';
 import LiveEnergyBarGraph from './live-energy-bar-graph';
 import OptionLink from './option-link';
 import { dashboardReducer, initialState } from './reducers/dashboardReducer';
+import ResponsiveEnergyUsageTable from './responsive-energy-usage-table';
 
 interface DashboardProps {
   selectedDate: moment.Moment;
@@ -50,9 +51,18 @@ const Dashboard = (
               </div>
             </h1>
           </div>
-          <div className="row">
+          <div className="row d-lg-block d-none">
             <div className="col">
               <DailyEnergyUsageTable
+                data={halfHourData}
+                totals={totals}
+                energyCalculator={energyCalculator}
+              />
+            </div>
+          </div>
+          <div className="row d-lg-none">
+            <div className="col">
+              <ResponsiveEnergyUsageTable
                 data={halfHourData}
                 totals={totals}
                 energyCalculator={energyCalculator}

@@ -2,8 +2,10 @@
 
 exports[`App renders correctly 1`] = `
 <DocumentFragment>
-  <div
-    data-testid="Dashboard-mock"
-  />
+  <div>
+    <div
+      data-testid="Dashboard-mock"
+    />
+  </div>
 </DocumentFragment>
 `;
