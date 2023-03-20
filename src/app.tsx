@@ -117,6 +117,14 @@ function App() {
     };
   }, []);
 
+  const canGoToPreviousDay = () => {
+    return state.selectedDate.isAfter(dateUtils.dawnOfTime);
+  };
+
+  const canGoToNextDay = () => {
+    return state.selectedDate.isBefore(state.today);
+  };
+
   const goToPreviousDay = async (): Promise<any> => {
     await goToDay(moment(state.selectedDate.subtract(1, 'day')));
   };
@@ -127,10 +135,10 @@ function App() {
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     // Query new data based on swipe direction
-    if (direction === 'left') {
-      await goToNextDay();
-    } else {
+    if (direction === 'right' && canGoToPreviousDay()) {
       await goToPreviousDay();
+    } else if (direction === 'left' && canGoToNextDay()) {
+      await goToNextDay();
     }
   };
 
