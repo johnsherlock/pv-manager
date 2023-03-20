@@ -2,6 +2,7 @@ import moment from 'moment';
 import { useState, useEffect, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './app.css';
+import { useSwipeable } from 'react-swipeable';
 import Visibility from 'visibilityjs';
 import Dashboard from './dashboard';
 import * as dateUtils from './lib/date-utils';
@@ -14,6 +15,7 @@ function App() {
   const [state, setState] = useState(stateUtils.initialState());
 
   const intervalRef = useRef(-1);
+  let reactSwipeEl;
 
   // TODO: Initialise this dynamically (from props or per user)
   const energyCalculator = new EnergyCalculator({
@@ -104,6 +106,7 @@ function App() {
 
   useEffect(() => {
     console.log('USE EFFECT');
+
     // retrieve data for today.
     goToDay(state.selectedDate).catch((error) => {
       console.error(`Error retrieving data for ${state.selectedDate}`, error);
@@ -122,8 +125,23 @@ function App() {
     await goToDay(moment(state.selectedDate.add(1, 'day')));
   };
 
+  const handleSwipe = async (direction: 'left' | 'right') => {
+    // Query new data based on swipe direction
+    if (direction === 'left') {
+      await goToNextDay();
+    } else {
+      await goToPreviousDay();
+    }
+  };
+
+  const handlers = useSwipeable({
+    onSwipedLeft: () => handleSwipe('left'),
+    onSwipedRight: () => handleSwipe('right'),
+  });
+
+
   return (
-    <div>
+    <div {...handlers}>
       <Dashboard
         selectedDate={state.selectedDate}
         today={state.today}

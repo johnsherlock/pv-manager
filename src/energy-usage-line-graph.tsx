@@ -151,6 +151,8 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
       decimation: decimation,
       legend: {
       },
+      tooltip: {
+      },
     },
     scales: {
       // y: {
