@@ -11,7 +11,7 @@ import moment from 'moment';
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import { convertJoulesToKw } from './lib/num-utils';
-import { MinutePVData } from './lib/pv-service';
+import { calculateGreenEnergyPercentage, MinutePVData } from './lib/pv-service';
 
 ChartJS.register(
   CategoryScale,
@@ -40,6 +40,8 @@ const LiveEnergyBarGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {
     convertJoulesToKw(props.minutePvData.exportedJoules),
   ];
 
+  const solarCoverage = calculateGreenEnergyPercentage(props.minutePvData.importedJoules, props.minutePvData.consumedJoules);
+
   const labels = ['Imp', 'Gen', 'Cons', 'Divert', 'Exp'];
   const barData = {
     labels: labels,
@@ -64,6 +66,8 @@ const LiveEnergyBarGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {
     }],
   };
 
+  const chartTitle = `Live Energy Usage: ${toMoment(props.minutePvData.hour, props.minutePvData.minute).format('HH:mm')} - ${solarCoverage}% Solar Coverage`;
+
   const options = {
     responsive: true,
     plugins: {
@@ -72,7 +76,7 @@ const LiveEnergyBarGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {
       },
       title: {
         display: true,
-        text: 'Live Energy Usage: ' + toMoment(props.minutePvData.hour, props.minutePvData.minute).format('HH:mm'),
+        text: chartTitle,
       },
     },
     scales: {
