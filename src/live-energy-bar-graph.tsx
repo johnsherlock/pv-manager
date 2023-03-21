@@ -42,7 +42,7 @@ const LiveEnergyBarGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {
 
   const solarCoverage = calculateGreenEnergyPercentage(props.minutePvData.importedJoules, props.minutePvData.consumedJoules);
 
-  const labels = ['Imp', 'Gen', 'Cons', 'Divert', 'Exp'];
+  const labels = ['Imp', 'Gen', 'Cons', 'Immersion', 'Exp'];
   const barData = {
     labels: labels,
     datasets: [{
