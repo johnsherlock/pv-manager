@@ -95,7 +95,12 @@ const Dashboard = (
           </div>
           <div className="row">
             <div className="col-sm-6">
-              <GreenEnergyPercentageLineGraph halfHourPvData={halfHourData} />
+              <GreenEnergyPercentageLineGraph
+                scale={state.energyUsageLineGraphScale}
+                minutePvData={minuteData}
+                halfHourPvData={halfHourData}
+                hourlyPvData={hourData}
+              />
             </div>
             <div className="col-sm-6">
               <LiveEnergyBarGraph minutePvData={minuteData[minuteData.length-1] ?? {}} />

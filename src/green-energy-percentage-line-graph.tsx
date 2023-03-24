@@ -35,34 +35,47 @@ const toMoment = (hr: number = 0, min: number = 0): moment.Moment => {
   return moment().hour(hr).minute(min);
 };
 
-export type View = 'minute' | 'halfHour' | 'hour';
+export type Scale = 'minute' | 'halfHour' | 'hour';
 
 export interface EnergyUsageLineGraphProps {
+  scale: Scale;
+  minutePvData: MinutePVData[];
   halfHourPvData: HalfHourlyPVData[];
+  hourlyPvData: HourlyPVData[];
 }
 
-const getData = (halfHourPvData: HalfHourlyPVData[]): { x: moment.Moment; y: number }[] => {
+const getDataForScale = (
+  minuteData: MinutePVData[], halfHourData: HalfHourlyPVData[], hourlyData: HourlyPVData[], scale: Scale): { x: moment.Moment; y: number }[] => {
 
+  let filteredData;
   // filter out items from halfHourlyData where greenEnergyPercentage is 0
+  switch (scale) {
+    case 'minute':
+      filteredData = minuteData.filter((item) => item.greenEnergyPercentage !== 0);
+      break;
+    case 'halfHour':
+      filteredData = halfHourData.filter((item) => item.greenEnergyPercentage !== 0);
+      break;
+    case 'hour':
+      filteredData = hourlyData.filter((item) => item.greenEnergyPercentage !== 0);
+      break;
+  }
   // map the remaining items to an array of objects with x and y properties
-
-  const filteredData = halfHourPvData.filter((item) => item.greenEnergyPercentage !== 0);
-  const mappedData = filteredData.map((item) => ({ x: toMoment(item.hour, item.minute), y: item.greenEnergyPercentage }));
-
-  return mappedData;
+  return filteredData.map((item) => ({ x: toMoment(item.hour, item.minute), y: item.greenEnergyPercentage }));
 };
-
 
 const GreenEnergyPercentageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {
 
   // create a map of the data based on the view type (hour, halfHour, minute).
   // if the view is minute, then we use the minute data, otherwise we use the halfHour or hour data.
 
+  const data = getDataForScale(props.minutePvData, props.halfHourPvData, props.hourlyPvData, props.scale);
+
   const lineData = {
     datasets: [
       {
         label: 'Green Energy Percentage',
-        data: getData(props.halfHourPvData),
+        data,
         fill: true,
         borderColor: 'rgb(51, 153, 102)',
         backgroundColor: 'rgba(51, 153, 102, 0.5)',
