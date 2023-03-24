@@ -95,10 +95,10 @@ const Dashboard = (
           </div>
           <div className="row">
             <div className="col-sm-6">
-              <LiveEnergyBarGraph minutePvData={minuteData[minuteData.length-1] ?? {}} />
+              <GreenEnergyPercentageLineGraph halfHourPvData={halfHourData} />
             </div>
             <div className="col-sm-6">
-              <GreenEnergyPercentageLineGraph halfHourPvData={halfHourData} />
+              <LiveEnergyBarGraph minutePvData={minuteData[minuteData.length-1] ?? {}} />
             </div>
           </div>
         </div>
