@@ -15,9 +15,9 @@ import {
 import moment from 'moment-timezone';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
+import { toMoment } from './lib/date-utils';
 import { convertJoulesToKw } from './lib/num-utils';
 import { HalfHourlyPVData, HourlyPVData, MinutePVData } from './model/pv-data';
-import { toMoment } from './lib/date-utils';
 
 ChartJS.register(
   CategoryScale,
