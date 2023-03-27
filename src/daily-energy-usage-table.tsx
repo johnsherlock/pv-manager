@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { getFormattedTime } from './lib/date-utils';
 import { EnergyCalculator, Totals } from './lib/energy-calculator';
 import { formatToEuro } from './lib/num-utils';
-import { HalfHourlyPVData } from './lib/pv-service';
+import { HalfHourlyPVData } from './model/pv-data';
 
 export interface DailyEnergyUsageTableProps {
   data: HalfHourlyPVData[];
@@ -35,7 +36,7 @@ const DailyEnergyUsageTable = ({ data, energyCalculator }: DailyEnergyUsageTable
         <div className="table-body">
           {data?.map((item: HalfHourlyPVData, index: number) => (
             <div key={item.year + item.month + item.dayOfMonth + item.hour + item.minute} className={`table-row ${index % 2 === 0 ? 'table-primary' : ''}`}>
-              <div className="table-cell time">{item.hour.toString().padStart(2, '0')}:{item.minute.toString().padStart(2, '0')}</div>
+              <div className="table-cell time">{getFormattedTime(item)}</div>
               <div className="table-cell imp">{item.importedKwH.toFixed(2)}</div>
               <div className="table-cell gep">{item.generatedKwH.toFixed(2)}</div>
               <div className="table-cell comp">{item.consumedKwH.toFixed(2)}</div>

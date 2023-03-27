@@ -12,11 +12,11 @@ import {
   Decimation,
   DecimationOptions,
 } from 'chart.js';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
 import { convertJoulesToKw } from './lib/num-utils';
-import { HalfHourlyPVData, HourlyPVData, MinutePVData } from './lib/pv-service';
+import { HalfHourlyPVData, HourlyPVData, MinutePVData } from './model/pv-data';
 
 ChartJS.register(
   CategoryScale,
@@ -32,7 +32,7 @@ ChartJS.register(
 );
 
 const toMoment = (hr: number = 0, min: number = 0): moment.Moment => {
-  return moment().hour(hr).minute(min);
+  return moment().tz('Europe/London').hour(hr).minute(min);
 };
 
 export type Scale = 'minute' | 'halfHour' | 'hour';

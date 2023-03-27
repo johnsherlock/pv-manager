@@ -1,7 +1,7 @@
-import moment from 'moment';
+import moment from 'moment-timezone';
 import * as dateUtils from './date-utils';
 import { Totals } from './energy-calculator';
-import { MinutePVData } from './pv-service';
+import { MinutePVData } from '../model/pv-data';
 
 interface AppState {
   today: moment.Moment;
@@ -13,7 +13,7 @@ interface AppState {
 }
 
 export const initialState = (): AppState => {
-  const today: moment.Moment = moment().startOf('day');
+  const today: moment.Moment = moment().tz('Europe/London').startOf('day');
   return {
     today: today,
     selectedDate: today,

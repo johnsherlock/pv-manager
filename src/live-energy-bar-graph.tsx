@@ -7,11 +7,12 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import moment from 'moment';
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
+import { getFormattedTime } from './lib/date-utils';
 import { convertJoulesToKw } from './lib/num-utils';
-import { calculateGreenEnergyPercentage, MinutePVData } from './lib/pv-service';
+import { calculateGreenEnergyPercentage } from './lib/pv-service';
+import { MinutePVData } from './model/pv-data';
 
 ChartJS.register(
   CategoryScale,
@@ -21,10 +22,6 @@ ChartJS.register(
   Tooltip,
   Legend,
 );
-
-const toMoment = (hr: number = 0, min: number = 0): moment.Moment => {
-  return moment().hour(hr).minute(min);
-};
 
 export interface EnergyUsageLineGraphProps {
   minutePvData: MinutePVData;
@@ -66,7 +63,7 @@ const LiveEnergyBarGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {
     }],
   };
 
-  const chartTitle = `Live Energy Usage: ${toMoment(props.minutePvData.hour, props.minutePvData.minute).format('HH:mm')} - ${solarCoverage}% Solar Coverage`;
+  const chartTitle = `Live Energy Usage: ${getFormattedTime(props.minutePvData)} - ${solarCoverage}% Solar Coverage`;
 
   const options = {
     responsive: true,

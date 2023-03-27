@@ -12,11 +12,12 @@ import {
   Decimation,
   DecimationOptions,
 } from 'chart.js';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
 import { convertJoulesToKw } from './lib/num-utils';
-import { HalfHourlyPVData, HourlyPVData, MinutePVData } from './lib/pv-service';
+import { HalfHourlyPVData, HourlyPVData, MinutePVData } from './model/pv-data';
+import { toMoment } from './lib/date-utils';
 
 ChartJS.register(
   CategoryScale,
@@ -30,10 +31,6 @@ ChartJS.register(
   Decimation,
   Filler,
 );
-
-const toMoment = (hr: number = 0, min: number = 0): moment.Moment => {
-  return moment().hour(hr).minute(min);
-};
 
 export type Scale = 'minute' | 'halfHour' | 'hour';
 
@@ -61,7 +58,7 @@ const getDataForScale = (
       break;
   }
   // map the remaining items to an array of objects with x and y properties
-  return filteredData.map((item) => ({ x: toMoment(item.hour, item.minute), y: item.greenEnergyPercentage }));
+  return filteredData.map((item) => ({ x: toMoment(item), y: item.greenEnergyPercentage }));
 };
 
 const GreenEnergyPercentageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {

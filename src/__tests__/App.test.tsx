@@ -1,5 +1,5 @@
 import { render, act, waitFor } from '@testing-library/react';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import App from '../app';
 import * as pvService from '../lib/pv-service';
 

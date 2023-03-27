@@ -1,4 +1,4 @@
-import moment from 'moment';
+import moment from 'moment-timezone';
 import { useState, useEffect, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './app.css';
@@ -8,8 +8,9 @@ import Dashboard from './dashboard';
 import * as dateUtils from './lib/date-utils';
 import { EnergyCalculator } from './lib/energy-calculator';
 import * as pvService from './lib/pv-service';
-import { convertMinuteDataToHalfHourlyData, convertMinuteDataToHourlyData, MinutePVData } from './lib/pv-service';
+import { convertMinuteDataToHalfHourlyData, convertMinuteDataToHourlyData } from './lib/pv-service';
 import * as stateUtils from './lib/state-utils';
+import { MinutePVData } from './model/pv-data';
 
 function App() {
   const [state, setState] = useState(stateUtils.initialState());
@@ -52,7 +53,7 @@ function App() {
       stopAutoRefresh();
       setState({
         ...state,
-        today: moment().startOf('day'),
+        today: moment().tz('Europe/London').startOf('day'),
         selectedDate: targetDate,
         formattedSelectedDate: formattedTargetDate,
       });
@@ -63,7 +64,7 @@ function App() {
       console.log('State: ', state);
       const newState = {
         ...state,
-        today: moment().startOf('day'),
+        today: moment().tz('Europe/London').startOf('day'),
         selectedDate: targetDate,
         formattedSelectedDate: formattedTargetDate,
         intervalId: null,

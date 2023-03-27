@@ -1,4 +1,4 @@
-import moment from 'moment';
+import moment from 'moment-timezone';
 import React, { useReducer } from 'react';
 import CustomDatePicker from './custom-date-picker';
 import DailyEnergyUsageTable from './daily-energy-usage-table';
@@ -6,7 +6,7 @@ import EnergyUsageLineGraph from './energy-usage-line-graph';
 import GreenEnergyPercentageLineGraph from './green-energy-percentage-line-graph';
 import * as dateUtils from './lib/date-utils';
 import { EnergyCalculator, Totals } from './lib/energy-calculator';
-import { MinutePVData, HalfHourlyPVData, HourlyPVData } from './lib/pv-service';
+import { MinutePVData, HalfHourlyPVData, HourlyPVData } from './model/pv-data';
 import LiveEnergyBarGraph from './live-energy-bar-graph';
 import OptionLink from './option-link';
 import { dashboardReducer, initialState } from './reducers/dashboardReducer';
