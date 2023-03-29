@@ -53,7 +53,7 @@ function App() {
       stopAutoRefresh();
       setState({
         ...state,
-        today: moment().tz('Europe/London').startOf('day'),
+        today: moment().startOf('day'),
         selectedDate: targetDate,
         formattedSelectedDate: formattedTargetDate,
       });
@@ -64,7 +64,7 @@ function App() {
       console.log('State: ', state);
       const newState = {
         ...state,
-        today: moment().tz('Europe/London').startOf('day'),
+        today: moment().startOf('day'),
         selectedDate: targetDate,
         formattedSelectedDate: formattedTargetDate,
         intervalId: null,

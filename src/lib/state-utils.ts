@@ -13,7 +13,7 @@ interface AppState {
 }
 
 export const initialState = (): AppState => {
-  const today: moment.Moment = moment().tz('Europe/London').startOf('day');
+  const today: moment.Moment = moment().startOf('day');
   return {
     today: today,
     selectedDate: today,

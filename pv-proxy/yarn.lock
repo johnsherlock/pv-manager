@@ -50,6 +50,11 @@
     "@types/qs" "*"
     "@types/serve-static" "*"
 
+"@types/luxon@^3.2.0":
+  "integrity" "sha512-lGmaGFoaXHuOLXFvuju2bfvZRqxAqkHPx9Y9IQdQABrinJJshJwfNCKV+u7rR3kJbiqfTF/NhOkcxxAFrObyaA=="
+  "resolved" "https://registry.npmjs.org/@types/luxon/-/luxon-3.2.0.tgz"
+  "version" "3.2.0"
+
 "@types/mime@*":
   "integrity" "sha512-Y4XFY5VJAuw0FgAqPNd6NNoV44jbq9Bz2L7Rh/J6jLTiHBSBJa9fxqQIvkIld4GsoDOcCbvzOUAbLPsSKKg+uA=="
   "resolved" "https://registry.npmjs.org/@types/mime/-/mime-3.0.1.tgz"
@@ -314,6 +319,11 @@
   "integrity" "sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g=="
   "resolved" "https://registry.npmjs.org/ipaddr.js/-/ipaddr.js-1.9.1.tgz"
   "version" "1.9.1"
+
+"luxon@^3.3.0":
+  "integrity" "sha512-An0UCfG/rSiqtAIiBPO0Y9/zAnHUZxAMiCpTd5h2smgsj7GGmcenvrvww2cqNA8/4A5ZrD1gJpHN2mIHZQF+Mg=="
+  "resolved" "https://registry.npmjs.org/luxon/-/luxon-3.3.0.tgz"
+  "version" "3.3.0"
 
 "media-typer@0.3.0":
   "integrity" "sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ=="

@@ -32,7 +32,7 @@ ChartJS.register(
 );
 
 const toMoment = (hr: number = 0, min: number = 0): moment.Moment => {
-  return moment().tz('Europe/London').hour(hr).minute(min);
+  return moment().hour(hr).minute(min);
 };
 
 export type Scale = 'minute' | 'halfHour' | 'hour';

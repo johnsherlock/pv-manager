@@ -29,11 +29,11 @@ export const calculateGreenEnergyPercentage = (importedEnergy: number = 0, consu
 
 export const getPVDataForDate = async (formattedTargetDate: string): Promise<MinutePVData[]> => {
   console.log(`Retrieving per minute data for ${formattedTargetDate}`);
-  const url = `https://jmcjm1731b.execute-api.eu-west-1.amazonaws.com/prod/minute-data?date=${formattedTargetDate}`;
-  // const url = `http://localhost:3001/minute-data?date=${formattedTargetDate}`;
+  // const url = `https://jmcjm1731b.execute-api.eu-west-1.amazonaws.com/prod/minute-data?date=${formattedTargetDate}`;
+  const url = `http://localhost:3001/minute-data?date=${formattedTargetDate}`;
   try {
     const response = await axios.get(url);
-    const data = await Promise.resolve(response.data.U21494842 as EddiData[]);
+    const data = await Promise.resolve(response.data as EddiData[]);
     return data.map((item: EddiData): MinutePVData => {
       const conp = calculateEnergyConsumption(item.imp, item.gep, item.h1d, item.exp);
       const gepc = calculateGreenEnergyPercentage(item.imp, conp);
