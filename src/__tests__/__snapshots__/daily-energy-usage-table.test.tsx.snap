@@ -6,7 +6,7 @@ Object {
   "baseElement": <body>
     <div>
       <div
-        class="table"
+        class="table d-md-block d-none"
       >
         <div
           class="table-header"
@@ -84,9 +84,7 @@ Object {
               <div
                 class="table-cell time"
               >
-                01
-                :
-                30
+                01:30
               </div>
               <div
                 class="table-cell imp"
@@ -191,7 +189,7 @@ Object {
   </body>,
   "container": <div>
     <div
-      class="table"
+      class="table d-md-block d-none"
     >
       <div
         class="table-header"
@@ -269,9 +267,7 @@ Object {
             <div
               class="table-cell time"
             >
-              01
-              :
-              30
+              01:30
             </div>
             <div
               class="table-cell imp"

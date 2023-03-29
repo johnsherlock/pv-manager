@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import moment from 'moment-timezone';
+import moment from 'moment';
 import React from 'react';
 import CustomDatePicker from '../custom-date-picker';
 

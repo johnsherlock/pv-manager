@@ -1,4 +1,4 @@
-import moment from 'moment-timezone';
+import moment from 'moment';
 import { BasePVData } from '../model/pv-data';
 
 export const formatDate = (date: moment.Moment): string => moment(date).startOf('day').format('YYYY-MM-DD');

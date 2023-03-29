@@ -1,4 +1,4 @@
-import moment from 'moment-timezone';
+import moment from 'moment';
 import React, { useReducer } from 'react';
 import CustomDatePicker from './custom-date-picker';
 import DailyEnergyUsageTable from './daily-energy-usage-table';

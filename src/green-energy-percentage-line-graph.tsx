@@ -12,7 +12,7 @@ import {
   Decimation,
   DecimationOptions,
 } from 'chart.js';
-import moment from 'moment-timezone';
+import moment from 'moment';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
 import { toMoment } from './lib/date-utils';

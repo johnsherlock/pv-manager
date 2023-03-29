@@ -1,4 +1,4 @@
-import moment from 'moment-timezone';
+import moment from 'moment';
 import * as dateUtils from './date-utils';
 import { Totals } from './energy-calculator';
 import { MinutePVData } from '../model/pv-data';
