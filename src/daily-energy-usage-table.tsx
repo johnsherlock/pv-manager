@@ -78,7 +78,7 @@ const DailyEnergyUsageTable = ({ data, energyCalculator }: DailyEnergyUsageTable
           <span className="table-cell">
             {formatToEuro(energyCalculator.calculateTotalGrossImportCost(data))}
             &nbsp;
-            {data[0]?.dayOfWeek === 'Sat' ? `(${formatToEuro(energyCalculator.calculateFreeImportGrossTotal(data))})` : ''}
+            {data[data.length-1]?.dayOfWeek === 'Sat' ? `(${formatToEuro(energyCalculator.calculateFreeImportGrossTotal(data))})` : ''}
           </span>
           <span className="table-cell">{formatToEuro(energyCalculator.calculateTotalGrossSavings(data))}</span>
           <span className="table-cell">{formatToEuro(energyCalculator.calculateTotalExportValue(data))}</span>

@@ -40,7 +40,7 @@ const ResponsiveEnergyUsageTable = ({ data, energyCalculator }: ResponsiveEnergy
           <div className="fw-bold">Import €</div>
           <div className="">
             {formatToEuro(energyCalculator.calculateTotalGrossImportCost(data))}&nbsp;
-            {data[0]?.dayOfWeek === 'Sat' ? `(${formatToEuro(energyCalculator.calculateFreeImportGrossTotal(data))})` : ''}
+            {data[data.length-1]?.dayOfWeek === 'Sat' ? `(${formatToEuro(energyCalculator.calculateFreeImportGrossTotal(data))})` : ''}
           </div>
         </div>
         <div className="col-3">
