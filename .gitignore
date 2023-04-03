@@ -43,3 +43,4 @@ junit.xml
 /build/
 .DS_Store
 src/.DS_Store
+pv-proxy/src/*.js

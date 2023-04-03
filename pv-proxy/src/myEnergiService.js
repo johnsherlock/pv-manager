@@ -65,19 +65,30 @@ class MyEnergiService {
                 url,
             });
             const eddiData = response.data[`U${credentials.serialNumber}`];
-            return this.adjustEddiDataForTimeZone(eddiData, dateTime);
+            return this.adjustEddiDataForTimeZoneAndApplyDefaults(eddiData, dateTime);
         });
     }
-    adjustEddiDataForTimeZone(eddiData, dateTime) {
+    adjustEddiDataForTimeZoneAndApplyDefaults(eddiData, dateTime) {
         const offsetInHours = dateTime.offset / 60;
-        console.log('Adjusting for timezone offset', offsetInHours, dateTime);
+        console.log(`Timezone offset ${offsetInHours} hours`);
+        const dowArray = ['Sun', 'Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat'];
         return eddiData.map((data) => {
             var _a, _b;
             // adjust the hour for the timezone and ensure both hr and min are set
             data.hr = ((_a = data.hr) !== null && _a !== void 0 ? _a : 0) + offsetInHours;
-            data.hr %= 24;
-            if (data.hr < 0) {
+            let dayAdjustment = 0;
+            if (data.hr >= 24) {
+                data.hr %= 24;
+                dayAdjustment = 1;
+            }
+            else if (data.hr < 0) {
                 data.hr += 24;
+                dayAdjustment = -1;
+            }
+            if (dayAdjustment !== 0 && data.dow) {
+                const currentIndex = dowArray.indexOf(data.dow);
+                const newIndex = (currentIndex + dayAdjustment + dowArray.length) % dowArray.length;
+                data.dow = dowArray[newIndex];
             }
             data.min = (_b = data.min) !== null && _b !== void 0 ? _b : 0;
             return data;
