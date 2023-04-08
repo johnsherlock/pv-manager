@@ -15,6 +15,7 @@ import {
 import moment from 'moment';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
+import { isTouchScreen } from './lib/display-utils';
 import { convertJoulesToKw } from './lib/num-utils';
 import { HalfHourlyPVData, HourlyPVData, MinutePVData } from './model/pv-data';
 
@@ -152,6 +153,7 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
       legend: {
       },
       tooltip: {
+        enabled: !isTouchScreen(),
       },
     },
     scales: {

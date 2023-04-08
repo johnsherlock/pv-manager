@@ -16,7 +16,7 @@ import moment from 'moment';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
 import { toMoment } from './lib/date-utils';
-import { convertJoulesToKw } from './lib/num-utils';
+import { isTouchScreen } from './lib/display-utils';
 import { HalfHourlyPVData, HourlyPVData, MinutePVData } from './model/pv-data';
 
 ChartJS.register(
@@ -98,6 +98,9 @@ const GreenEnergyPercentageLineGraph = (props: EnergyUsageLineGraphProps): JSX.E
     plugins: {
       decimation: decimation,
       legend: {
+      },
+      tooltip: {
+        enabled: !isTouchScreen(),
       },
     },
     scales: {

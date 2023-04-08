@@ -10,6 +10,7 @@ import {
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import { getFormattedTime } from './lib/date-utils';
+import { isTouchScreen } from './lib/display-utils';
 import { convertJoulesToKw } from './lib/num-utils';
 import { calculateGreenEnergyPercentage } from './lib/pv-service';
 import { MinutePVData } from './model/pv-data';
@@ -74,6 +75,9 @@ const LiveEnergyBarGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {
       title: {
         display: true,
         text: chartTitle,
+      },
+      tooltip: {
+        enabled: !isTouchScreen(),
       },
     },
     scales: {
