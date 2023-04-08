@@ -139,6 +139,11 @@ body.dark {
     height: 260px;
     margin-top: 0px;
   }
+
+  .row-two-graph {
+    height: 220px;
+    margin-top: 0px;
+  }
 }
 
 .responsive-energy-table {

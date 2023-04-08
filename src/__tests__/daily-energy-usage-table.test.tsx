@@ -53,7 +53,7 @@ describe('DailyEnergyUsageTable', () => {
     }];
 
     const totals: Totals = {
-      impTotal: 1000,
+      combinedImpTotal: 1000,
       genTotal: 2000,
       expTotal: 500,
       conpTotal: 1000,

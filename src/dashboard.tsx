@@ -2,9 +2,11 @@ import moment from 'moment';
 import React, { useReducer } from 'react';
 import CustomDatePicker from './custom-date-picker';
 import DailyEnergyUsageTable from './daily-energy-usage-table';
+import EnergyCostLineGraph from './energy-cost-line-graph';
 import EnergyUsageLineGraph from './energy-usage-line-graph';
 import GreenEnergyPercentageLineGraph from './green-energy-percentage-line-graph';
 import * as dateUtils from './lib/date-utils';
+import { isTouchScreen } from './lib/display-utils';
 import { EnergyCalculator, Totals } from './lib/energy-calculator';
 import LiveEnergyBarGraph from './live-energy-bar-graph';
 import { MinutePVData, HalfHourlyPVData, HourlyPVData } from './model/pv-data';
@@ -30,6 +32,8 @@ const Dashboard = (
   DashboardProps): JSX.Element => {
 
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
+
+  const isToday = selectedDate.isSame(today);
 
   return (
     <div className="container dashboard">
@@ -83,7 +87,7 @@ const Dashboard = (
             </div>
           </div>
           <div className="row">
-            <div className="col-12 col-lg-12 energy-line-graph">
+            <div className={isToday ? 'col-lg-6 energy-line-graph' : 'col-12 energy-line-graph'}>
               <EnergyUsageLineGraph
                 scale={state.energyUsageLineGraphScale}
                 view={state.energyUsageLineGraphView}
@@ -92,9 +96,29 @@ const Dashboard = (
                 hourlyPvData={hourData}
               />
             </div>
+            {isToday ? (
+              <div className="col-6 energy-line-graph">
+                <EnergyCostLineGraph
+                  view={state.energyUsageLineGraphView}
+                  halfHourPvData={halfHourData}
+                  hourlyPvData={hourData}
+                  energyCalculator={energyCalculator}
+                />
+              </div>
+            ) : null}
           </div>
-          <div className="row">
-            <div className="col-sm-6">
+          <div className='row'>
+            {!isToday ? (
+              <div className="col-sm-6 row-two-graph">
+                <EnergyCostLineGraph
+                  view={state.energyUsageLineGraphView}
+                  halfHourPvData={halfHourData}
+                  hourlyPvData={hourData}
+                  energyCalculator={energyCalculator}
+                />
+              </div>
+            ) : null}
+            <div className="col-sm-6 row-two-graph">
               <GreenEnergyPercentageLineGraph
                 scale={state.energyUsageLineGraphScale}
                 minutePvData={minuteData}
@@ -102,7 +126,7 @@ const Dashboard = (
                 hourlyPvData={hourData}
               />
             </div>
-            <div className="col-sm-6">
+            <div className={isToday ? 'col-sm-6 row-two-graph' : 'd-none'}>
               <LiveEnergyBarGraph minutePvData={minuteData[minuteData.length-1] ?? {}} />
             </div>
           </div>

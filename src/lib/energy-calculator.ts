@@ -13,13 +13,13 @@ export interface EnergyCalculatorProps {
 }
 
 export interface Totals {
-  impTotal: number;
   genTotal: number;
   expTotal: number;
   conpTotal: number;
   dayImpTotal: number;
   peakImpTotal: number;
   nightImpTotal: number;
+  combinedImpTotal: number;
   freeImpTotal: number;
   immersionTotal: number;
   immersionRunTime: number;
@@ -28,13 +28,13 @@ export interface Totals {
 
 const initialTotals = (): Totals => {
   return {
-    impTotal: 0,
     genTotal: 0,
     expTotal: 0,
     conpTotal: 0,
     dayImpTotal: 0,
     peakImpTotal: 0,
     nightImpTotal: 0,
+    combinedImpTotal: 0,
     freeImpTotal: 0,
     immersionRunTime: 0,
     immersionTotal: 0,
@@ -162,7 +162,7 @@ export class EnergyCalculator {
   };
 
   public calculateDailyGreenEnergyCoverage = (totals: Totals = initialTotals()) => {
-    return numUtils.formatDecimal(100 - ((totals.impTotal/totals.conpTotal) * 100));
+    return numUtils.formatDecimal(100 - ((totals.combinedImpTotal/totals.conpTotal) * 100));
   };
 
   public calculateTotalImportedKwH = (pvData: HalfHourlyPVData[] = []) => {
@@ -221,11 +221,11 @@ export class EnergyCalculator {
     return calculateGreenEnergyPercentage(totalImportedKwH, totalConsumedKwH);
   };
 
-  public calculateTotals = (perMinuteData: HalfHourlyPVData[]): Totals => {
+  public calculateTotals = (pvData: HalfHourlyPVData[]): Totals => {
     console.log('Recaculating totals');
     const totals: Totals = initialTotals();
-    perMinuteData.forEach((item: HalfHourlyPVData) => {
-      totals.impTotal += item.importedKwH ?? 0;
+    pvData.forEach((item: HalfHourlyPVData) => {
+      totals.combinedImpTotal += item.importedKwH ?? 0;
       totals.genTotal += item.generatedKwH ?? 0;
       totals.expTotal += item.exportedKwH ?? 0;
       totals.conpTotal += item.consumedKwH ?? 0;
@@ -240,7 +240,7 @@ export class EnergyCalculator {
     });
     return {
       ...totals,
-      impTotal: totals.peakImpTotal + totals.nightImpTotal + totals.dayImpTotal,
+      combinedImpTotal: totals.peakImpTotal + totals.nightImpTotal + totals.dayImpTotal,
     };
   };
 
