@@ -114,6 +114,11 @@ const GreenEnergyPercentageLineGraph = (props: EnergyUsageLineGraphProps): JSX.E
         },
       },
     },
+    elements: {
+      point: {
+        pointStyle: isTouchScreen() ? 'dash' : 'circle',
+      },
+    },
   };
 
   return (

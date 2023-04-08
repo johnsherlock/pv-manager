@@ -157,14 +157,19 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
       },
     },
     scales: {
-      // y: {
-      //   title: { display: true, text: props.scale === 'minute' ? 'kw' : 'kWh' },
-      // },
+      y: {
+        title: { display: !isTouchScreen(), text: props.scale === 'minute' ? 'kw' : 'kWh' },
+      },
       x: {
         type: 'time' as const,
         time: {
           unit: 'hour' as const,
         },
+      },
+    },
+    elements: {
+      point: {
+        pointStyle: isTouchScreen() ? 'dash' : 'circle',
       },
     },
   };
