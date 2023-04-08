@@ -83,13 +83,13 @@ const convertToCumulativeView = (data: { x: moment.Moment; y: number }[]): { x: 
 const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => {
 
   const fill = false;
-  const borderWidth = props.view === 'line' ? 1 : 2;
+  const borderWidth = 1;
   const unit = 'EUR';
 
   const lineData = {
     datasets: [
       {
-        label: 'Import Cost',
+        label: 'Import €',
         data: getImportCost(props),
         fill,
         borderColor: 'rgb(255, 99, 888)',
@@ -98,7 +98,7 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
         radius: 0,
       },
       {
-        label: 'Green Savings',
+        label: 'Savings €',
         data: getGeneratedValue(props),
         fill,
         borderColor: 'rgb(51, 153, 102)',
@@ -108,7 +108,7 @@ const EnergyUsageLineGraph = (props: EnergyUsageLineGraphProps): JSX.Element => 
         hidden: false,
       },
       {
-        label: 'Export Value',
+        label: 'Export €',
         data: getExportValue(props),
         fill,
         borderColor: 'rgb(53, 162, 235)',

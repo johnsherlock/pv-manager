@@ -87,7 +87,7 @@ const Dashboard = (
             </div>
           </div>
           <div className="row">
-            <div className={isToday ? 'col-lg-6 energy-line-graph' : 'col-12 energy-line-graph'}>
+            <div className={isToday ? 'col energy-line-graph' : 'col-12 energy-line-graph'}>
               <EnergyUsageLineGraph
                 scale={state.energyUsageLineGraphScale}
                 view={state.energyUsageLineGraphView}
@@ -97,7 +97,7 @@ const Dashboard = (
               />
             </div>
             {isToday ? (
-              <div className="col-6 energy-line-graph">
+              <div className="col energy-line-graph">
                 <EnergyCostLineGraph
                   view={state.energyUsageLineGraphView}
                   halfHourPvData={halfHourData}
