@@ -4,6 +4,8 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import { NodejsFunction, SourceMapMode } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
@@ -95,7 +97,14 @@ export class ApplicationStack extends cdk.Stack {
       }),
       buildSpec: this.createBuildSpec(),
     });
-    amplifyApp.addBranch('main');
+    const main = amplifyApp.addBranch('main');
+
+    const domain = amplifyApp.addDomain('solar-stats.com', {
+      enableAutoSubdomain: true, // in case subdomains should be auto registered for branches
+      autoSubdomainCreationPatterns: ['*', 'pr*'], // regex for branches that should auto register subdomains
+    });
+    domain.mapRoot(main); // map main branch to domain root
+    domain.mapSubDomain(main, 'www');
 
     return amplifyApp;
   }
