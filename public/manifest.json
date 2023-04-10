@@ -1,6 +1,6 @@
 {
-  "short_name": "PV Manager",
-  "name": "PV Manager",
+  "short_name": "Solar Stats",
+  "name": "Solar stats",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,12 +8,12 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "solar-stats96.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "logo512.png",
+      "src": "solar-stats96.png",
       "type": "image/png",
       "sizes": "512x512"
     }
