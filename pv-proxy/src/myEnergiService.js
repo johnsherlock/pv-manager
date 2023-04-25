@@ -13,8 +13,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MyEnergiService = void 0;
-const luxon_1 = require("luxon");
 const axios_digest_auth_1 = __importDefault(require("@mhoc/axios-digest-auth"));
+const luxon_1 = require("luxon");
 class MyEnergiService {
     constructor(myenergiAPIEndpoint) {
         this.myenergiAPIEndpoint = myenergiAPIEndpoint;
