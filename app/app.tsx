@@ -7,8 +7,8 @@ import Visibility from 'visibilityjs';
 import Dashboard from './dashboard';
 import * as dateUtils from './lib/date-utils';
 import { EnergyCalculator } from './lib/energy-calculator';
+import { convertMinuteDataToHalfHourlyData, convertMinuteDataToHourlyData } from './lib/energy-utils';
 import * as pvService from './lib/pv-service';
-import { convertMinuteDataToHalfHourlyData, convertMinuteDataToHourlyData } from './lib/pv-service';
 import * as stateUtils from './lib/state-utils';
 import { MinutePVData } from './model/pv-data';
 

@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { Line } from 'react-chartjs-2';
 import HourlyEnergyUsageLineGraph from '../energy-usage-line-graph';
-import { HalfHourlyPVData, HourlyPVData, MinutePVData } from '../lib/pv-service';
+import { HalfHourlyPVData, HourlyPVData, MinutePVData } from '../model/pv-data';
 
 jest.mock('react-chartjs-2', () => ({
   Line: jest.fn(() => null),

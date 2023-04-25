@@ -75,6 +75,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "watch": "tsc -w",
     "test": "react-scripts test --coverage",
     "test:watch": "npm run test -- --watchAll",
     "lint": "eslint '{src,tools,acceptance,public}/**/*.{t,j}s{,x}' && stylelint 'src/**/*.{,s}css'",

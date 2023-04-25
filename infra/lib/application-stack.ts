@@ -3,9 +3,8 @@ import * as amplify from '@aws-cdk/aws-amplify-alpha';
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as route53 from 'aws-cdk-lib/aws-route53';
-import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import { NodejsFunction, SourceMapMode } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
@@ -15,16 +14,23 @@ export class ApplicationStack extends cdk.Stack {
   readonly amplifyApp: amplify.App;
   readonly restApi: apigateway.RestApi;
   readonly pvProxyLambda: lambda.Function;
+  readonly myEnergiDailyBackupLambda: lambda.Function;
+  readonly myEnergiDailyBackupTable: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    const myEnergiSecret: secretsmanager.ISecret = secretsmanager.Secret.fromSecretNameV2(this, 'pvmSecret', 'pvm');
+    const eddiDataBackupTableName = 'eddi-data';
+
     this.amplifyApp = this.createAmplifyApp();
     this.restApi = this.createRestApi();
-    this.pvProxyLambda = this.createPvMinuteDataHandler();
+    this.pvProxyLambda = this.createPvMinuteDataHandler(myEnergiSecret);
+    this.myEnergiDailyBackupLambda = this.createMyEnergiDailyBackupHandler(myEnergiSecret, eddiDataBackupTableName);
+    this.myEnergiDailyBackupTable = this.createDailyBackupDynamoDbTable(eddiDataBackupTableName);
   }
 
-  private createPvMinuteDataHandler(): lambda.Function {
+  private createPvMinuteDataHandler(myEnergiSecret: secretsmanager.ISecret): lambda.Function {
 
     const modulePath = path.resolve(process.cwd());
     const lambdaPath = path.join(modulePath, '../pv-proxy/src/myEnergiProxy.ts');
@@ -41,8 +47,6 @@ export class ApplicationStack extends cdk.Stack {
       },
     });
 
-    const myEnergiSecret = secretsmanager.Secret.fromSecretNameV2(this, 'pvmSecret', 'pvm');
-
     myEnergiProxyFunction.addEnvironment('MYENERGI_USERNAME', `{{resolve:secretsmanager:${myEnergiSecret.secretArn}:SecretString:myenergi-username}}`);
     myEnergiProxyFunction.addEnvironment('MYENERGI_PASSWORD', `{{resolve:secretsmanager:${myEnergiSecret.secretArn}:SecretString:myenergi-password}}`);
 
@@ -50,6 +54,43 @@ export class ApplicationStack extends cdk.Stack {
     pvMinuteDataResource.addMethod('GET', new apigateway.LambdaIntegration(myEnergiProxyFunction));
 
     return myEnergiProxyFunction;
+  }
+
+  private createMyEnergiDailyBackupHandler(myEnergiSecret: secretsmanager.ISecret, tableName: string): lambda.Function {
+
+    const modulePath = path.resolve(process.cwd());
+    const lambdaPath = path.join(modulePath, '../pv-proxy/src/myEnergiDailyBackup.ts');
+
+    const myEnergiDailyBackupFunction = new NodejsFunction(this, 'MyEnergiDailyBackup', {
+      functionName: 'MyEnergiDailyBackup',
+      entry: lambdaPath,
+      bundling: {
+        externalModules: [],
+        minify: false,
+        sourceMap: true,
+        sourceMapMode: SourceMapMode.INLINE,
+        sourcesContent: true,
+      },
+    });
+
+    myEnergiDailyBackupFunction.addEnvironment('MYENERGI_USERNAME', `{{resolve:secretsmanager:${myEnergiSecret.secretArn}:SecretString:myenergi-username}}`);
+    myEnergiDailyBackupFunction.addEnvironment('MYENERGI_PASSWORD', `{{resolve:secretsmanager:${myEnergiSecret.secretArn}:SecretString:myenergi-password}}`);
+    myEnergiDailyBackupFunction.addEnvironment('EDDI_DATA_TABLE_NAME', tableName);
+
+    const pvMinuteDataResource = this.restApi.root.addResource('backup-eddi-data');
+    pvMinuteDataResource.addMethod('GET', new apigateway.LambdaIntegration(myEnergiDailyBackupFunction));
+
+    return myEnergiDailyBackupFunction;
+  }
+
+  private createDailyBackupDynamoDbTable(tableName: string): dynamodb.Table {
+    const table = new dynamodb.Table(this, 'Eddi-Data', {
+      tableName,
+      partitionKey: { name: 'serialNumber', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'date', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+    });
+    return table;
   }
 
   private createRestApi(): apigateway.RestApi {

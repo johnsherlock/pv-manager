@@ -38,7 +38,7 @@
     "node_modules/",
     "*.generated.ts",
     "coverage",
-    "src/reportWebVitals.ts"
+    "app/reportWebVitals.ts"
   ],
   "rules": {
     "indent": [

@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import DailyEnergyUsageTable from '../daily-energy-usage-table';
 import { EnergyCalculator, Totals } from '../lib/energy-calculator';
-import { HalfHourlyPVData } from '../lib/pv-service';
+import { HalfHourlyPVData } from '../model/pv-data';
 
 jest.mock('../lib/energy-calculator', () => {
   return {

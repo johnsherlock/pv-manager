@@ -1,24 +1,6 @@
-import { DateTime, IANAZone } from 'luxon';
 import AxiosDigestAuth from '@mhoc/axios-digest-auth';
-
-export interface EddiData {
-  yr: number;
-  mon: number;
-  dom: number;
-  dow: 'Sun' | 'Mon' | 'Tues' | 'Wed' | 'Thurs' | 'Fri' | 'Sat';
-  hr?: number;
-  min?: number;
-  imp?: number;
-  gep?: number;
-  exp?: number;
-  h1d?: number;
-  h1b?: number;
-  pect1?: number;
-  pect2?: number;
-  hsk?: number;
-  v1?: number;
-  frq?: number;
-}
+import { DateTime, IANAZone } from 'luxon';
+import { EddiData } from '../../api/eddi-data';
 
 export interface MiEnergiCredentials {
   serialNumber?: string;
@@ -47,13 +29,13 @@ export class MyEnergiService {
     if (!datePattern.test(date)) {
       throw new Error('Invalid date format. Expected format is YYYY-MM-DD');
     }
-  
+
     const parsedDate = DateTime.fromISO(date, { setZone: true });
     if (!parsedDate.isValid) {
       throw new Error(`Invalid date: ${parsedDate.invalidExplanation}`);
     }
   }
-  
+
   private validateInputs(date: string, credentials: MiEnergiCredentials, locale: string) {
     if (!date) {
       throw new Error('Missing date parameter');
@@ -64,11 +46,11 @@ export class MyEnergiService {
     this.validateDateFormat(date);
     this.validateCredentials(credentials);
   }
-  
+
   public async getEddiData(date: string, credentials: MiEnergiCredentials, locale: string = 'Europe/London'): Promise<EddiData[]> {
     console.log('Getting data for', date);
     this.validateInputs(date, credentials, locale);
-    
+
     const dateTime = DateTime.fromISO(date, { zone: locale });
     const offsetInHours = dateTime.offset / 60;
 
@@ -80,7 +62,7 @@ export class MyEnergiService {
     console.log('Fetching data from', url);
 
     const digestAuth = new AxiosDigestAuth({ password: credentials.password!, username: credentials.serialNumber! });
-  
+
     const response = await digestAuth.request({
       headers: { Accept: 'application/json' },
       method: 'GET',
@@ -95,14 +77,14 @@ export class MyEnergiService {
   private adjustEddiDataForTimeZoneAndApplyDefaults(eddiData: EddiData[], dateTime: DateTime): EddiData[] {
     const offsetInHours = dateTime.offset / 60;
     console.log(`Timezone offset ${offsetInHours} hours`);
-  
+
     const dowArray: EddiData['dow'][] = ['Sun', 'Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat'];
-  
+
     return eddiData.map((data) => {
       // adjust the hour for the timezone and ensure both hr and min are set
       data.hr = (data.hr ?? 0) + offsetInHours;
       let dayAdjustment = 0;
-  
+
       if (data.hr >= 24) {
         data.hr %= 24;
         dayAdjustment = 1;
@@ -110,17 +92,17 @@ export class MyEnergiService {
         data.hr += 24;
         dayAdjustment = -1;
       }
-  
+
       if (dayAdjustment !== 0 && data.dow) {
         const currentIndex = dowArray.indexOf(data.dow);
         const newIndex = (currentIndex + dayAdjustment + dowArray.length) % dowArray.length;
         data.dow = dowArray[newIndex];
       }
-  
+
       data.min = data.min ?? 0;
       return data;
     });
   }
-  
-} 
+
+}
 

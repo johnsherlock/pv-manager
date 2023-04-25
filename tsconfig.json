@@ -21,10 +21,10 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "src",
+    "app", "pv-proxy", "infra", "api"
   ],
   "exclude": [
-    "infra",
-    "pv-proxy"
+    // "infra",
+    // "pv-proxy"
   ]
 }

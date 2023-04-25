@@ -1,5 +1,5 @@
+import { calculateGreenEnergyPercentage } from './energy-utils';
 import * as numUtils from './num-utils';
-import { calculateGreenEnergyPercentage } from './pv-service';
 import { HalfHourlyPVData } from '../model/pv-data';
 
 export interface EnergyCalculatorProps {
@@ -150,11 +150,6 @@ export class EnergyCalculator {
     const grossImportTotal = (discountedNetImportTotal + this.dailyStandingCharge) * this.vatRate;
     return numUtils.formatToEuro(grossImportTotal);
   };
-
-  // public calculateFreeImportGrossTotal = (totals: Totals = initialTotals()) => {
-  //   const freeImportGrossTotal = (numUtils.convertJoulesToKwh(totals.freeImpTotal) * this.dayRate) * this.vatRate;
-  //   return numUtils.formatToEuro(freeImportGrossTotal);
-  // };
 
   public calculateDailyExportTotal = (totals: Totals = initialTotals()) => {
     const grossExportTotal = (numUtils.convertJoulesToKwh(totals.expTotal) * this.exportRate);
