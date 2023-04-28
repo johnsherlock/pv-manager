@@ -1,7 +1,7 @@
 import AxiosDigestAuth from '@mhoc/axios-digest-auth';
 import cors from 'cors';
 import express from 'express';
-import { MyEnergiService } from './myEnergiService';
+import { MyEnergiService } from './my-energi-service';
 
 class Server {
   private app = express();

@@ -1,7 +1,7 @@
 import moment from 'moment';
 import * as dateUtils from './date-utils';
-import { Totals } from './energy-calculator';
-import { MinutePVData } from '../model/pv-data';
+import { Totals } from '../../shared/energy-calculator';
+import { MinutePVData } from '../../shared/pv-data';
 
 interface AppState {
   today: moment.Moment;

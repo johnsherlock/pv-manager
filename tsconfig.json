@@ -21,10 +21,8 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "app", "pv-proxy", "infra", "api"
+    "app", "pv-proxy", "infra", "shared"
   ],
   "exclude": [
-    // "infra",
-    // "pv-proxy"
   ]
 }

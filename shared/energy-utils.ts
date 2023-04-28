@@ -1,5 +1,6 @@
+import { EddiData } from './eddi-data';
 import { convertJoulesToKwh } from './num-utils';
-import { MinutePVData, HourlyPVData, HalfHourlyPVData } from '../model/pv-data';
+import { MinutePVData, HourlyPVData, HalfHourlyPVData } from './pv-data';
 
 export const calculateEnergyConsumption = (
   importedJoules: number = 0,
@@ -20,6 +21,26 @@ export const calculateGreenEnergyPercentage = (importedEnergy: number = 0, consu
   }
   const percentage = Math.round((greenEnergy / consumedEnergy) * 100);
   return percentage;
+};
+
+export const mapEddiDataToMinutePVData = (item: EddiData): MinutePVData => {
+  const conp = calculateEnergyConsumption(item.imp, item.gep, item.h1d, item.exp);
+  const gepc = calculateGreenEnergyPercentage(item.imp, conp);
+  return {
+    year: item.yr,
+    month: item.mon,
+    dayOfMonth: item.dom,
+    dayOfWeek: item.dow,
+    hour: item.hr ?? 0,
+    minute: item.min ?? 0,
+    importedJoules: item.imp ?? 0,
+    generatedJoules: item.gep ?? 0,
+    exportedJoules: item.exp ?? 0,
+    immersionDivertedJoules: item.h1d ?? 0,
+    immersionBoostedJoules: item.h1b ?? 0,
+    consumedJoules: conp,
+    greenEnergyPercentage: gepc,
+  };
 };
 
 export const convertMinuteDataToHourlyData = (minuteData: MinutePVData[] = []): HourlyPVData[] => {

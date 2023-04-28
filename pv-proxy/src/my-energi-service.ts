@@ -1,6 +1,6 @@
 import AxiosDigestAuth from '@mhoc/axios-digest-auth';
 import { DateTime, IANAZone } from 'luxon';
-import { EddiData } from '../../api/eddi-data';
+import { EddiData } from '../../shared/eddi-data';
 
 export interface MiEnergiCredentials {
   serialNumber?: string;

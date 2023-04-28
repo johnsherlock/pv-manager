@@ -47,19 +47,19 @@
     "ts-node": "^10.9.1"
   },
   "lint-staged": {
-    "{src,tools,acceptance,public}/**/*.{t,j}s{,x}": [
+    "{app,tools,acceptance,public}/**/*.{t,j}s{,x}": [
       "prettier --write",
       "eslint --fix"
     ],
-    "src/**/*.scss": [
+    "app/**/*.scss": [
       "stylelint --fix"
     ]
   },
   "jest": {
     "resetMocks": false,
     "collectCoverageFrom": [
-      "src/**/*.{j,t}s{,x}",
-      "!src/index.ts"
+      "app/**/*.{j,t}s{,x}",
+      "!app/index.ts"
     ],
     "transform": {
       "\\.(js|ts|jsx|tsx)$": "babel-jest",
@@ -78,8 +78,8 @@
     "watch": "tsc -w",
     "test": "react-scripts test --coverage",
     "test:watch": "npm run test -- --watchAll",
-    "lint": "eslint '{src,tools,acceptance,public}/**/*.{t,j}s{,x}' && stylelint 'src/**/*.{,s}css'",
-    "lint:fix": "eslint --fix '{src,tools,acceptance,public}/**/*.{t,j}s{,x}' && stylelint --fix 'src/**/*.{,s}css'",
+    "lint": "eslint '{app,tools,acceptance,public}/**/*.{t,j}s{,x}' && stylelint 'app/**/*.{,s}css'",
+    "lint:fix": "eslint --fix '{app,tools,acceptance,public}/**/*.{t,j}s{,x}' && stylelint --fix 'app/**/*.{,s}css'",
     "pre-commit": "lint-staged",
     "prepare": "husky install",
     "jestrunner.jestCommand": "npm run test --"

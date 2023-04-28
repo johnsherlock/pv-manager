@@ -14,14 +14,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const cors_1 = __importDefault(require("cors"));
 const express_1 = __importDefault(require("express"));
-const myEnergiService_1 = require("./myEnergiService");
+const my_energi_service_1 = require("./my-energi-service");
 class Server {
     constructor(username, password) {
         this.app = (0, express_1.default)();
         this.myEnergiAPIEndpoint = 'https://director.myenergi.net';
         this.username = username;
         this.password = password;
-        this.myEnergiService = new myEnergiService_1.MyEnergiService(this.myEnergiAPIEndpoint);
+        this.myEnergiService = new my_energi_service_1.MyEnergiService(this.myEnergiAPIEndpoint);
         this.app.use((0, cors_1.default)());
         this.app.get('/minute-data', (req, res) => __awaiter(this, void 0, void 0, function* () {
             const date = req.query.date;

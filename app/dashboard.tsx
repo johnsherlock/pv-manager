@@ -7,12 +7,12 @@ import EnergyUsageLineGraph from './energy-usage-line-graph';
 import GreenEnergyPercentageLineGraph from './green-energy-percentage-line-graph';
 import * as dateUtils from './lib/date-utils';
 import { isTouchScreen } from './lib/display-utils';
-import { EnergyCalculator, Totals } from './lib/energy-calculator';
 import LiveEnergyBarGraph from './live-energy-bar-graph';
-import { MinutePVData, HalfHourlyPVData, HourlyPVData } from './model/pv-data';
 import OptionLink from './option-link';
 import { dashboardReducer, initialState } from './reducers/dashboardReducer';
 import ResponsiveEnergyUsageTable from './responsive-energy-usage-table';
+import { EnergyCalculator, Totals } from '../shared/energy-calculator';
+import { MinutePVData, HalfHourlyPVData, HourlyPVData } from '../shared/pv-data';
 
 interface DashboardProps {
   selectedDate: moment.Moment;

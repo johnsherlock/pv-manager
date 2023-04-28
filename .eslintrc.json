@@ -144,8 +144,8 @@
       "error",
       {
         "devDependencies": [
-          "**/src/**/*.test.tsx",
-          "**/src/setupTests.ts"
+          "**/app/**/*.test.tsx",
+          "**/app/setupTests.ts"
         ],
         "optionalDependencies": false,
         "peerDependencies": true

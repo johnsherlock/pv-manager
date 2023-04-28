@@ -1,4 +1,4 @@
-import { MyEnergiService } from './myEnergiService';
+import { MyEnergiService } from './my-energi-service';
 
 const username = process.env.MYENERGI_USERNAME;
 const password = process.env.MYENERGI_PASSWORD;

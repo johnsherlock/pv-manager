@@ -1,6 +1,6 @@
 import { calculateGreenEnergyPercentage } from './energy-utils';
 import * as numUtils from './num-utils';
-import { HalfHourlyPVData } from '../model/pv-data';
+import { HalfHourlyPVData } from './pv-data';
 
 export interface EnergyCalculatorProps {
   readonly dayRate: number;

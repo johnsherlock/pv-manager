@@ -16,8 +16,8 @@ import moment from 'moment';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
 import { isTouchScreen } from './lib/display-utils';
-import { EnergyCalculator } from './lib/energy-calculator';
-import { HalfHourlyPVData, HourlyPVData, MinutePVData } from './model/pv-data';
+import { EnergyCalculator } from '../shared/energy-calculator';
+import { HalfHourlyPVData, HourlyPVData } from '../shared/pv-data';
 
 ChartJS.register(
   CategoryScale,

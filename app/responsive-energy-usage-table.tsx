@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { EnergyCalculator, Totals } from './lib/energy-calculator';
-import { formatToEuro } from './lib/num-utils';
-import { HalfHourlyPVData } from './model/pv-data';
+import { EnergyCalculator, Totals } from '../shared/energy-calculator';
+import { formatToEuro } from '../shared/num-utils';
+import { HalfHourlyPVData } from '../shared/pv-data';
 
 export interface ResponsiveEnergyUsageTableProps {
   data: HalfHourlyPVData[];

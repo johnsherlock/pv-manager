@@ -6,17 +6,16 @@ import { useSwipeable } from 'react-swipeable';
 import Visibility from 'visibilityjs';
 import Dashboard from './dashboard';
 import * as dateUtils from './lib/date-utils';
-import { EnergyCalculator } from './lib/energy-calculator';
-import { convertMinuteDataToHalfHourlyData, convertMinuteDataToHourlyData } from './lib/energy-utils';
 import * as pvService from './lib/pv-service';
 import * as stateUtils from './lib/state-utils';
-import { MinutePVData } from './model/pv-data';
+import { EnergyCalculator } from '../shared/energy-calculator';
+import { convertMinuteDataToHalfHourlyData, convertMinuteDataToHourlyData } from '../shared/energy-utils';
+import { MinutePVData } from '../shared/pv-data';
 
 function App() {
   const [state, setState] = useState(stateUtils.initialState());
 
   const intervalRef = useRef(-1);
-  let reactSwipeEl;
 
   // TODO: Initialise this dynamically (from props or per user)
   const energyCalculator = new EnergyCalculator({

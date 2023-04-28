@@ -11,9 +11,9 @@ import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import { getFormattedTime } from './lib/date-utils';
 import { isTouchScreen } from './lib/display-utils';
-import { calculateGreenEnergyPercentage } from './lib/energy-utils';
-import { convertJoulesToKw } from './lib/num-utils';
-import { MinutePVData } from './model/pv-data';
+import { calculateGreenEnergyPercentage } from '../shared/energy-utils';
+import { convertJoulesToKw } from '../shared/num-utils';
+import { MinutePVData } from '../shared/pv-data';
 
 ChartJS.register(
   CategoryScale,
