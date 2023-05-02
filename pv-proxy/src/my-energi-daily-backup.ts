@@ -52,7 +52,7 @@ export const handler = async (event: any, context: any) => {
     const data: EddiData[] = await myEnergiService.getEddiData(date, { serialNumber: username, password: password });
 
     if (!data || data.length === 0) {
-      const message = `No data returned for ${date}.`;
+      const message = `No data returned for ${date}`;
       console.log(message);
       return getHttpResult(404, message);
     }

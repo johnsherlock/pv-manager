@@ -81,6 +81,7 @@ export class ApplicationStack extends cdk.Stack {
         sourceMapMode: SourceMapMode.INLINE,
         sourcesContent: true,
       },
+      memorySize: 1024,
       timeout: cdk.Duration.seconds(30),
     });
 
@@ -110,7 +111,8 @@ export class ApplicationStack extends cdk.Stack {
         sourceMapMode: SourceMapMode.INLINE,
         sourcesContent: true,
       },
-      timeout: cdk.Duration.seconds(30),
+      memorySize: 1024,
+      timeout: cdk.Duration.seconds(300),
     });
 
     const pvMinuteDataResource = this.restApi.root.addResource('bootstrap-historical-data');
