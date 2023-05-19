@@ -1,12 +1,12 @@
 import { DynamoDBClient, PutItemCommand, PutItemCommandInput } from '@aws-sdk/client-dynamodb';
 import { S3Client, PutObjectCommand, PutObjectCommandInput } from '@aws-sdk/client-s3';
 
+import { getHttpResult } from './http-utils';
 import { MyEnergiService } from './my-energi-service';
 import { EddiData } from '../../shared/eddi-data';
 import { EnergyCalculator } from '../../shared/energy-calculator';
 import { mapEddiDataToMinutePVData, convertMinuteDataToHalfHourlyData } from '../../shared/energy-utils';
 import { HalfHourlyPVData, MinutePVData } from '../../shared/pv-data';
-import { getHttpResult } from './http-utils';
 
 const username = process.env.MYENERGI_USERNAME;
 const password = process.env.MYENERGI_PASSWORD;

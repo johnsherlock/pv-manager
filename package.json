@@ -78,8 +78,8 @@
     "watch": "tsc -w",
     "test": "react-scripts test --coverage",
     "test:watch": "npm run test -- --watchAll",
-    "lint": "eslint '{app,tools,acceptance,public}/**/*.{t,j}s{,x}' && stylelint 'app/**/*.{,s}css'",
-    "lint:fix": "eslint --fix '{app,tools,acceptance,public}/**/*.{t,j}s{,x}' && stylelint --fix 'app/**/*.{,s}css'",
+    "lint": "eslint '{app,tools,acceptance,shared,back-end,public}/**/*.{t,j}s{,x}' && stylelint 'app/**/*.{,s}css'",
+    "lint:fix": "eslint --fix '{app,tools,acceptance,shared,back-end,public}/**/*.{t,j}s{,x}' && stylelint --fix 'app/**/*.{,s}css'",
     "pre-commit": "lint-staged",
     "prepare": "husky install",
     "jestrunner.jestCommand": "npm run test --"

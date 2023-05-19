@@ -4,6 +4,8 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, SourceMapMode } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
@@ -17,8 +19,10 @@ export class ApplicationStack extends cdk.Stack {
   readonly pvProxyLambda: lambda.Function;
   readonly myEnergiDailyBackupLambda: lambda.Function;
   readonly bootstrapHistoricalDataLambda: lambda.Function;
+  readonly aggregateHistoricalDataLambda: lambda.Function;
   readonly myEnergiDailyBackupTable: dynamodb.Table;
   readonly myEnergiDailyBackupBucket: s3.Bucket;
+  readonly myEnergiDailyBackupRule: events.Rule;
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -29,15 +33,28 @@ export class ApplicationStack extends cdk.Stack {
 
     this.amplifyApp = this.createAmplifyApp();
     this.restApi = this.createRestApi();
+
+    // lambda
     this.pvProxyLambda = this.createPvMinuteDataHandler(myEnergiSecret);
     this.myEnergiDailyBackupLambda = this.createMyEnergiDailyBackupHandler(myEnergiSecret, eddiDataBackupTableName, eddiDataBackupBucketName);
     this.bootstrapHistoricalDataLambda = this.createBootstrapHistoricalDataHandler();
+    this.aggregateHistoricalDataLambda = this.createAggregateHistoricalDataHandler();
+
+    // dynamo
     this.myEnergiDailyBackupTable = this.createDailyBackupDynamoDbTable(eddiDataBackupTableName);
     this.myEnergiDailyBackupBucket = this.createDailyBackupBucket(eddiDataBackupBucketName);
 
+    // grant rights
     this.myEnergiDailyBackupTable.grantReadWriteData(this.myEnergiDailyBackupLambda);
+    this.myEnergiDailyBackupTable.grantReadData(this.aggregateHistoricalDataLambda);
     this.myEnergiDailyBackupBucket.grantReadWrite(this.myEnergiDailyBackupLambda);
     this.myEnergiDailyBackupLambda.grantInvoke(this.bootstrapHistoricalDataLambda);
+
+    // event bridge
+    this.myEnergiDailyBackupRule = new events.Rule(this, 'ScheduleRule', {
+      schedule: events.Schedule.cron({ minute: '1', hour: '0' }),
+    });
+    this.myEnergiDailyBackupRule.addTarget(new targets.LambdaFunction(this.myEnergiDailyBackupLambda));
   }
 
   private createPvMinuteDataHandler(myEnergiSecret: secretsmanager.ISecret): lambda.Function {
@@ -90,8 +107,8 @@ export class ApplicationStack extends cdk.Stack {
     myEnergiDailyBackupFunction.addEnvironment('EDDI_DATA_TABLE_NAME', tableName);
     myEnergiDailyBackupFunction.addEnvironment('EDDI_DATA_BUCKET_NAME', bucketName);
 
-    const pvMinuteDataResource = this.restApi.root.addResource('backup-eddi-data');
-    pvMinuteDataResource.addMethod('GET', new apigateway.LambdaIntegration(myEnergiDailyBackupFunction));
+    const backupEddiDataResource = this.restApi.root.addResource('backup-eddi-data');
+    backupEddiDataResource.addMethod('GET', new apigateway.LambdaIntegration(myEnergiDailyBackupFunction));
 
     return myEnergiDailyBackupFunction;
   }
@@ -115,10 +132,35 @@ export class ApplicationStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(300),
     });
 
-    const pvMinuteDataResource = this.restApi.root.addResource('bootstrap-historical-data');
-    pvMinuteDataResource.addMethod('GET', new apigateway.LambdaIntegration(bootstrapHistoricalDataFunction));
+    const bootstrapHistoricalDataResource = this.restApi.root.addResource('bootstrap-historical-data');
+    bootstrapHistoricalDataResource.addMethod('GET', new apigateway.LambdaIntegration(bootstrapHistoricalDataFunction));
 
     return bootstrapHistoricalDataFunction;
+  }
+
+  private createAggregateHistoricalDataHandler(): lambda.Function {
+
+    const modulePath = path.resolve(process.cwd());
+    const lambdaPath = path.join(modulePath, '../back-end/historical-eddi-data-service.ts');
+
+    const aggregateHistoricalDataFunction = new NodejsFunction(this, 'AggregateHistoricalData', {
+      functionName: 'AggregateHistoricalData',
+      entry: lambdaPath,
+      bundling: {
+        externalModules: [],
+        minify: false,
+        sourceMap: true,
+        sourceMapMode: SourceMapMode.INLINE,
+        sourcesContent: true,
+      },
+      memorySize: 1024,
+      timeout: cdk.Duration.seconds(300),
+    });
+
+    const aggregateEddiDataResource = this.restApi.root.addResource('aggregate-historical-data');
+    aggregateEddiDataResource.addMethod('GET', new apigateway.LambdaIntegration(aggregateHistoricalDataFunction));
+
+    return aggregateHistoricalDataFunction;
   }
 
   private createDailyBackupDynamoDbTable(tableName: string): dynamodb.Table {
