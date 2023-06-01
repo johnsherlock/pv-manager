@@ -1,6 +1,5 @@
 import moment from 'moment';
 import React, { useReducer } from 'react';
-import CustomDatePicker from './custom-date-picker';
 import DailyEnergyUsageTable from './daily-energy-usage-table';
 import EnergyCostLineGraph, { View } from './energy-cost-line-graph';
 import EnergyUsageLineGraph, { Scale } from './energy-usage-line-graph';
@@ -8,16 +7,15 @@ import GreenEnergyPercentageLineGraph from './green-energy-percentage-line-graph
 import { CalendarScale } from './lib/state-utils';
 import LiveEnergyBarGraph from './live-energy-bar-graph';
 import OptionLink from './option-link';
-import { dashboardReducer, initialState } from './reducers/dashboardReducer';
 import ResponsiveEnergyUsageTable from './responsive-energy-usage-table';
 import { EnergyCalculator } from '../shared/energy-calculator';
 import { MinutePVData, HalfHourlyPVData, HourlyPVData, Totals } from '../shared/pv-data';
 
-interface DashboardProps {
+interface SingleDayDashboardProps {
   dispatch: React.Dispatch<any>;
   selectedDate: moment.Moment;
   startDate?: moment.Moment;
-  endDate?: moment.Moment;
+  endDate?: moment.Moment | null;
   today: moment.Moment;
   minuteData: MinutePVData[];
   halfHourData: HalfHourlyPVData[];
@@ -32,12 +30,12 @@ interface DashboardProps {
   goToDay: (date: Date | [Date | null, Date | null]) => void;
 }
 
-const Dashboard = (
+const SingleDayDashboard = (
   {
-    selectedDate, startDate, endDate, today, minuteData, halfHourData, hourData, totals, energyCalculator, goToPreviousDay, goToNextDay, goToDay,
-    energyUsageLineGraphScale, energyUsageLineGraphView, calendarScale, dispatch,
+    selectedDate, today, minuteData, halfHourData, hourData, totals, energyCalculator, goToPreviousDay, goToNextDay, goToDay,
+    energyUsageLineGraphScale, energyUsageLineGraphView, dispatch,
   }:
-  DashboardProps): JSX.Element => {
+  SingleDayDashboardProps): JSX.Element => {
 
   // const [state, dispatch] = useReducer(dashboardReducer, initialState);
 
@@ -47,26 +45,6 @@ const Dashboard = (
     <div className="container dashboard">
       <div className="row">
         <div className="col">
-          <div className="navigation">
-            <div className="text-center">
-              {/* <div className="navPrev">
-                {selectedDate.isAfter(dateUtils.dawnOfTime) ? <div className="navigationButton" onClick={goToPreviousDay}>&lt;&lt;</div> : null}
-              </div> */}
-              <div className="date">
-                <CustomDatePicker
-                  dispatch={dispatch}
-                  scale={calendarScale}
-                  selectedDate={selectedDate}
-                  startDate={startDate}
-                  endDate={endDate}
-                  onChange={goToDay}
-                />
-              </div>
-              {/* <div className="navNext">
-                {selectedDate.isBefore(today) ? <div className="navigationButton" onClick={goToNextDay}>&gt;&gt;</div> : null}
-              </div> */}
-            </div>
-          </div>
           <div className="row d-lg-block d-none">
             <div className="col">
               <DailyEnergyUsageTable
@@ -147,4 +125,4 @@ const Dashboard = (
     </div>
   );
 };
-export default Dashboard;
+export default SingleDayDashboard;

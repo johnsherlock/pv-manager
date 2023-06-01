@@ -60,7 +60,7 @@ export class ApplicationStack extends cdk.Stack {
   private createPvMinuteDataHandler(myEnergiSecret: secretsmanager.ISecret): lambda.Function {
 
     const modulePath = path.resolve(process.cwd());
-    const lambdaPath = path.join(modulePath, '../pv-proxy/src/my-energi-proxy.ts');
+    const lambdaPath = path.join(modulePath, '../src/pv-proxy/src/my-energi-proxy.ts');
 
     const myEnergiProxyFunction = new NodejsFunction(this, 'MyEnergiProxy', {
       functionName: 'MyEnergiProxy',
@@ -86,7 +86,7 @@ export class ApplicationStack extends cdk.Stack {
   private createMyEnergiDailyBackupHandler(myEnergiSecret: secretsmanager.ISecret, tableName: string, bucketName: string): lambda.Function {
 
     const modulePath = path.resolve(process.cwd());
-    const lambdaPath = path.join(modulePath, '../pv-proxy/src/my-energi-daily-backup.ts');
+    const lambdaPath = path.join(modulePath, '../src/pv-proxy/src/my-energi-daily-backup.ts');
 
     const myEnergiDailyBackupFunction = new NodejsFunction(this, 'MyEnergiDailyBackup', {
       functionName: 'MyEnergiDailyBackup',
@@ -116,7 +116,7 @@ export class ApplicationStack extends cdk.Stack {
   private createBootstrapHistoricalDataHandler(): lambda.Function {
 
     const modulePath = path.resolve(process.cwd());
-    const lambdaPath = path.join(modulePath, '../pv-proxy/src/bootstrap-historical-data.ts');
+    const lambdaPath = path.join(modulePath, '../src/pv-proxy/src/bootstrap-historical-data.ts');
 
     const bootstrapHistoricalDataFunction = new NodejsFunction(this, 'BootstrapHistoricalData', {
       functionName: 'BootstrapHistoricalData',
@@ -141,7 +141,7 @@ export class ApplicationStack extends cdk.Stack {
   private createAggregateHistoricalDataHandler(): lambda.Function {
 
     const modulePath = path.resolve(process.cwd());
-    const lambdaPath = path.join(modulePath, '../back-end/historical-eddi-data-service.ts');
+    const lambdaPath = path.join(modulePath, '../src/back-end/historical-eddi-data-service.ts');
 
     const aggregateHistoricalDataFunction = new NodejsFunction(this, 'AggregateHistoricalData', {
       functionName: 'AggregateHistoricalData',

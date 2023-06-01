@@ -21,7 +21,7 @@ interface CustomDatePickerProps {
   scale: CalendarScale;
   selectedDate: moment.Moment;
   startDate?: moment.Moment;
-  endDate?: moment.Moment;
+  endDate?: moment.Moment | null;
   onChange: (date: Date | [Date | null, Date | null]) => void;
 }
 
@@ -36,7 +36,6 @@ const CustomDatePicker = ({ selectedDate, dispatch, scale, onChange, startDate, 
       showMonthYearPicker={scale === 'month'}
       showYearPicker={scale === 'year'}
       yearItemNumber={4}
-      withPortal
       onChange={onChange}
       dateFormat="EEE do MMM yyyy"
       minDate={new Date(2023, 0, 20)}

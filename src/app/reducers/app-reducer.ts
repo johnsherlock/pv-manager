@@ -1,7 +1,8 @@
 import moment from 'moment';
-import { MinutePVData } from '../../shared/pv-data';
+import { MinutePVData, Totals } from '../../shared/pv-data';
 import { Scale, View } from '../energy-usage-line-graph';
-import { AppState, CalendarScale } from '../lib/state-utils';
+import { getDateRange } from '../lib/date-utils';
+import { AppState, CalendarScale, FormattedDateRange } from '../lib/state-utils';
 
 
 export type Action =
@@ -9,14 +10,19 @@ export type Action =
   | { type: 'SET_CALENDAR_SCALE'; payload: CalendarScale }
   | { type: 'SET_VIEW'; payload: View }
   | { type: 'GO_TO_CACHED_DAY'; payload: { selectedDate: moment.Moment; formattedSelectedDate: string } }
-  | { type: 'GO_TO_DAY'; payload: { pvData: MinutePVData[]; selectedDate: moment.Moment; formattedSelectedDate: string } };
+  | { type: 'GO_TO_DAY'; payload: { pvData: MinutePVData[]; selectedDate: moment.Moment; formattedSelectedDate: string } }
+  | { type: 'SET_CALENDAR_RANGE'; payload: FormattedDateRange }
+  | { type: 'GO_TO_RANGE'; payload: { dateRange: FormattedDateRange; totals: Totals[] } }
+  | { type: 'GO_TO_CACHED_RANGE'; payload: FormattedDateRange }
 
-export const appReducer = (state: AppState, action: Action): AppState => {
+export const appReducer = (state: AppState, action: Action) => {
   switch (action.type) {
     case 'SET_SCALE':
       return { ...state, energyUsageLineGraphScale: action.payload };
-    case 'SET_CALENDAR_SCALE':
-      return { ...state, calendarScale: action.payload };
+    case 'SET_CALENDAR_SCALE': {
+      const dateRange = getDateRange(action.payload, state.selectedDate.toDate());
+      return { ...state, calendarScale: action.payload, ...dateRange };
+    }
     case 'SET_VIEW':
       return { ...state, energyUsageLineGraphView: action.payload };
     case 'GO_TO_CACHED_DAY':
@@ -26,16 +32,35 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         selectedDate: action.payload.selectedDate,
         formattedSelectedDate: action.payload.formattedSelectedDate,
       };
-    case 'GO_TO_DAY':
-      const newState = {
+    case 'GO_TO_DAY': {
+      const goToDayState = {
         ...state,
         today: moment().startOf('day'),
         selectedDate: action.payload.selectedDate,
         formattedSelectedDate: action.payload.formattedSelectedDate,
         intervalId: null,
+        startDate: undefined,
+        endDate: undefined,
       };
-      newState.pvDataCache.set(action.payload.formattedSelectedDate, action.payload.pvData);
-      return newState;
+      goToDayState.pvDataCache.set(action.payload.formattedSelectedDate, action.payload.pvData);
+      return goToDayState;
+    }
+    case 'SET_CALENDAR_RANGE': {
+      return {
+        ...state,
+        selectedDate: moment(action.payload.startDate),
+        startDate: moment(action.payload.startDate),
+        endDate: moment(action.payload.endDate),
+      };
+    }
+    case 'GO_TO_RANGE': {
+      const goToRangeState = {
+        ...state,
+      };
+      const compoundKey = `${action.payload.dateRange.startDate}_${action.payload.dateRange.endDate}`;
+      goToRangeState.totalsCache.set(compoundKey, action.payload.totals);
+      return goToRangeState;
+    }
     default:
       return state;
   }

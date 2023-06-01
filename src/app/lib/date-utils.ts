@@ -1,4 +1,5 @@
 import moment from 'moment';
+import { CalendarScale, DateRange, FormattedDateRange } from './state-utils';
 import { BasePVData } from '../../shared/pv-data';
 
 export const formatDate = (date: moment.Moment): string => moment(date).startOf('day').format('YYYY-MM-DD');
@@ -18,4 +19,27 @@ export const toMoment = (pvData: BasePVData, locale?: string): moment.Moment => 
 export const getFormattedTime = (pvData: BasePVData, locale?: string): string => {
   const time = toMoment(pvData, locale);
   return time.format('HH:mm');
+};
+
+export const getDateRange = (scale: CalendarScale, date: Date): DateRange => {
+
+  switch (scale) {
+    case 'week':
+    case 'month':
+    case 'year': {
+      const m = moment(date);
+      const start = moment(m.startOf(scale).toDate());
+      const end = moment(m.endOf(scale).toDate());
+      return { startDate: start, endDate: end };
+    }
+    default:
+      return { startDate: moment(date), endDate: (moment(date)) };
+  }
+};
+
+export const formatDateRange = (dateRange: DateRange): FormattedDateRange => {
+  return {
+    startDate: formatDate(dateRange.startDate),
+    endDate: formatDate(dateRange.endDate),
+  };
 };

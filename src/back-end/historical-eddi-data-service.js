@@ -14,6 +14,7 @@ const aws_sdk_1 = require("aws-sdk");
 const dynamo = new aws_sdk_1.DynamoDB.DocumentClient();
 const tableName = 'eddi-data';
 function queryData(serialNumber, startDate, endDate) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const params = {
             TableName: tableName,
@@ -29,7 +30,11 @@ function queryData(serialNumber, startDate, endDate) {
         };
         console.log('Querying dynamo with payload', params);
         const response = yield dynamo.query(params).promise();
-        return response.Items;
+        // Parse the data field from a string to a JSON object
+        return (_a = response.Items) === null || _a === void 0 ? void 0 : _a.map(item => {
+            const dataRecord = JSON.parse(item.data);
+            return dataRecord;
+        });
     });
 }
 const handler = (event, context) => __awaiter(void 0, void 0, void 0, function* () {
@@ -63,7 +68,15 @@ const handler = (event, context) => __awaiter(void 0, void 0, void 0, function* 
             grossSavingTotal: 0,
         });
         console.log('Aggregated data', aggregatedData);
-        return { statusCode: 200, body: JSON.stringify(aggregatedData) };
+        return {
+            statusCode: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'GET,OPTIONS',
+            },
+            body: JSON.stringify(aggregatedData),
+        };
     }
     catch (error) {
         console.error('Error querying data', error);

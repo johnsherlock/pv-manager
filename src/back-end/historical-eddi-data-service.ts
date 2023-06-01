@@ -69,7 +69,18 @@ export const handler = async (event: any, context: any) => {
 
     console.log('Aggregated data', aggregatedData);
 
-    return { statusCode: 200, body: JSON.stringify(aggregatedData) };
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET,OPTIONS',
+      },
+      body: JSON.stringify({
+        rawData: dataRecords,
+        aggregatedData,
+      }),
+    };
   } catch (error) {
     console.error('Error querying data', error);
     return { statusCode: 500, body: 'Internal server error' };

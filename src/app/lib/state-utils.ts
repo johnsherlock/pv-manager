@@ -5,15 +5,18 @@ import { Scale, View } from '../energy-usage-line-graph';
 
 export type CalendarScale = 'day' | 'week' | 'month' | 'year' | 'custom';
 
+export interface FormattedDateRange { startDate: string; endDate: string };
+export interface DateRange { startDate: moment.Moment; endDate: moment.Moment };
+
 export interface AppState {
   intervalId?: number | null;
   today: moment.Moment;
   selectedDate: moment.Moment;
   startDate?: moment.Moment;
-  endDate?: moment.Moment;
+  endDate?: moment.Moment | null;
   formattedSelectedDate: string;
   pvDataCache: Map<string, MinutePVData[]>;
-  totals: Map<string, Totals>;
+  totalsCache: Map<string, Totals[]>;
   energyUsageLineGraphScale: Scale;
   energyUsageLineGraphView: View;
   calendarScale: CalendarScale;
@@ -26,7 +29,7 @@ export const initialState = (): AppState => {
     selectedDate: today,
     formattedSelectedDate: dateUtils.formatDate(today),
     pvDataCache: new Map(),
-    totals: new Map(),
+    totalsCache: new Map(),
     energyUsageLineGraphScale: 'hour',
     energyUsageLineGraphView: 'line',
     calendarScale: 'day',
