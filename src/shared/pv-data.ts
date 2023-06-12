@@ -46,3 +46,8 @@ export interface Totals {
   immersionRunTime: number;
   grossSavingTotal: number;
 }
+
+export interface RangeTotals {
+  rawData: Totals[];
+  aggregatedData?: Totals;
+}

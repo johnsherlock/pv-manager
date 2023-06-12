@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { MinutePVData, Totals } from '../../shared/pv-data';
+import { MinutePVData, RangeTotals } from '../../shared/pv-data';
 import { Scale, View } from '../energy-usage-line-graph';
 import { getDateRange } from '../lib/date-utils';
 import { AppState, CalendarScale, FormattedDateRange } from '../lib/state-utils';
@@ -12,7 +12,7 @@ export type Action =
   | { type: 'GO_TO_CACHED_DAY'; payload: { selectedDate: moment.Moment; formattedSelectedDate: string } }
   | { type: 'GO_TO_DAY'; payload: { pvData: MinutePVData[]; selectedDate: moment.Moment; formattedSelectedDate: string } }
   | { type: 'SET_CALENDAR_RANGE'; payload: FormattedDateRange }
-  | { type: 'GO_TO_RANGE'; payload: { dateRange: FormattedDateRange; totals: Totals[] } }
+  | { type: 'GO_TO_RANGE'; payload: { dateRange: FormattedDateRange; rangeTotals: RangeTotals } }
   | { type: 'GO_TO_CACHED_RANGE'; payload: FormattedDateRange }
 
 export const appReducer = (state: AppState, action: Action) => {
@@ -50,16 +50,23 @@ export const appReducer = (state: AppState, action: Action) => {
         ...state,
         selectedDate: moment(action.payload.startDate),
         startDate: moment(action.payload.startDate),
-        endDate: moment(action.payload.endDate),
+        endDate: action.payload.endDate ? moment(action.payload.endDate) : null,
       };
     }
     case 'GO_TO_RANGE': {
+      const formattedDateRange = `${action.payload.dateRange.startDate}_${action.payload.dateRange.endDate}`;
       const goToRangeState = {
         ...state,
+        formattedDateRange,
       };
-      const compoundKey = `${action.payload.dateRange.startDate}_${action.payload.dateRange.endDate}`;
-      goToRangeState.totalsCache.set(compoundKey, action.payload.totals);
+      goToRangeState.totalsCache.set(formattedDateRange, action.payload.rangeTotals);
       return goToRangeState;
+    }
+    case 'GO_TO_CACHED_RANGE': {
+      return {
+        ...state,
+        formattedDateRange: action.payload,
+      };
     }
     default:
       return state;

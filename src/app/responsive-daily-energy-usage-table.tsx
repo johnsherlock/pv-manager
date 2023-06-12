@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { EnergyCalculator, Totals } from '../shared/energy-calculator';
+import { EnergyCalculator } from '../shared/energy-calculator';
 import { formatToEuro } from '../shared/num-utils';
 import { HalfHourlyPVData } from '../shared/pv-data';
 
 export interface ResponsiveEnergyUsageTableProps {
   data: HalfHourlyPVData[];
-  totals?: Totals;
   energyCalculator: EnergyCalculator;
 }
 
-const ResponsiveEnergyUsageTable = ({ data, energyCalculator }: ResponsiveEnergyUsageTableProps): JSX.Element => {
+const ResponsiveDailyEnergyUsageTable = ({ data, energyCalculator }: ResponsiveEnergyUsageTableProps): JSX.Element => {
 
   const [state, setState] = useState({ expanded: false });
 
@@ -57,4 +56,4 @@ const ResponsiveEnergyUsageTable = ({ data, energyCalculator }: ResponsiveEnergy
   );
 };
 
-export default ResponsiveEnergyUsageTable;
+export default ResponsiveDailyEnergyUsageTable;

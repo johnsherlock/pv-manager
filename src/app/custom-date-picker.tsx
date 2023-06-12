@@ -3,6 +3,7 @@ import { forwardRef } from 'react';
 import DatePicker from 'react-datepicker';
 import { CalendarScale } from './lib/state-utils';
 import OptionLink from './option-link';
+import CalendarNavigation from './calendar-navigation';
 import 'react-datepicker/dist/react-datepicker.css';
 
 interface DatePickerDivProps {
@@ -27,6 +28,8 @@ interface CustomDatePickerProps {
 
 const CustomDatePicker = ({ selectedDate, dispatch, scale, onChange, startDate, endDate }: CustomDatePickerProps) => {
 
+  const maxDate = scale === 'day' ? new Date() : moment().subtract(1, 'day').toDate();;
+
   return (
     <DatePicker
       selected={selectedDate.toDate()}
@@ -39,7 +42,7 @@ const CustomDatePicker = ({ selectedDate, dispatch, scale, onChange, startDate, 
       onChange={onChange}
       dateFormat="EEE do MMM yyyy"
       minDate={new Date(2023, 0, 20)}
-      maxDate={new Date()}
+      maxDate={maxDate}
       monthsShown={1}
       customInput={<DatePickerDiv value={selectedDate.toString()} onClick={() => {}}/>}
       todayButton="Back to Today"
@@ -55,7 +58,7 @@ const CustomDatePicker = ({ selectedDate, dispatch, scale, onChange, startDate, 
         <div
           style={{
             margin: 10,
-            display: 'flex',
+            display: 'block',
             justifyContent: 'center',
           }}
         >
@@ -66,6 +69,7 @@ const CustomDatePicker = ({ selectedDate, dispatch, scale, onChange, startDate, 
             <OptionLink dispatch={dispatch} type="SET_CALENDAR_SCALE" payload="year" selected={scale === 'year'} text="Year" />&nbsp;|&nbsp;
             <OptionLink dispatch={dispatch} type="SET_CALENDAR_SCALE" payload="custom" selected={scale === 'custom'} text="Custom Range" />
           </div>
+          <CalendarNavigation date={date} decreaseMonth={decreaseMonth} increaseMonth={increaseMonth}/>
         </div>
       )}
     />

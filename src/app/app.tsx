@@ -14,8 +14,8 @@ import MultiDayDashboard from './multi-day-dashboard';
 import { appReducer } from './reducers/app-reducer';
 import SingleDayDashboard from './single-day-dashboard';
 import { EnergyCalculator } from '../shared/energy-calculator';
+import { MinutePVData, RangeTotals } from '../shared/pv-data';
 import { convertMinuteDataToHalfHourlyData, convertMinuteDataToHourlyData } from '../shared/energy-utils';
-import { MinutePVData, Totals } from '../shared/pv-data';
 
 function App() {
   // const [state, setState] = useState(stateUtils.initialState());
@@ -97,7 +97,7 @@ function App() {
     }
   };
 
-  const getDataForRange = async (dateRange: FormattedDateRange): Promise<Totals[]> => {
+  const getDataForRange = async (dateRange: FormattedDateRange): Promise<RangeTotals> => {
     console.log(`Fetch data for range ${dateRange.startDate} - ${dateRange.endDate}`);
     const totals = await pvService.getPVTotalsForRange(dateRange.startDate, dateRange.endDate);
     console.log('Received: ', totals);
@@ -109,6 +109,7 @@ function App() {
     if (state.calendarScale === 'day' && date instanceof Date) {
       await goToDay(moment(date));
     } else {
+      stopAutoRefresh();
       let dateRange, formattedDateRange;
       if ((state.calendarScale === 'month' || state.calendarScale === 'year') && date instanceof Date) {
         dateRange = getDateRange(state.calendarScale, date);
@@ -119,7 +120,7 @@ function App() {
           dateRange = getDateRange(state.calendarScale, start!);
           formattedDateRange = formatDateRange(dateRange);
         } else {
-          formattedDateRange = { startDate: formatDate(moment(start)), endDate: formatDate(moment(end)) };
+          formattedDateRange = { startDate: start ? formatDate(moment(start)) : null, endDate: end ? formatDate(moment(end)) : null };
         }
       } else {
         console.log('Unspported date combo!');
@@ -128,10 +129,10 @@ function App() {
       dispatch({ type: 'SET_CALENDAR_RANGE', payload: formattedDateRange });
       const compoundKey = `${formattedDateRange.startDate}_${formattedDateRange.endDate}`;
       if (state.totalsCache.get(compoundKey)) {
-        dispatch({ type: 'GO_TO_CACHED_RANGE', payload: formattedDateRange });
+        dispatch({ type: 'GO_TO_CACHED_RANGE', payload: compoundKey });
       } else {
-        const totals = await getDataForRange(formattedDateRange);
-        dispatch({ type: 'GO_TO_RANGE', payload: { dateRange: formattedDateRange, totals } });
+        const rangeTotals = await getDataForRange(formattedDateRange);
+        dispatch({ type: 'GO_TO_RANGE', payload: { dateRange: formattedDateRange, rangeTotals: rangeTotals } });
       }
     }
   };
@@ -218,21 +219,13 @@ function App() {
           calendarScale={state.calendarScale}
         />
       ) :
-        <MultiDayDashboard selectedDate={state.selectedDate}
+        <MultiDayDashboard
           startDate={state.startDate}
           endDate={state.endDate}
-          today={state.today}
-          minuteData={state.pvDataCache.get(state.formattedSelectedDate) ?? []}
-          halfHourData={convertMinuteDataToHalfHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
-          hourData={convertMinuteDataToHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
           energyCalculator={energyCalculator}
-          goToPreviousDay={goToPreviousDay}
-          goToNextDay={goToNextDay}
-          goToDay={handleDate}
           dispatch={dispatch}
-          energyUsageLineGraphScale={state.energyUsageLineGraphScale}
-          energyUsageLineGraphView={state.energyUsageLineGraphView}
           calendarScale={state.calendarScale}
+          totals={state.totalsCache.get(`${state.formattedDateRange}`)}
         />
       }
     </div>

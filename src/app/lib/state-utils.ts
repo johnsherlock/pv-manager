@@ -1,6 +1,6 @@
 import moment from 'moment';
 import * as dateUtils from './date-utils';
-import { MinutePVData, Totals } from '../../shared/pv-data';
+import { MinutePVData, RangeTotals } from '../../shared/pv-data';
 import { Scale, View } from '../energy-usage-line-graph';
 
 export type CalendarScale = 'day' | 'week' | 'month' | 'year' | 'custom';
@@ -15,8 +15,9 @@ export interface AppState {
   startDate?: moment.Moment;
   endDate?: moment.Moment | null;
   formattedSelectedDate: string;
+  formattedDateRange?: string;
   pvDataCache: Map<string, MinutePVData[]>;
-  totalsCache: Map<string, Totals[]>;
+  totalsCache: Map<string, RangeTotals>;
   energyUsageLineGraphScale: Scale;
   energyUsageLineGraphView: View;
   calendarScale: CalendarScale;

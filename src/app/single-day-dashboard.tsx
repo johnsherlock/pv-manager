@@ -7,7 +7,7 @@ import GreenEnergyPercentageLineGraph from './green-energy-percentage-line-graph
 import { CalendarScale } from './lib/state-utils';
 import LiveEnergyBarGraph from './live-energy-bar-graph';
 import OptionLink from './option-link';
-import ResponsiveEnergyUsageTable from './responsive-energy-usage-table';
+import ResponsiveDailyEnergyUsageTable from './responsive-daily-energy-usage-table';
 import { EnergyCalculator } from '../shared/energy-calculator';
 import { MinutePVData, HalfHourlyPVData, HourlyPVData, Totals } from '../shared/pv-data';
 
@@ -20,7 +20,6 @@ interface SingleDayDashboardProps {
   minuteData: MinutePVData[];
   halfHourData: HalfHourlyPVData[];
   hourData: HourlyPVData[];
-  totals?: Totals;
   energyCalculator: EnergyCalculator;
   energyUsageLineGraphScale: Scale;
   energyUsageLineGraphView: View;
@@ -32,7 +31,7 @@ interface SingleDayDashboardProps {
 
 const SingleDayDashboard = (
   {
-    selectedDate, today, minuteData, halfHourData, hourData, totals, energyCalculator, goToPreviousDay, goToNextDay, goToDay,
+    selectedDate, today, minuteData, halfHourData, hourData, energyCalculator, goToPreviousDay, goToNextDay, goToDay,
     energyUsageLineGraphScale, energyUsageLineGraphView, dispatch,
   }:
   SingleDayDashboardProps): JSX.Element => {
@@ -49,16 +48,14 @@ const SingleDayDashboard = (
             <div className="col">
               <DailyEnergyUsageTable
                 data={halfHourData}
-                totals={totals}
                 energyCalculator={energyCalculator}
               />
             </div>
           </div>
           <div className="row d-lg-none">
             <div className="col">
-              <ResponsiveEnergyUsageTable
+              <ResponsiveDailyEnergyUsageTable
                 data={halfHourData}
-                totals={totals}
                 energyCalculator={energyCalculator}
               />
             </div>

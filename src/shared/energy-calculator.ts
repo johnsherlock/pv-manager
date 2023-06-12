@@ -1,6 +1,6 @@
 import { calculateGreenEnergyPercentage } from './energy-utils';
 import * as numUtils from './num-utils';
-import { HalfHourlyPVData, Totals } from './pv-data';
+import { HalfHourlyPVData, RangeTotals, Totals } from './pv-data';
 
 export interface EnergyCalculatorProps {
   readonly dayRate: number;
@@ -135,6 +135,21 @@ export class EnergyCalculator {
     const discountedNetImportTotal = discountedDayImportNetCost + discountedPeakImportNetCost + discountedNightImportNetCost;
     const grossImportTotal = (discountedNetImportTotal + this.dailyStandingCharge) * this.vatRate;
     return numUtils.formatToEuro(grossImportTotal);
+  };
+
+  public calculateGrossImportTotalForRange = (rangeTotals?: RangeTotals) => {
+    if (rangeTotals?.aggregatedData) {
+      const discountedDayImportNetCost =
+        ((rangeTotals.aggregatedData?.dayImpTotal - rangeTotals.aggregatedData.freeImpTotal) * this.dayRate) * this.discountPercentage;
+      const discountedPeakImportNetCost = (rangeTotals.aggregatedData.peakImpTotal * this.peakRate) * this.discountPercentage;
+      const discountedNightImportNetCost = (rangeTotals.aggregatedData.nightImpTotal * this.nightRate) * this.discountPercentage;
+      const discountedNetImportTotal = discountedDayImportNetCost + discountedPeakImportNetCost + discountedNightImportNetCost;
+      const standingChargeForRange = this.dailyStandingCharge * rangeTotals.rawData.length;
+      const grossImportTotal = (discountedNetImportTotal + standingChargeForRange) * this.vatRate;
+      return numUtils.formatToEuro(grossImportTotal);
+    }
+    // safety net in case rangeTotals.aggregatedData is undefined
+    return 0.0;
   };
 
   public calculateDailyExportTotal = (totals: Totals = initialTotals()) => {

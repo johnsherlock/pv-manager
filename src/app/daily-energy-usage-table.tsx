@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { getFormattedTime } from './lib/date-utils';
 import { EnergyCalculator } from '../shared/energy-calculator';
 import { formatToEuro } from '../shared/num-utils';
-import { HalfHourlyPVData, Totals } from '../shared/pv-data';
+import { HalfHourlyPVData } from '../shared/pv-data';
 
 export interface DailyEnergyUsageTableProps {
   data: HalfHourlyPVData[];
-  totals?: Totals;
   energyCalculator: EnergyCalculator;
 }
 
