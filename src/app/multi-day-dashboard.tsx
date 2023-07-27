@@ -20,7 +20,7 @@ const MultiDayDashboard = ({ totals, energyCalculator, dispatch }: MultiDayDashb
     <div className="container dashboard">
       <div className="row">
         <div className="col">
-          <div className="row d-lg-none">
+          <div className="row">
             <div className="col">
               <ResponsiveRangeEnergyUsageTable
                 totals={totals}

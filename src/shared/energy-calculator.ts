@@ -1,3 +1,4 @@
+import moment from 'moment';
 import { calculateGreenEnergyPercentage } from './energy-utils';
 import * as numUtils from './num-utils';
 import { HalfHourlyPVData, RangeTotals, Totals } from './pv-data';
@@ -9,6 +10,7 @@ export interface EnergyCalculatorProps {
   readonly exportRate: number;
   readonly discountPercentage: number;
   readonly annualStandingCharge: number;
+  readonly monthlyPsoCharge: number;
   readonly vatRate?: number;
 }
 
@@ -40,6 +42,8 @@ export class EnergyCalculator {
   readonly hourlyStandingCharge: number;
   readonly halfHourlyStandingCharge: number;
   readonly perMinuteStandingCharge: number;
+  readonly monthlyPsoCharge: number;
+  readonly dailyPsoCharge: number;
   readonly vatRate: number;
 
   constructor(props: EnergyCalculatorProps) {
@@ -47,12 +51,14 @@ export class EnergyCalculator {
     this.peakRate = props.peakRate;
     this.nightRate = props.nightRate;
     this.exportRate = props.exportRate;
-    this.discountPercentage = 1 - props.discountPercentage;
+    this.discountPercentage = props.discountPercentage;
     this.annualStandingCharge = props.annualStandingCharge;
     this.dailyStandingCharge = props.annualStandingCharge / 365;
     this.hourlyStandingCharge = this.dailyStandingCharge / 24;
     this.halfHourlyStandingCharge = this.hourlyStandingCharge / 2;
     this.perMinuteStandingCharge = this.halfHourlyStandingCharge / 30;
+    this.monthlyPsoCharge = props.monthlyPsoCharge;
+    this.dailyPsoCharge = (this.monthlyPsoCharge * 12) / 365;
     this.vatRate = props.vatRate ?? 1.09;
   }
 
@@ -129,9 +135,9 @@ export class EnergyCalculator {
 
   public calculateDailyGrossImportTotal = (totals: Totals = initialTotals()) => {
     const discountedDayImportNetCost =
-      (numUtils.convertJoulesToKwh(totals.dayImpTotal - totals.freeImpTotal) * this.dayRate) * this.discountPercentage;
-    const discountedPeakImportNetCost = (numUtils.convertJoulesToKwh(totals.peakImpTotal) * this.peakRate) * this.discountPercentage;
-    const discountedNightImportNetCost = (numUtils.convertJoulesToKwh(totals.nightImpTotal) * this.nightRate) * this.discountPercentage;
+      (numUtils.convertJoulesToKwh(totals.dayImpTotal - totals.freeImpTotal) * this.dayRate) * (1 - this.discountPercentage);
+    const discountedPeakImportNetCost = (numUtils.convertJoulesToKwh(totals.peakImpTotal) * this.peakRate) * (1 - this.discountPercentage);
+    const discountedNightImportNetCost = (numUtils.convertJoulesToKwh(totals.nightImpTotal) * this.nightRate) * (1 - this.discountPercentage);
     const discountedNetImportTotal = discountedDayImportNetCost + discountedPeakImportNetCost + discountedNightImportNetCost;
     const grossImportTotal = (discountedNetImportTotal + this.dailyStandingCharge) * this.vatRate;
     return numUtils.formatToEuro(grossImportTotal);
@@ -139,13 +145,14 @@ export class EnergyCalculator {
 
   public calculateGrossImportTotalForRange = (rangeTotals?: RangeTotals) => {
     if (rangeTotals?.aggregatedData) {
-      const discountedDayImportNetCost =
-        ((rangeTotals.aggregatedData?.dayImpTotal - rangeTotals.aggregatedData.freeImpTotal) * this.dayRate) * this.discountPercentage;
-      const discountedPeakImportNetCost = (rangeTotals.aggregatedData.peakImpTotal * this.peakRate) * this.discountPercentage;
-      const discountedNightImportNetCost = (rangeTotals.aggregatedData.nightImpTotal * this.nightRate) * this.discountPercentage;
-      const discountedNetImportTotal = discountedDayImportNetCost + discountedPeakImportNetCost + discountedNightImportNetCost;
+      const dayImportNetCost = rangeTotals.aggregatedData?.dayImpTotal * this.dayRate;
+      const peakImportNetCost = rangeTotals.aggregatedData.peakImpTotal * this.peakRate;
+      const nightImportNetCost = rangeTotals.aggregatedData.nightImpTotal * this.nightRate;
+      const netImportTotal = dayImportNetCost + peakImportNetCost + nightImportNetCost;
+      const affinityDiscount = netImportTotal * this.discountPercentage;
       const standingChargeForRange = this.dailyStandingCharge * rangeTotals.rawData.length;
-      const grossImportTotal = (discountedNetImportTotal + standingChargeForRange) * this.vatRate;
+      const psoCharge = this.dailyPsoCharge * rangeTotals.rawData.length;
+      const grossImportTotal = (netImportTotal - affinityDiscount + standingChargeForRange + psoCharge) * this.vatRate;
       return numUtils.formatToEuro(grossImportTotal);
     }
     // safety net in case rangeTotals.aggregatedData is undefined
@@ -234,9 +241,10 @@ export class EnergyCalculator {
       else if (item.dayOfWeek === 'Sat' && item.hour >= 9 && item.hour < 17) totals.freeImpTotal += item.importedKwH ?? 0;
       else totals.dayImpTotal += item.importedKwH ?? 0;
     });
+    const firstRecord = pvData[0];
     return {
       ...totals,
-      combinedImpTotal: totals.peakImpTotal + totals.nightImpTotal + totals.dayImpTotal,
+      combinedImpTotal: totals.peakImpTotal + totals.nightImpTotal + totals.dayImpTotal + totals.freeImpTotal,
     };
   };
 

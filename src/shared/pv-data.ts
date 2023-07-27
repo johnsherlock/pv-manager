@@ -47,7 +47,13 @@ export interface Totals {
   grossSavingTotal: number;
 }
 
+export interface DayTotals extends Totals {
+  year: number;
+  month: number;
+  dayOfMonth: number;
+}
+
 export interface RangeTotals {
-  rawData: Totals[];
+  rawData: DayTotals[];
   aggregatedData?: Totals;
 }

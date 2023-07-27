@@ -14,8 +14,8 @@ import MultiDayDashboard from './multi-day-dashboard';
 import { appReducer } from './reducers/app-reducer';
 import SingleDayDashboard from './single-day-dashboard';
 import { EnergyCalculator } from '../shared/energy-calculator';
-import { MinutePVData, RangeTotals } from '../shared/pv-data';
 import { convertMinuteDataToHalfHourlyData, convertMinuteDataToHourlyData } from '../shared/energy-utils';
+import { MinutePVData, RangeTotals } from '../shared/pv-data';
 
 function App() {
   // const [state, setState] = useState(stateUtils.initialState());
@@ -31,6 +31,7 @@ function App() {
     exportRate: 0.1850,
     discountPercentage: 0.15,
     annualStandingCharge: 257.91,
+    monthlyPsoCharge: 12.75,
   });
 
   const startAutoRefresh = (selectedDate: moment.Moment) => {
@@ -132,7 +133,9 @@ function App() {
         dispatch({ type: 'GO_TO_CACHED_RANGE', payload: compoundKey });
       } else {
         const rangeTotals = await getDataForRange(formattedDateRange);
-        dispatch({ type: 'GO_TO_RANGE', payload: { dateRange: formattedDateRange, rangeTotals: rangeTotals } });
+        if (rangeTotals.aggregatedData) {
+          dispatch({ type: 'GO_TO_RANGE', payload: { dateRange: formattedDateRange, rangeTotals: rangeTotals } });
+        }
       }
     }
   };
@@ -182,9 +185,6 @@ function App() {
     <div {...handlers}>
       <div className="navigation">
         <div className="text-center">
-          {/* <div className="navPrev">
-            {selectedDate.isAfter(dateUtils.dawnOfTime) ? <div className="navigationButton" onClick={goToPreviousDay}>&lt;&lt;</div> : null}
-          </div> */}
           <div className="date">
             <CustomDatePicker
               dispatch={dispatch}
@@ -195,9 +195,6 @@ function App() {
               onChange={handleDate}
             />
           </div>
-          {/* <div className="navNext">
-            {selectedDate.isBefore(today) ? <div className="navigationButton" onClick={goToNextDay}>&gt;&gt;</div> : null}
-          </div> */}
         </div>
       </div>
       { state.calendarScale === 'day' ? (

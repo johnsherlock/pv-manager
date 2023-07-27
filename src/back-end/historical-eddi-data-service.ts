@@ -1,11 +1,12 @@
 import { DynamoDB } from 'aws-sdk';
-import { Totals } from '../shared/pv-data';
+import { Totals, DayTotals } from '../shared/pv-data';
+
 
 const dynamo = new DynamoDB.DocumentClient();
 
 const tableName = 'eddi-data';
 
-async function queryData(serialNumber: string, startDate: string, endDate: string): Promise<Totals[]> {
+async function queryData(serialNumber: string, startDate: string, endDate: string): Promise<DayTotals[]> {
   const params: DynamoDB.DocumentClient.QueryInput = {
     TableName: tableName,
     KeyConditionExpression: 'serialNumber = :serialNumber AND #date BETWEEN :startDate AND :endDate',
@@ -25,9 +26,9 @@ async function queryData(serialNumber: string, startDate: string, endDate: strin
 
   // Parse the data field from a string to a JSON object
   return response.Items?.map(item => {
-    const dataRecord: Totals = JSON.parse(item.data);
+    const dataRecord: DayTotals = JSON.parse(item.data);
     return dataRecord;
-  }) as Totals[];
+  }) as DayTotals[];
 }
 
 export const handler = async (event: any, context: any) => {
@@ -44,11 +45,11 @@ export const handler = async (event: any, context: any) => {
   try {
     console.log(`Aggregating Eddi data for serial number ${serialNumber} in range ${startDate} - ${endDate}`);
 
-    const dataRecords = await queryData(serialNumber, startDate, endDate);
+    const dayTotals = await queryData(serialNumber, startDate, endDate);
 
-    console.log('Data', dataRecords);
+    console.log('Data', dayTotals);
 
-    const aggregatedData: Totals = dataRecords.reduce((acc: Totals, record: Totals) => {
+    const aggregatedData: Totals = dayTotals.reduce((acc: Totals, record: Totals) => {
       for (const key in acc) {
         acc[key as keyof Totals] += record[key as keyof Totals];
       }
@@ -77,7 +78,7 @@ export const handler = async (event: any, context: any) => {
         'Access-Control-Allow-Methods': 'GET,OPTIONS',
       },
       body: JSON.stringify({
-        rawData: dataRecords,
+        rawData: dayTotals,
         aggregatedData,
       }),
     };
