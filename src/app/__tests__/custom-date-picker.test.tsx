@@ -7,7 +7,7 @@ describe('CustomDatePicker', () => {
   test('renders correctly', () => {
     const selectedDate = moment('2023-02-19');
     const onChange = jest.fn();
-    const { container } = render(<CustomDatePicker selectedDate={selectedDate} onChange={onChange} />);
+    const { container } = render(<CustomDatePicker selectedDate={selectedDate} onChange={onChange} dispatch={() => {}} scale={'day'} />);
     expect(container.firstChild).toMatchSnapshot();
   });
 });

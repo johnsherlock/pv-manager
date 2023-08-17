@@ -1,5 +1,6 @@
 import { render } from '@testing-library/react';
-import { EnergyCalculator, Totals } from '../../shared/energy-calculator';
+import React from 'react';
+import { EnergyCalculator } from '../../shared/energy-calculator';
 import { HalfHourlyPVData } from '../../shared/pv-data';
 import DailyEnergyUsageTable from '../daily-energy-usage-table';
 
@@ -52,20 +53,6 @@ describe('DailyEnergyUsageTable', () => {
       dayOfWeek: 'Mon',
     }];
 
-    const totals: Totals = {
-      combinedImpTotal: 1000,
-      genTotal: 2000,
-      expTotal: 500,
-      conpTotal: 1000,
-      dayImpTotal: 500,
-      nightImpTotal: 300,
-      peakImpTotal: 200,
-      freeImpTotal: 200,
-      grossSavingTotal: 20,
-      immersionRunTime: 65,
-      immersionTotal: 100,
-    };
-
     const energyCalculator = new EnergyCalculator({
       dayRate: 0.4673,
       peakRate: 0.5709,
@@ -73,12 +60,12 @@ describe('DailyEnergyUsageTable', () => {
       exportRate: 0.1850,
       discountPercentage: 0.15,
       annualStandingCharge: 0.7066,
+      monthlyPsoCharge: 12.70,
     });
 
     const component = render(
       <DailyEnergyUsageTable
         data={data}
-        totals={totals}
         energyCalculator={energyCalculator}
       />);
     expect(component).toMatchSnapshot();

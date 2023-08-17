@@ -1,9 +1,9 @@
 import moment from 'moment';
 import { forwardRef } from 'react';
 import DatePicker from 'react-datepicker';
+import CalendarNavigation from './calendar-navigation';
 import { CalendarScale } from './lib/state-utils';
 import OptionLink from './option-link';
-import CalendarNavigation from './calendar-navigation';
 import 'react-datepicker/dist/react-datepicker.css';
 
 interface DatePickerDivProps {

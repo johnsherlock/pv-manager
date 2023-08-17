@@ -9,11 +9,11 @@ export interface FormattedDateRange { startDate: string; endDate: string };
 export interface DateRange { startDate: moment.Moment; endDate: moment.Moment };
 
 export interface AppState {
-  intervalId?: number | null;
+  intervalId?: number;
   today: moment.Moment;
   selectedDate: moment.Moment;
   startDate?: moment.Moment;
-  endDate?: moment.Moment | null;
+  endDate?: moment.Moment;
   formattedSelectedDate: string;
   formattedDateRange?: string;
   pvDataCache: Map<string, MinutePVData[]>;
@@ -25,7 +25,7 @@ export interface AppState {
 
 export const initialState = (): AppState => {
   const today: moment.Moment = moment().startOf('day');
-  return {
+  const appState: AppState = {
     today: today,
     selectedDate: today,
     formattedSelectedDate: dateUtils.formatDate(today),
@@ -35,4 +35,5 @@ export const initialState = (): AppState => {
     energyUsageLineGraphView: 'line',
     calendarScale: 'day',
   };
+  return appState;
 };

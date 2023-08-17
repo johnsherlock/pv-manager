@@ -1,4 +1,4 @@
-import { formatDecimal, convertJoulesToKwh, formatToEuro } from '../../../shared/num-utils';
+import { formatDecimal, convertJoulesToKwh, formatToEuro } from '../../shared/num-utils';
 
 describe('formatDecimal', () => {
   it('should return the number rounded to two decimal places', () => {

@@ -13,6 +13,7 @@ import {
   DecimationOptions,
 } from 'chart.js';
 import moment from 'moment';
+import React from 'react';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
 import { isTouchScreen } from './lib/display-utils';
@@ -38,7 +39,7 @@ const toMoment = (hr: number = 0, min: number = 0): moment.Moment => {
 
 export type Scale = 'day' | 'week' | 'month';
 export type View = 'line' | 'cumulative';
-type DataPoint = 'imported' | 'generated' | 'consumed' | 'immersionDiverted' | 'exported';
+type DataPoint = 'genTotal' | 'expTotal' | 'conpTotal' | 'peakImpTotal' | 'nightImpTotal' | 'dayImpTotal' | 'combinedImpTotal' | 'freeImpTotal';
 
 export interface RangeEnergyUsageLineGraphProps {
   data: Totals[];
@@ -50,13 +51,8 @@ const getDataForView = (props: RangeEnergyUsageLineGraphProps, dataPoint: DataPo
 
   let data: { x: moment.Moment; y: number }[];
 
-  if (props.scale === 'minute') {
-    data = props.minutePvData.map((item) => ({ x: toMoment(item.hour, item.minute), y: convertJoulesToKw(item[`${dataPoint}Joules`]) }));
-  } else if (props.scale === 'halfHour') {
-    data = props.halfHourPvData.map((item) => ({ x: toMoment(item.hour, item.minute), y: item[`${dataPoint}KwH`] }));
-  } else {
-    data = props.hourlyPvData.map((item) => ({ x: toMoment(item.hour, item.minute), y: item[`${dataPoint}KwH`] }));
-  }
+  // TODO: Fix moment instantiation
+  data = props.data.map((item) => ({ x: toMoment(0, 0), y: item[dataPoint] }));
 
   return props.view === 'line'? data : convertToCumulativeView(data);
 };
@@ -71,9 +67,9 @@ const convertToCumulativeView = (data: { x: moment.Moment; y: number }[]): { x: 
 
 const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.Element => {
 
-  const fill = props.scale === 'minute' && props.view !== 'cumulative';
-  const borderWidth = props.scale === 'minute' && props.view !== 'cumulative' ? 1 : 1;
-  const unit = props.scale === 'minute' ? 'kw' : 'kWh';
+  const fill = props.view !== 'cumulative';
+  const borderWidth = props.view !== 'cumulative' ? 1 : 1;
+  const unit = 'kWh';
 
   // create a map of the data based on the view type (hour, halfHour, minute).
   // if the view is minute, then we use the minute data, otherwise we use the halfHour or hour data.
@@ -82,17 +78,17 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
     datasets: [
       {
         label: `Imp ${unit}`,
-        data: getDataForView(props, 'imported'),
+        data: getDataForView(props, 'combinedImpTotal'),
         fill,
         borderColor: 'rgb(255, 99, 888)',
         backgroundColor: 'rgba(255, 99, 255, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: props.scale === 'minute' && props.view !== 'cumulative',
+        hidden: props.view !== 'cumulative',
       },
       {
         label: `Gen ${unit}`,
-        data: getDataForView(props, 'generated'),
+        data: getDataForView(props, 'genTotal'),
         fill,
         borderColor: 'rgb(51, 153, 102)',
         backgroundColor: 'rgba(51, 153, 102, 0.5)',
@@ -102,17 +98,17 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
       },
       {
         label: `Exp ${unit}`,
-        data: getDataForView(props, 'exported'),
+        data: getDataForView(props, 'expTotal'),
         fill,
         borderColor: 'rgb(53, 162, 235)',
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: props.scale === 'minute' && props.view !== 'cumulative',
+        hidden: props.view !== 'cumulative',
       },
       {
         label: `Consumed ${unit}`,
-        data: getDataForView(props, 'consumed'),
+        data: getDataForView(props, 'conpTotal'),
         fill,
         borderColor: 'rgb(255, 153, 102)',
         backgroundColor: 'rgba(255, 153, 102, 0.5)',
@@ -121,14 +117,14 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
         hidden: false,
       },
       {
-        label: `Immersion ${unit}`,
-        data: getDataForView(props, 'immersionDiverted'),
+        label: `Free ${unit}`,
+        data: getDataForView(props, 'freeImpTotal'),
         fill,
         borderColor: 'rgb(179, 0, 0)',
         backgroundColor: 'rgba(179, 0, 0, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: props.scale === 'minute' && props.view !== 'cumulative',
+        hidden: props.view !== 'cumulative',
       },
     ],
   };
@@ -156,7 +152,7 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
     },
     scales: {
       y: {
-        title: { display: !isTouchScreen(), text: props.scale === 'minute' ? 'kw' : 'kWh' },
+        title: { display: !isTouchScreen(), text: 'kWh' },
       },
       x: {
         type: 'time' as const,
@@ -177,4 +173,4 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
   );
 };
 
-export default EnergyUsageLineGraph;
+export default RangeEnergyUsageLineGraph;

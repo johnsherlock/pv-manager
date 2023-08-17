@@ -7,6 +7,7 @@ const energyCalculator: EnergyCalculator = new EnergyCalculator({
   exportRate: 0.1850,
   discountPercentage: 0.15,
   annualStandingCharge: 257.91,
+  monthlyPsoCharge: 0.1,
 });
 
 describe('EnergyCalculator', () => {

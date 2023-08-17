@@ -15,7 +15,7 @@ export type Action =
   | { type: 'GO_TO_RANGE'; payload: { dateRange: FormattedDateRange; rangeTotals: RangeTotals } }
   | { type: 'GO_TO_CACHED_RANGE'; payload: FormattedDateRange }
 
-export const appReducer = (state: AppState, action: Action) => {
+export const appReducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
     case 'SET_SCALE':
       return { ...state, energyUsageLineGraphScale: action.payload };
@@ -38,7 +38,7 @@ export const appReducer = (state: AppState, action: Action) => {
         today: moment().startOf('day'),
         selectedDate: action.payload.selectedDate,
         formattedSelectedDate: action.payload.formattedSelectedDate,
-        intervalId: null,
+        intervalId: undefined,
         startDate: undefined,
         endDate: undefined,
       };
@@ -50,7 +50,7 @@ export const appReducer = (state: AppState, action: Action) => {
         ...state,
         selectedDate: moment(action.payload.startDate),
         startDate: moment(action.payload.startDate),
-        endDate: action.payload.endDate ? moment(action.payload.endDate) : null,
+        endDate: action.payload.endDate ? moment(action.payload.endDate) : undefined,
       };
     }
     case 'GO_TO_RANGE': {
@@ -63,9 +63,10 @@ export const appReducer = (state: AppState, action: Action) => {
       return goToRangeState;
     }
     case 'GO_TO_CACHED_RANGE': {
+      const formattedDateRange = `${action.payload.startDate}_${action.payload.endDate}`;
       return {
         ...state,
-        formattedDateRange: action.payload,
+        formattedDateRange,
       };
     }
     default:

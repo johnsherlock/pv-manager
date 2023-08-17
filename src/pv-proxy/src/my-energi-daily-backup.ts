@@ -31,6 +31,7 @@ const energyCalculator = new EnergyCalculator({
   exportRate: 0.1850,
   discountPercentage: 0.15,
   annualStandingCharge: 257.91,
+  monthlyPsoCharge: 12.73,
 });
 
 export const handler = async (event: any, context: any) => {

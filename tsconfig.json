@@ -21,7 +21,7 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "src", "src/app", "src/pv-proxy", "infra", "src/shared", "src/back-end"
+    "**/*.ts",     "**/*.tsx"
   ],
   "exclude": [
   ]

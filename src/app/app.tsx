@@ -1,5 +1,6 @@
 import moment from 'moment';
-import { useReducer, useEffect, useRef } from 'react';
+import React from 'react';
+// import { useReducer, useEffect, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './app.css';
 import { useSwipeable } from 'react-swipeable';
@@ -19,9 +20,9 @@ import { MinutePVData, RangeTotals } from '../shared/pv-data';
 
 function App() {
   // const [state, setState] = useState(stateUtils.initialState());
-  const [state, dispatch] = useReducer(appReducer, stateUtils.initialState());
+  const [state, dispatch] = React.useReducer(appReducer, stateUtils.initialState());
 
-  const intervalRef = useRef(-1);
+  const intervalRef = React.useRef(-1);
 
   // TODO: Initialise this dynamically (from props or per user)
   const energyCalculator = new EnergyCalculator({
@@ -121,7 +122,7 @@ function App() {
           dateRange = getDateRange(state.calendarScale, start!);
           formattedDateRange = formatDateRange(dateRange);
         } else {
-          formattedDateRange = { startDate: start ? formatDate(moment(start)) : null, endDate: end ? formatDate(moment(end)) : null };
+          formattedDateRange = { startDate: start ? formatDate(moment(start)) : '', endDate: end ? formatDate(moment(end)) : '' };
         }
       } else {
         console.log('Unspported date combo!');
@@ -130,7 +131,7 @@ function App() {
       dispatch({ type: 'SET_CALENDAR_RANGE', payload: formattedDateRange });
       const compoundKey = `${formattedDateRange.startDate}_${formattedDateRange.endDate}`;
       if (state.totalsCache.get(compoundKey)) {
-        dispatch({ type: 'GO_TO_CACHED_RANGE', payload: compoundKey });
+        dispatch({ type: 'GO_TO_CACHED_RANGE', payload: formattedDateRange });
       } else {
         const rangeTotals = await getDataForRange(formattedDateRange);
         if (rangeTotals.aggregatedData) {
@@ -140,7 +141,7 @@ function App() {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     // retrieve data for today.
     goToDay(state.selectedDate).catch((error) => {
       console.error(`Error retrieving data for ${state.selectedDate}`, error);
