@@ -1,6 +1,6 @@
+import nodemailer from 'nodemailer';
 import { getHttpResult } from './http-utils';
 import { MyEnergiService } from './my-energi-service';
-import nodemailer from 'nodemailer';
 
 type SesSmtpConfig = {
   username: string;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React from 'react';
 import { getFormattedTime } from './lib/date-utils';
 import { EnergyCalculator } from '../shared/energy-calculator';
 import { formatToEuro } from '../shared/num-utils';
@@ -11,7 +11,7 @@ export interface DailyEnergyUsageTableProps {
 
 const DailyEnergyUsageTable = ({ data, energyCalculator }: DailyEnergyUsageTableProps): JSX.Element => {
 
-  const [state, setState] = useState({ expanded: false });
+  const [state, setState] = React.useState({ expanded: false });
 
   return (
     <div className="table d-md-block d-none">
