@@ -1,5 +1,5 @@
 import moment from 'moment';
-import React from 'react';
+import React, { forwardRef, Dispatch } from 'react';
 import DatePicker from 'react-datepicker';
 import CalendarNavigation from './calendar-navigation';
 import { CalendarScale } from './lib/state-utils';
@@ -11,14 +11,14 @@ interface DatePickerDivProps {
   onClick: () => void;
 }
 
-const DatePickerDiv = React.forwardRef<HTMLDivElement, DatePickerDivProps>(({ value, onClick }, ref) => (
+const DatePickerDiv = forwardRef<HTMLDivElement, DatePickerDivProps>(({ value, onClick }, ref) => (
   <div className="custom-date-picker" onClick={onClick} ref={ref}>
     {value}
   </div>
 ));
 
 interface CustomDatePickerProps {
-  dispatch: React.Dispatch<any>;
+  dispatch: Dispatch<any>;
   scale: CalendarScale;
   selectedDate: moment.Moment;
   startDate?: moment.Moment;

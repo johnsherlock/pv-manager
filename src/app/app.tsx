@@ -1,6 +1,5 @@
 import moment from 'moment';
-import React from 'react';
-// import { useReducer, useEffect, useRef } from 'react';
+import React, { useReducer, useEffect, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './app.css';
 import { useSwipeable } from 'react-swipeable';
@@ -20,9 +19,9 @@ import { MinutePVData, RangeTotals } from '../shared/pv-data';
 
 function App() {
   // const [state, setState] = useState(stateUtils.initialState());
-  const [state, dispatch] = React.useReducer(appReducer, stateUtils.initialState());
+  const [state, dispatch] = useReducer(appReducer, stateUtils.initialState());
 
-  const intervalRef = React.useRef(-1);
+  const intervalRef = useRef(-1);
 
   // TODO: Initialise this dynamically (from props or per user)
   const energyCalculator = new EnergyCalculator({
@@ -141,7 +140,7 @@ function App() {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     // retrieve data for today.
     goToDay(state.selectedDate).catch((error) => {
       console.error(`Error retrieving data for ${state.selectedDate}`, error);
@@ -183,50 +182,52 @@ function App() {
   });
 
   return (
-    <div {...handlers}>
-      <div className="navigation">
-        <div className="text-center">
-          <div className="date">
-            <CustomDatePicker
-              dispatch={dispatch}
-              scale={state.calendarScale}
-              selectedDate={state.selectedDate}
-              startDate={state.startDate}
-              endDate={state.endDate}
-              onChange={handleDate}
-            />
+    <>
+      <div {...handlers}>
+        <div className="navigation">
+          <div className="text-center">
+            <div className="date">
+              <CustomDatePicker
+                dispatch={dispatch}
+                scale={state.calendarScale}
+                selectedDate={state.selectedDate}
+                startDate={state.startDate}
+                endDate={state.endDate}
+                onChange={handleDate}
+              />
+            </div>
           </div>
         </div>
+        { state.calendarScale === 'day' ? (
+          <SingleDayDashboard
+            selectedDate={state.selectedDate}
+            startDate={state.startDate}
+            endDate={state.endDate}
+            today={state.today}
+            minuteData={state.pvDataCache.get(state.formattedSelectedDate) ?? []}
+            halfHourData={convertMinuteDataToHalfHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
+            hourData={convertMinuteDataToHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
+            energyCalculator={energyCalculator}
+            goToPreviousDay={goToPreviousDay}
+            goToNextDay={goToNextDay}
+            goToDay={handleDate}
+            dispatch={dispatch}
+            energyUsageLineGraphScale={state.energyUsageLineGraphScale}
+            energyUsageLineGraphView={state.energyUsageLineGraphView}
+            calendarScale={state.calendarScale}
+          />
+        ) :
+          <MultiDayDashboard
+            startDate={state.startDate}
+            endDate={state.endDate}
+            energyCalculator={energyCalculator}
+            dispatch={dispatch}
+            calendarScale={state.calendarScale}
+            totals={state.totalsCache.get(`${state.formattedDateRange}`)}
+          />
+        }
       </div>
-      { state.calendarScale === 'day' ? (
-        <SingleDayDashboard
-          selectedDate={state.selectedDate}
-          startDate={state.startDate}
-          endDate={state.endDate}
-          today={state.today}
-          minuteData={state.pvDataCache.get(state.formattedSelectedDate) ?? []}
-          halfHourData={convertMinuteDataToHalfHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
-          hourData={convertMinuteDataToHourlyData(state.pvDataCache.get(state.formattedSelectedDate))}
-          energyCalculator={energyCalculator}
-          goToPreviousDay={goToPreviousDay}
-          goToNextDay={goToNextDay}
-          goToDay={handleDate}
-          dispatch={dispatch}
-          energyUsageLineGraphScale={state.energyUsageLineGraphScale}
-          energyUsageLineGraphView={state.energyUsageLineGraphView}
-          calendarScale={state.calendarScale}
-        />
-      ) :
-        <MultiDayDashboard
-          startDate={state.startDate}
-          endDate={state.endDate}
-          energyCalculator={energyCalculator}
-          dispatch={dispatch}
-          calendarScale={state.calendarScale}
-          totals={state.totalsCache.get(`${state.formattedDateRange}`)}
-        />
-      }
-    </div>
+    </>
   );
 }
 
