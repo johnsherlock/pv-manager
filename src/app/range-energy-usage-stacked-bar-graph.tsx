@@ -3,7 +3,7 @@ import {
   CategoryScale,
   LinearScale,
   PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   TimeScale,
@@ -14,7 +14,7 @@ import {
 } from 'chart.js';
 import moment from 'moment';
 import React from 'react';
-import { Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
 import { toDayMoment } from './lib/date-utils';
 import { isTouchScreen } from './lib/display-utils';
@@ -25,7 +25,7 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   TimeScale,
@@ -37,13 +37,13 @@ ChartJS.register(
 export type View = 'line' | 'cumulative';
 type DataPoint = 'genTotal' | 'expTotal' | 'conpTotal' | 'peakImpTotal' | 'nightImpTotal' | 'dayImpTotal' | 'combinedImpTotal' | 'freeImpTotal';
 
-export interface RangeEnergyUsageLineGraphProps {
+export interface RangeEnergyUsageStackedBarGraphProps {
   data: DayTotals[];
   calendarScale: CalendarScale;
   view: View;
 }
 
-const getDataForView = (props: RangeEnergyUsageLineGraphProps, dataPoint: DataPoint): { x: moment.Moment; y: number }[] => {
+const getDataForView = (props: RangeEnergyUsageStackedBarGraphProps, dataPoint: DataPoint): { x: moment.Moment; y: number }[] => {
 
   let data: { x: moment.Moment; y: number }[];
 
@@ -63,7 +63,7 @@ const convertToCumulativeView = (data: { x: moment.Moment; y: number }[]): { x: 
   });
 };
 
-const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.Element => {
+const RangeEnergyUsageStackedBarGraph = (props: RangeEnergyUsageStackedBarGraphProps): JSX.Element => {
 
   const fill = false;
   const borderWidth = props.view !== 'cumulative' ? 1 : 1;
@@ -72,17 +72,40 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
   // create a map of the data based on the view type (hour, halfHour, minute).
   // if the view is minute, then we use the minute data, otherwise we use the halfHour or hour data.
 
-  const lineData = {
+  const barData = {
     datasets: [
       {
-        label: `Imp ${unit}`,
-        data: getDataForView(props, 'combinedImpTotal'),
+        label: `Day Imp ${unit}`,
+        data: getDataForView(props, 'dayImpTotal'),
         fill,
         borderColor: 'rgb(255, 99, 888)',
         backgroundColor: 'rgba(255, 99, 255, 0.5)',
         borderWidth,
         radius: 0,
         hidden: false,
+        stack: 'Stack 0',
+      },
+      {
+        label: `Peak Imp ${unit}`,
+        data: getDataForView(props, 'peakImpTotal'),
+        fill,
+        borderColor: 'rgb(155, 99, 888)',
+        backgroundColor: 'rgba(155, 99, 255, 0.9)',
+        borderWidth,
+        radius: 0,
+        hidden: false,
+        stack: 'Stack 0',
+      },
+      {
+        label: `Night Imp ${unit}`,
+        data: getDataForView(props, 'nightImpTotal'),
+        fill,
+        borderColor: 'rgb(100, 99, 888)',
+        backgroundColor: 'rgba(100, 99, 255, 0.5)',
+        borderWidth,
+        radius: 0,
+        hidden: false,
+        stack: 'Stack 0',
       },
       {
         label: `Gen ${unit}`,
@@ -93,6 +116,7 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
         borderWidth,
         radius: 0,
         hidden: false,
+        stack: 'Stack 1',
       },
       {
         label: `Exp ${unit}`,
@@ -103,6 +127,7 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
         borderWidth,
         radius: 0,
         hidden: true,
+        stack: 'Stack 2',
       },
       {
         label: `Consumed ${unit}`,
@@ -113,6 +138,7 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
         borderWidth,
         radius: 0,
         hidden: true,
+        stack: 'Stack 3',
       },
       {
         label: `Free ${unit}`,
@@ -123,6 +149,7 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
         borderWidth,
         radius: 0,
         hidden: true,
+        stack: 'Stack 4',
       },
     ],
   };
@@ -167,8 +194,8 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
   };
 
   return (
-    <Line options={options} data={lineData} />
+    <Bar options={options} data={barData} />
   );
 };
 
-export default RangeEnergyUsageLineGraph;
+export default RangeEnergyUsageStackedBarGraph;

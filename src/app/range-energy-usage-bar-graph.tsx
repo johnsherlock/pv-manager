@@ -3,7 +3,7 @@ import {
   CategoryScale,
   LinearScale,
   PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   TimeScale,
@@ -14,7 +14,7 @@ import {
 } from 'chart.js';
 import moment from 'moment';
 import React from 'react';
-import { Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
 import { toDayMoment } from './lib/date-utils';
 import { isTouchScreen } from './lib/display-utils';
@@ -25,7 +25,7 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   TimeScale,
@@ -37,13 +37,13 @@ ChartJS.register(
 export type View = 'line' | 'cumulative';
 type DataPoint = 'genTotal' | 'expTotal' | 'conpTotal' | 'peakImpTotal' | 'nightImpTotal' | 'dayImpTotal' | 'combinedImpTotal' | 'freeImpTotal';
 
-export interface RangeEnergyUsageLineGraphProps {
+export interface RangeEnergyUsageBarGraphProps {
   data: DayTotals[];
   calendarScale: CalendarScale;
   view: View;
 }
 
-const getDataForView = (props: RangeEnergyUsageLineGraphProps, dataPoint: DataPoint): { x: moment.Moment; y: number }[] => {
+const getDataForView = (props: RangeEnergyUsageBarGraphProps, dataPoint: DataPoint): { x: moment.Moment; y: number }[] => {
 
   let data: { x: moment.Moment; y: number }[];
 
@@ -63,7 +63,7 @@ const convertToCumulativeView = (data: { x: moment.Moment; y: number }[]): { x: 
   });
 };
 
-const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.Element => {
+const RangeEnergyUsageBarGraph = (props: RangeEnergyUsageBarGraphProps): JSX.Element => {
 
   const fill = false;
   const borderWidth = props.view !== 'cumulative' ? 1 : 1;
@@ -167,8 +167,8 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
   };
 
   return (
-    <Line options={options} data={lineData} />
+    <Bar options={options} data={lineData} />
   );
 };
 
-export default RangeEnergyUsageLineGraph;
+export default RangeEnergyUsageBarGraph;

@@ -16,6 +16,10 @@ export const toMoment = (pvData: BasePVData, locale?: string): moment.Moment => 
   });
 };
 
+export const toDayMoment = (day: number = 0, month: number = 0, year: number = 0): moment.Moment => {
+  return moment({ year, month: month - 1, day });
+};
+
 export const getFormattedTime = (pvData: BasePVData, locale?: string): string => {
   const time = toMoment(pvData, locale);
   return time.format('HH:mm');
