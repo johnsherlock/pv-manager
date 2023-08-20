@@ -140,6 +140,14 @@ function App() {
     }
   };
 
+  const handleCalendarClose = async () => {
+    if (state.startDate && state.endDate) {
+      await handleDate([state.startDate.toDate(), state.endDate.toDate()]);
+    } else {
+      await handleDate(state.selectedDate.toDate());
+    }
+  };
+
   useEffect(() => {
     // retrieve data for today.
     goToDay(state.selectedDate).catch((error) => {
@@ -194,6 +202,7 @@ function App() {
                 startDate={state.startDate}
                 endDate={state.endDate}
                 onChange={handleDate}
+                onClose={handleCalendarClose}
               />
             </div>
           </div>

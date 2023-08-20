@@ -24,9 +24,10 @@ interface CustomDatePickerProps {
   startDate?: moment.Moment;
   endDate?: moment.Moment | null;
   onChange: (date: Date | [Date | null, Date | null]) => void;
+  onClose: () => void;
 }
 
-const CustomDatePicker = ({ selectedDate, dispatch, scale, onChange, startDate, endDate }: CustomDatePickerProps) => {
+const CustomDatePicker = ({ selectedDate, dispatch, scale, onChange, onClose, startDate, endDate }: CustomDatePickerProps) => {
 
   const maxDate = scale === 'day' ? new Date() : moment().subtract(1, 'day').toDate();;
 
@@ -40,6 +41,7 @@ const CustomDatePicker = ({ selectedDate, dispatch, scale, onChange, startDate, 
       showYearPicker={scale === 'year'}
       yearItemNumber={4}
       onChange={onChange}
+      onCalendarClose={onClose}
       dateFormat="EEE do MMM yyyy"
       minDate={new Date(2023, 0, 20)}
       maxDate={maxDate}

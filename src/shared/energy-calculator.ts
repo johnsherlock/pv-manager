@@ -1,7 +1,7 @@
 import moment from 'moment';
 import { calculateGreenEnergyPercentage } from './energy-utils';
 import * as numUtils from './num-utils';
-import { HalfHourlyPVData, RangeTotals, Totals } from './pv-data';
+import { HalfHourlyPVData, RangeTotals, Totals, DayTotals } from './pv-data';
 
 export interface EnergyCalculatorProps {
   readonly dayRate: number;
@@ -27,6 +27,15 @@ const initialTotals = (): Totals => {
     immersionRunTime: 0,
     immersionTotal: 0,
     grossSavingTotal: 0,
+  };
+};
+
+const initialDayTotals = (): DayTotals => {
+  return {
+    ...initialTotals(),
+    dayOfMonth: 0,
+    month: 0,
+    year: 0,
   };
 };
 
@@ -224,10 +233,13 @@ export class EnergyCalculator {
     return calculateGreenEnergyPercentage(totalImportedKwH, totalConsumedKwH);
   };
 
-  public calculateTotals = (pvData: HalfHourlyPVData[]): Totals => {
+  public calculateTotals = (pvData: HalfHourlyPVData[]): DayTotals => {
     console.log('Recaculating totals');
-    const totals: Totals = initialTotals();
+    const totals: DayTotals = initialDayTotals();
     pvData.forEach((item: HalfHourlyPVData) => {
+      totals.dayOfMonth = item?.dayOfMonth;
+      totals.month = item?.month;
+      totals.year = item?.year;
       totals.combinedImpTotal += item.importedKwH ?? 0;
       totals.genTotal += item.generatedKwH ?? 0;
       totals.expTotal += item.exportedKwH ?? 0;

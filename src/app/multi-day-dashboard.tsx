@@ -1,9 +1,11 @@
 import moment from 'moment';
 import React, { useReducer } from 'react';
 import { CalendarScale } from './lib/state-utils';
+import RangeEnergyUsageLineGraph from './range-energy-usage-line-graph';
 import ResponsiveRangeEnergyUsageTable from './responsive-range-energy-usage-table';
 import { EnergyCalculator } from '../shared/energy-calculator';
 import { RangeTotals } from '../shared/pv-data';
+
 
 interface MultiDayDashboardProps {
   dispatch: React.Dispatch<any>;
@@ -14,7 +16,7 @@ interface MultiDayDashboardProps {
   calendarScale: CalendarScale;
 }
 
-const MultiDayDashboard = ({ totals, energyCalculator, dispatch }: MultiDayDashboardProps): JSX.Element => {
+const MultiDayDashboard = ({ totals, energyCalculator, calendarScale, dispatch }: MultiDayDashboardProps): JSX.Element => {
 
   return (
     <div className="container dashboard">
@@ -25,6 +27,15 @@ const MultiDayDashboard = ({ totals, energyCalculator, dispatch }: MultiDayDashb
               <ResponsiveRangeEnergyUsageTable
                 totals={totals}
                 energyCalculator={energyCalculator}
+              />
+            </div>
+          </div>
+          <div className="row">
+            <div className="col energy-line-graph">
+              <RangeEnergyUsageLineGraph
+                calendarScale={calendarScale}
+                view='line'
+                data={totals?.rawData ?? []}
               />
             </div>
           </div>

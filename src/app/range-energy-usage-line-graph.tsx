@@ -17,8 +17,8 @@ import React from 'react';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
 import { isTouchScreen } from './lib/display-utils';
-import { convertJoulesToKw } from '../shared/num-utils';
-import { HalfHourlyPVData, HourlyPVData, MinutePVData, Totals } from '../shared/pv-data';
+import { CalendarScale } from './lib/state-utils';
+import { DayTotals } from '../shared/pv-data';
 
 ChartJS.register(
   CategoryScale,
@@ -33,17 +33,16 @@ ChartJS.register(
   Filler,
 );
 
-const toMoment = (hr: number = 0, min: number = 0): moment.Moment => {
-  return moment().hour(hr).minute(min);
+const toMoment = (day: number = 0, month: number = 0, year: number = 0): moment.Moment => {
+  return moment({ year, month: month - 1, day });
 };
 
-export type Scale = 'day' | 'week' | 'month';
 export type View = 'line' | 'cumulative';
 type DataPoint = 'genTotal' | 'expTotal' | 'conpTotal' | 'peakImpTotal' | 'nightImpTotal' | 'dayImpTotal' | 'combinedImpTotal' | 'freeImpTotal';
 
 export interface RangeEnergyUsageLineGraphProps {
-  data: Totals[];
-  scale: Scale;
+  data: DayTotals[];
+  calendarScale: CalendarScale;
   view: View;
 }
 
@@ -51,8 +50,10 @@ const getDataForView = (props: RangeEnergyUsageLineGraphProps, dataPoint: DataPo
 
   let data: { x: moment.Moment; y: number }[];
 
-  // TODO: Fix moment instantiation
-  data = props.data.map((item) => ({ x: toMoment(0, 0), y: item[dataPoint] }));
+  data = props.data.map((item) => ({ x: toMoment(item.dayOfMonth, item.month, item.year), y: item[dataPoint] }));
+
+  // Sort the array by the 'x' property (date) in ascending order
+  data.sort((a, b) => a.x.valueOf() - b.x.valueOf());
 
   return props.view === 'line'? data : convertToCumulativeView(data);
 };
@@ -67,7 +68,7 @@ const convertToCumulativeView = (data: { x: moment.Moment; y: number }[]): { x: 
 
 const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.Element => {
 
-  const fill = props.view !== 'cumulative';
+  const fill = false;
   const borderWidth = props.view !== 'cumulative' ? 1 : 1;
   const unit = 'kWh';
 
@@ -84,7 +85,6 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
         backgroundColor: 'rgba(255, 99, 255, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: props.view !== 'cumulative',
       },
       {
         label: `Gen ${unit}`,
@@ -94,7 +94,6 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
         backgroundColor: 'rgba(51, 153, 102, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: false,
       },
       {
         label: `Exp ${unit}`,
@@ -104,7 +103,6 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: props.view !== 'cumulative',
       },
       {
         label: `Consumed ${unit}`,
@@ -114,7 +112,6 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
         backgroundColor: 'rgba(255, 153, 102, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: false,
       },
       {
         label: `Free ${unit}`,
@@ -124,7 +121,6 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
         backgroundColor: 'rgba(179, 0, 0, 0.5)',
         borderWidth,
         radius: 0,
-        hidden: props.view !== 'cumulative',
       },
     ],
   };
@@ -157,7 +153,7 @@ const RangeEnergyUsageLineGraph = (props: RangeEnergyUsageLineGraphProps): JSX.E
       x: {
         type: 'time' as const,
         time: {
-          unit: 'hour' as const,
+          unit: 'day' as const,
         },
       },
     },
