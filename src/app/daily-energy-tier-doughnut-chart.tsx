@@ -101,7 +101,7 @@ const DailyEnergyTierDoughnutChart = (props: DailyEnergyTierDoughnutChartProps):
   };
 
   return (
-    <Doughnut options={options} data={chartData} />
+    <Doughnut data={chartData} />
   );
 };
 
