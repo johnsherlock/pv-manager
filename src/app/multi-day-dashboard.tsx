@@ -43,8 +43,6 @@ const MultiDayDashboard = ({ totals, energyCalculator, calendarScale, dispatch }
             <div className="row">
               <div className="col energy-line-graph">
                 <RangeEnergyUsageStackedBarGraph
-                  calendarScale={calendarScale}
-                  view='line'
                   data={totals?.rawData ?? []}
                 />
               </div>

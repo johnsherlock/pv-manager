@@ -39,8 +39,6 @@ type DataPoint = 'genTotal' | 'expTotal' | 'conpTotal' | 'peakImpTotal' | 'night
 
 export interface RangeEnergyUsageBarGraphProps {
   data: DayTotals[];
-  calendarScale: CalendarScale;
-  view: View;
 }
 
 const getDataForView = (props: RangeEnergyUsageBarGraphProps, dataPoint: DataPoint): { x: moment.Moment; y: number }[] => {
@@ -52,7 +50,7 @@ const getDataForView = (props: RangeEnergyUsageBarGraphProps, dataPoint: DataPoi
   // Sort the array by the 'x' property (date) in ascending order
   data.sort((a, b) => a.x.valueOf() - b.x.valueOf());
 
-  return props.view === 'line'? data : convertToCumulativeView(data);
+  return data;
 };
 
 const convertToCumulativeView = (data: { x: moment.Moment; y: number }[]): { x: moment.Moment; y: number }[] => {
@@ -66,7 +64,7 @@ const convertToCumulativeView = (data: { x: moment.Moment; y: number }[]): { x: 
 const RangeEnergyUsageBarGraph = (props: RangeEnergyUsageBarGraphProps): JSX.Element => {
 
   const fill = false;
-  const borderWidth = props.view !== 'cumulative' ? 1 : 1;
+  const borderWidth = 1;
   const unit = 'kWh';
 
   // create a map of the data based on the view type (hour, halfHour, minute).

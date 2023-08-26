@@ -1,5 +1,6 @@
 import moment from 'moment';
 import React, { useReducer } from 'react';
+import DailyEnergyTierDoughnutChart from './daily-energy-tier-doughnut-chart';
 import DailyEnergyUsageTable from './daily-energy-usage-table';
 import EnergyCostLineGraph, { View } from './energy-cost-line-graph';
 import EnergyUsageLineGraph, { Scale } from './energy-usage-line-graph';
@@ -115,6 +116,11 @@ const SingleDayDashboard = (
             </div>
             <div className={isToday ? 'col-sm-6 row-two-graph' : 'd-none'}>
               <LiveEnergyBarGraph minutePvData={minuteData[minuteData.length-1] ?? {}} />
+            </div>
+            <div className='row'>
+              <div className={'col-sm-12 col-md-4'}>
+                <DailyEnergyTierDoughnutChart halfHourPvData={halfHourData} energyCalculator={energyCalculator} />
+              </div>
             </div>
           </div>
         </div>

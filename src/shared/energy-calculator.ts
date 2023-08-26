@@ -2,6 +2,7 @@ import moment from 'moment';
 import { calculateGreenEnergyPercentage } from './energy-utils';
 import * as numUtils from './num-utils';
 import { HalfHourlyPVData, RangeTotals, Totals, DayTotals } from './pv-data';
+import { get } from 'http';
 
 export interface EnergyCalculatorProps {
   readonly dayRate: number;
@@ -39,6 +40,8 @@ const initialDayTotals = (): DayTotals => {
   };
 };
 
+export type PricingTier = 'day' | 'peak' | 'night' | 'free';
+
 export class EnergyCalculator {
 
   readonly dayRate: number;
@@ -71,21 +74,48 @@ export class EnergyCalculator {
     this.vatRate = props.vatRate ?? 1.09;
   }
 
-  public calculateNetCostAtStandardRates = (hour = 0, dow: string, kWh: number = 0, round: boolean = true) => {
-    let multiplier = this.dayRate;
-
+  public getPricingTier = (hour: number, dow: string): PricingTier => {
     if ((hour >= 0 && hour <= 8) || hour === 23) {
-      multiplier = this.nightRate;
-    } else if (hour >= 17 && hour < 19) {
-      multiplier = this.peakRate;
+      return 'night';
     }
-
+    if (hour >= 17 && hour < 19) {
+      return 'peak';
+    }
     if (dow === 'Sat' && hour >= 9 && hour < 17) {
-      multiplier = 0;
+      return 'free';
     }
+    return 'day';
+  };
 
-    const cost = kWh * multiplier;
+  public getPricingTierRate = (tier: PricingTier) => {
+    switch (tier) {
+      case 'day': return this.dayRate;
+      case 'peak': return this.peakRate;
+      case 'night': return this.nightRate;
+      case 'free': return 0;
+    }
+  };
 
+  public getDayUnits = (pvData: HalfHourlyPVData[]): HalfHourlyPVData[] => {
+    return pvData.filter(reading => this.getPricingTier(reading.hour, reading.dayOfWeek) === 'day');
+  };
+
+  public getNightUnits = (pvData: HalfHourlyPVData[]): HalfHourlyPVData[] => {
+    return pvData.filter(reading => this.getPricingTier(reading.hour, reading.dayOfWeek) === 'night');
+  };
+
+  public getPeakUnits = (pvData: HalfHourlyPVData[]): HalfHourlyPVData[] => {
+    return pvData.filter(reading => this.getPricingTier(reading.hour, reading.dayOfWeek) === 'peak');
+  };
+
+  public getFreeUnits = (pvData: HalfHourlyPVData[]): HalfHourlyPVData[] => {
+    return pvData.filter(reading => this.getPricingTier(reading.hour, reading.dayOfWeek) === 'free');
+  };
+
+  public calculateNetCostAtStandardRates = (hour = 0, dow: string, kWh: number = 0, round: boolean = true) => {
+
+    const rate = this.getPricingTierRate(this.getPricingTier(hour, dow));
+    const cost = kWh * rate;
     return round ? numUtils.formatDecimal(cost) : cost;
   };
 
@@ -211,6 +241,27 @@ export class EnergyCalculator {
 
   public calculateTotalGrossImportCost = (pvData: HalfHourlyPVData[] = []) => {
     return pvData.reduce((acc, item) => acc + this.calculateGrossCostPerHalfHourIncStdChgAndDiscount(item.hour, item.dayOfWeek, item.importedKwH), 0);
+  };
+
+  public calculateDayGrossImportCost = (pvData: HalfHourlyPVData[] = []) => {
+
+    return this.getDayUnits(pvData).reduce((acc, item) => {
+      return acc + this.calculateGrossCostPerHalfHourIncStdChgAndDiscount(item.hour, item.dayOfWeek, item.importedKwH);
+    }, 0);
+  };
+
+  public calculatePeakGrossImportCost = (pvData: HalfHourlyPVData[] = []) => {
+
+    return this.getPeakUnits(pvData).reduce((acc, item) => {
+      return acc + this.calculateGrossCostPerHalfHourIncStdChgAndDiscount(item.hour, item.dayOfWeek, item.importedKwH);
+    }, 0);
+  };
+
+  public calculateNightGrossImportCost = (pvData: HalfHourlyPVData[] = []) => {
+
+    return this.getNightUnits(pvData).reduce((acc, item) => {
+      return acc + this.calculateGrossCostPerHalfHourIncStdChgAndDiscount(item.hour, item.dayOfWeek, item.importedKwH);
+    }, 0);
   };
 
   public calculateTotalGrossSavings = (pvData: HalfHourlyPVData[] = []) => {
