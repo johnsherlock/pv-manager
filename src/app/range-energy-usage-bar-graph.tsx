@@ -34,14 +34,13 @@ ChartJS.register(
   Filler,
 );
 
-export type View = 'line' | 'cumulative';
 type DataPoint = 'genTotal' | 'expTotal' | 'conpTotal' | 'peakImpTotal' | 'nightImpTotal' | 'dayImpTotal' | 'combinedImpTotal' | 'freeImpTotal';
 
 export interface RangeEnergyUsageBarGraphProps {
   data: DayTotals[];
 }
 
-const getDataForView = (props: RangeEnergyUsageBarGraphProps, dataPoint: DataPoint): { x: moment.Moment; y: number }[] => {
+const getData = (props: RangeEnergyUsageBarGraphProps, dataPoint: DataPoint): { x: moment.Moment; y: number }[] => {
 
   let data: { x: moment.Moment; y: number }[];
 
@@ -74,7 +73,7 @@ const RangeEnergyUsageBarGraph = (props: RangeEnergyUsageBarGraphProps): JSX.Ele
     datasets: [
       {
         label: `Imp ${unit}`,
-        data: getDataForView(props, 'combinedImpTotal'),
+        data: getData(props, 'combinedImpTotal'),
         fill,
         borderColor: 'rgb(255, 99, 888)',
         backgroundColor: 'rgba(255, 99, 255, 0.5)',
@@ -84,7 +83,7 @@ const RangeEnergyUsageBarGraph = (props: RangeEnergyUsageBarGraphProps): JSX.Ele
       },
       {
         label: `Gen ${unit}`,
-        data: getDataForView(props, 'genTotal'),
+        data: getData(props, 'genTotal'),
         fill,
         borderColor: 'rgb(51, 153, 102)',
         backgroundColor: 'rgba(51, 153, 102, 0.5)',
@@ -94,7 +93,7 @@ const RangeEnergyUsageBarGraph = (props: RangeEnergyUsageBarGraphProps): JSX.Ele
       },
       {
         label: `Exp ${unit}`,
-        data: getDataForView(props, 'expTotal'),
+        data: getData(props, 'expTotal'),
         fill,
         borderColor: 'rgb(53, 162, 235)',
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
@@ -104,7 +103,7 @@ const RangeEnergyUsageBarGraph = (props: RangeEnergyUsageBarGraphProps): JSX.Ele
       },
       {
         label: `Consumed ${unit}`,
-        data: getDataForView(props, 'conpTotal'),
+        data: getData(props, 'conpTotal'),
         fill,
         borderColor: 'rgb(255, 153, 102)',
         backgroundColor: 'rgba(255, 153, 102, 0.5)',
@@ -114,7 +113,7 @@ const RangeEnergyUsageBarGraph = (props: RangeEnergyUsageBarGraphProps): JSX.Ele
       },
       {
         label: `Free ${unit}`,
-        data: getDataForView(props, 'freeImpTotal'),
+        data: getData(props, 'freeImpTotal'),
         fill,
         borderColor: 'rgb(179, 0, 0)',
         backgroundColor: 'rgba(179, 0, 0, 0.5)',

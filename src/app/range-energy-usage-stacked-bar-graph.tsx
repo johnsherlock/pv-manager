@@ -34,14 +34,13 @@ ChartJS.register(
   Filler,
 );
 
-export type View = 'line' | 'cumulative';
 type DataPoint = 'genTotal' | 'expTotal' | 'immersionTotal' | 'conpTotal' | 'peakImpTotal' | 'nightImpTotal' | 'dayImpTotal' | 'combinedImpTotal' | 'freeImpTotal';
 
 export interface RangeEnergyUsageStackedBarGraphProps {
   data: DayTotals[];
 }
 
-const getDataForView = (props: RangeEnergyUsageStackedBarGraphProps, dataPoint: DataPoint): { x: moment.Moment; y: number }[] => {
+const getData = (props: RangeEnergyUsageStackedBarGraphProps, dataPoint: DataPoint): { x: moment.Moment; y: number }[] => {
 
   let data: { x: moment.Moment; y: number }[];
 
@@ -88,7 +87,7 @@ const RangeEnergyUsageStackedBarGraph = (props: RangeEnergyUsageStackedBarGraphP
     datasets: [
       {
         label: `Day Imp ${unit}`,
-        data: getDataForView(props, 'dayImpTotal'),
+        data: getData(props, 'dayImpTotal'),
         fill,
         borderColor: 'rgb(255, 99, 888)',
         backgroundColor: 'rgba(255, 99, 255, 0.5)',
@@ -99,7 +98,7 @@ const RangeEnergyUsageStackedBarGraph = (props: RangeEnergyUsageStackedBarGraphP
       },
       {
         label: `Peak Imp ${unit}`,
-        data: getDataForView(props, 'peakImpTotal'),
+        data: getData(props, 'peakImpTotal'),
         fill,
         borderColor: 'rgb(155, 99, 888)',
         backgroundColor: 'rgba(155, 99, 255, 0.9)',
@@ -110,7 +109,7 @@ const RangeEnergyUsageStackedBarGraph = (props: RangeEnergyUsageStackedBarGraphP
       },
       {
         label: `Night Imp ${unit}`,
-        data: getDataForView(props, 'nightImpTotal'),
+        data: getData(props, 'nightImpTotal'),
         fill,
         borderColor: 'rgb(100, 99, 888)',
         backgroundColor: 'rgba(100, 99, 255, 0.5)',
@@ -121,7 +120,7 @@ const RangeEnergyUsageStackedBarGraph = (props: RangeEnergyUsageStackedBarGraphP
       },
       {
         label: `Exp ${unit}`,
-        data: getDataForView(props, 'expTotal'),
+        data: getData(props, 'expTotal'),
         fill,
         borderColor: 'rgb(53, 162, 235)',
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
@@ -132,7 +131,7 @@ const RangeEnergyUsageStackedBarGraph = (props: RangeEnergyUsageStackedBarGraphP
       },
       {
         label: `Immersion ${unit}`,
-        data: getDataForView(props, 'immersionTotal'),
+        data: getData(props, 'immersionTotal'),
         fill,
         borderColor: 'rgb(53, 162, 235)',
         backgroundColor: 'rgba(153, 162, 235, 0.5)',
@@ -154,7 +153,7 @@ const RangeEnergyUsageStackedBarGraph = (props: RangeEnergyUsageStackedBarGraphP
       },
       {
         label: `Overall Gen ${unit}`,
-        data: getDataForView(props, 'genTotal'),
+        data: getData(props, 'genTotal'),
         fill,
         borderColor: 'rgb(51, 153, 102)',
         backgroundColor: 'rgba(51, 153, 102, 0.5)',
@@ -165,7 +164,7 @@ const RangeEnergyUsageStackedBarGraph = (props: RangeEnergyUsageStackedBarGraphP
       },
       {
         label: `Overall Consumed ${unit}`,
-        data: getDataForView(props, 'conpTotal'),
+        data: getData(props, 'conpTotal'),
         fill,
         borderColor: 'rgb(255, 153, 102)',
         backgroundColor: 'rgba(255, 153, 102, 0.5)',
@@ -176,7 +175,7 @@ const RangeEnergyUsageStackedBarGraph = (props: RangeEnergyUsageStackedBarGraphP
       },
       {
         label: `Free ${unit}`,
-        data: getDataForView(props, 'freeImpTotal'),
+        data: getData(props, 'freeImpTotal'),
         fill,
         borderColor: 'rgb(179, 0, 0)',
         backgroundColor: 'rgba(179, 0, 0, 0.5)',
