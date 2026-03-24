@@ -118,6 +118,11 @@ Scheduled Jobs
 - optional archival of provider-native payloads for debugging, repair, and adapter evolution
 - explicitly separate from the canonical reading model used by product logic
 
+### SupplierIntervalImport
+
+- optional normalized representation of supplier-side interval data, kept distinct from solar-provider telemetry
+- used for bill reconstruction, validation, and reconciliation rather than as a direct replacement for solar-source readings
+
 ### DailySummary
 
 - precomputed daily totals for reporting and faster aggregation
@@ -141,6 +146,13 @@ Scheduled Jobs
 7. Data-health metadata is updated.
 8. A `JobRun` record and centralized logs capture outcome, counts, and failures.
 
+Supplier-side interval imports, when available, should follow a parallel but separate path:
+
+1. ingest supplier-native CSV or billing export data
+2. normalize it into a supplier-side interval model
+3. use it for bill reconstruction and reconciliation
+4. do not collapse it blindly into solar-provider telemetry
+
 ## Canonical Energy Model
 
 The core financial and reporting logic should never depend directly on a provider-specific schema.
@@ -150,6 +162,12 @@ Instead:
 - each provider adapter maps raw payloads into a canonical internal format
 - the savings engine, summaries, and UI queries operate only on canonical readings
 - provider-specific quirks remain isolated to adapter and import layers
+
+For beta v1:
+
+- MyEnergi is expected to be the primary solar telemetry source
+- supplier billing data and supplier interval exports are separate evidence streams
+- comparison between supplier-side import and MyEnergi-derived behavior should be supported as validation tooling and, later, as user-facing insight
 
 The initial product can be MyEnergi-only while still enforcing this boundary.
 
@@ -235,6 +253,7 @@ Requirements:
 - savings engine package
 - authenticated app shell
 - overview, live, history, and tariff setup pages
+- supplier-data reconciliation strategy
 
 ## Risks To Manage
 

@@ -17,7 +17,7 @@ Status values:
 | D-001 | Discovery | Write product brief | Capture the product goal, target users, success criteria, and non-goals. | `docs/product-brief.md` exists and reflects the rewrite direction. | None | Done | Seeded from planning discussion. |
 | D-002 | Discovery | Write use-case inventory | Capture the user questions and major product flows the new app must support. | `docs/use-cases.md` exists with core stories and acceptance notes. | D-001 | Done | Seeded from planning discussion and current-app audit. |
 | D-003 | Discovery | Audit current app features | Capture current live-app behaviors and codebase features as reference material only. | Current feature set is summarized and gaps are noted for the rewrite. | None | Done | Live browser audit completed; current app remains reference only. |
-| D-004 | Discovery | Gather financial evidence | Collect bills, tariff docs, and sample datasets for validation. | Source files are available in an agreed location and referenced from docs. | None | Blocked | Waiting for user uploads. |
+| D-004 | Discovery | Gather financial evidence | Collect bills, tariff docs, and sample datasets for validation. | Source files are available in an agreed location and referenced from docs. | None | In Progress | Initial Energia bills and supplier CSV exports are now present under `sample data/`; more tariff docs may still be useful. |
 | D-005 | Discovery | Define success metrics | Decide how we will judge the rewrite for product quality and correctness. | Product and engineering success metrics are documented. | D-001 | Done | Included in the product brief. |
 | D-006 | Discovery | Define privacy expectations | Capture beta-user privacy, deletion, and operator-access expectations before implementation starts. | Privacy requirements are documented and reflected in architecture and backlog. | D-001 | Done | Seeded from user feedback on privacy and trust. |
 
@@ -29,9 +29,10 @@ Status values:
 | F-002 | Financial Model | Define "saving" | Decide what counts as savings and how it is presented. | Savings definition is written and approved in the calculation spec. | F-001, D-004 | Todo | Needs bill-backed validation. |
 | F-003 | Financial Model | Define no-solar baseline | Decide how the counterfactual bill is modeled. | Baseline logic is written with examples and edge cases. | F-001, D-004 | Todo | High-impact modeling decision. |
 | F-004 | Financial Model | Define export treatment | Decide whether export offsets import directly or is shown separately. | Export treatment is documented and testable. | F-001, D-004 | Todo | Must align with real bill semantics. |
-| F-005 | Financial Model | Define fixed-charge handling | Validate standing charge, PSO, VAT, discount, and bill-period rules. | Fixed charges and tax treatment are documented with examples. | F-001, D-004 | Todo | Current code has assumptions that may not be correct. |
-| F-006 | Financial Model | Define tariff versioning rules | Model plan changes across time without breaking history. | Date-ranged tariff rules are documented and examples span a plan change. | F-001 | Todo | Required before schema finalization. |
+| F-005 | Financial Model | Define fixed-charge handling | Validate standing charge, PSO, VAT, discount, and bill-period rules. | Fixed charges and tax treatment are documented with examples. | F-001, D-004 | In Progress | Bills now show both unit-rate and fixed-charge splits, including PSO changes inside broader periods. |
+| F-006 | Financial Model | Define tariff versioning rules | Model plan changes across time without breaking history. | Date-ranged tariff rules are documented and examples span a plan change. | F-001 | In Progress | Sept-Oct 2025 provides a concrete mid-billing-period rate-change example. |
 | F-007 | Financial Model | Build golden fixtures | Turn bills and sample datasets into repeatable validation fixtures. | Fixture set exists with expected outputs for multiple periods. | D-004, F-002, F-003, F-004, F-005 | Todo | Use anonymized or reduced samples where possible. |
+| F-008 | Financial Model | Define supplier-vs-solar reconciliation rules | Decide how supplier interval data and MyEnergi telemetry are compared when validating bills and usage models. | Reconciliation approach is documented, including expected mismatches and what source is authoritative for each use case. | D-004, F-007 | In Progress | Initial day-level comparisons suggest supplier CSV is close to billed import and MyEnergi `imp` is directionally comparable. |
 
 ## Phase 3: Data Model and Platform
 
@@ -46,6 +47,7 @@ Status values:
 | P-007 | Auth / Multi-user | Design privacy and deletion model | Ensure account deletion, data removal, and least-privilege access are first-class in the schema and architecture. | Deletion, retention, and access-control requirements are documented and mapped to entities. | D-006, P-002 | Todo | Should cover user trust and likely GDPR-adjacent expectations. |
 | P-008 | Ingestion | Define canonical energy model | Create a provider-agnostic internal reading format so core logic is insulated from MyEnergi-specific payloads. | Canonical reading fields and adapter boundary are documented and reflected in schema design. | P-002, P-003 | Todo | Important guardrail even if MyEnergi remains the only provider initially. |
 | P-009 | Ingestion | Design provider adapter contract | Define how provider-specific import code maps raw payloads into canonical readings. | Adapter responsibilities and input/output contract are documented. | P-008 | Deferred | Do enough for MyEnergi first without overbuilding multi-provider support. |
+| P-010 | Ingestion | Model supplier-side interval imports separately | Keep supplier billing/interval data distinct from solar-provider telemetry while allowing reconciliation. | Architecture and schema distinguish supplier interval imports from canonical solar readings. | P-005, F-008 | Todo | Needed because Energia CSV data is not the same source or schema as MyEnergi. |
 
 ## Phase 4: Product and UX
 
@@ -75,12 +77,13 @@ Status values:
 
 ## Current Priorities
 
-1. Get bills, tariff docs, and sample datasets into the repo or an agreed staging area.
-2. Resolve the open financial-model decisions in `docs/calculation-spec.md`.
-3. Turn the architecture direction into a concrete schema proposal.
-4. Define the canonical energy model and provider adapter boundary before writing product code.
-5. Define the privacy, deletion, and centralized job/logging model before writing product code.
-6. Define the information architecture and overview/historical UX before writing product code.
+1. Resolve the open financial-model decisions in `docs/calculation-spec.md` using the supplied Energia bills and supplier CSV exports.
+2. Confirm supplier CSV semantics and billing-period boundary handling.
+3. Define how supplier-side interval data and MyEnergi telemetry will be reconciled.
+4. Turn the architecture direction into a concrete schema proposal.
+5. Define the canonical energy model and provider adapter boundary before writing product code.
+6. Define the privacy, deletion, and centralized job/logging model before writing product code.
+7. Define the information architecture and overview/historical UX before writing product code.
 
 ## Active Risks
 

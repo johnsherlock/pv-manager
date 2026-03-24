@@ -48,10 +48,9 @@ A comparison between solar-attributed savings and the user's installation cost, 
 
 ### Meter or provider inputs
 
-- generation by interval
-- import by interval
-- export by interval
-- consumption by interval if directly available, otherwise derived
+- solar/provider telemetry by interval, such as generation, export, immersion, and derived consumption
+- supplier or meter import data by interval where available
+- supplier billing-period totals and charges
 - timestamps and timezone context
 
 ### Tariff inputs
@@ -166,9 +165,190 @@ This document should be updated from:
 
 - uploaded energy bills
 - tariff documentation or screenshots
+- supplier CSV exports
 - sample MyEnergi exports
 - known-good periods where expected savings are understood
 - reference observations from the current app
+
+## Evidence Inventory In Repo
+
+Current evidence files under [`sample data/`](/Users/john/Documents/Projects/pv-manager/sample%20data):
+
+- [Mar-Apr 25 billing period.png](/Users/john/Documents/Projects/pv-manager/sample%20data/Mar-Apr%2025%20billing%20period.png)
+- [May-July 25 billing period.png](/Users/john/Documents/Projects/pv-manager/sample%20data/May-July%2025%20billing%20period.png)
+- [July-Aug 25 billing period.png](/Users/john/Documents/Projects/pv-manager/sample%20data/July-Aug%2025%20billing%20period.png)
+- [Sept-Oct 25 billing period.png](/Users/john/Documents/Projects/pv-manager/sample%20data/Sept-Oct%2025%20billing%20period.png)
+- [Nov-Dec 25 billing period.png](/Users/john/Documents/Projects/pv-manager/sample%20data/Nov-Dec%2025%20billing%20period.png)
+- [Jan-Feb 26 billing period.png](/Users/john/Documents/Projects/pv-manager/sample%20data/Jan-Feb%2026%20billing%20period.png)
+- [02-05-25 to 03-07-25.csv](/Users/john/Documents/Projects/pv-manager/sample%20data/02-05-25%20to%2003-07-25.csv)
+- [09-07-25.csv](/Users/john/Documents/Projects/pv-manager/sample%20data/09-07-25.csv)
+
+## Observed Billing Evidence
+
+### Tariff windows seen on supplied Energia bills
+
+- day or smart day: all other times
+- night: 11pm to 8am
+- peak: 5pm to 7pm
+
+These windows align with the current proof-of-concept assumptions and should be used as the initial validation target.
+
+### March to May 2025 billing period
+
+From the supplied bill:
+
+- billing period: 2025-02-28 to 2025-05-02
+- day rate: `0.3451`
+- night rate: `0.1848`
+- peak rate: `0.3617`
+- standing charge: `0.59` per day
+- PSO levy: `3.23` per month
+- export credit: `0.20` per unit
+
+### May to July 2025 billing period
+
+From the supplied bill:
+
+- billing period: 2025-05-02 to 2025-07-03
+- day rate: `0.3451`
+- night rate: `0.1848`
+- peak rate: `0.3617`
+- standing charge: `0.59` per day
+- PSO levy: `3.23` per month
+- export credit: `0.20` per unit
+
+The supplier export [02-05-25 to 03-07-25.csv](/Users/john/Documents/Projects/pv-manager/sample%20data/02-05-25%20to%2003-07-25.csv) appears to represent half-hourly Energia-side usage across this same bill window:
+
+- `63` daily rows
+- `48` half-hour intervals per day
+- first date: `2025-05-02`
+- last date: `2025-07-03`
+
+Initial bucketing of this CSV using the bill's day/night/peak windows approximately reproduces the billed usage totals, but not perfectly. That strongly suggests we need to validate one or more of:
+
+- inclusive vs exclusive billing-period boundaries
+- supplier-specific treatment of boundary dates
+- daylight-saving or clock-change handling
+- meter reconciliation or rounding behavior
+
+This is useful because it gives us a concrete fixture for bill-reconstruction tests and for later reconciliation against MyEnergi-derived household usage.
+
+### Initial supplier-versus-MyEnergi comparison
+
+Using the live minute-data API and filtering on the local date fields returned by the payload:
+
+- requested `2025-05-07`
+  - MyEnergi-derived import: about `5.0116 kWh`
+  - supplier CSV total for `2025-05-07`: `5.3490 kWh`
+- requested `2025-07-09`
+  - MyEnergi-derived import: about `5.3079 kWh`
+  - supplier CSV total for `2025-07-09`: `5.6525 kWh`
+
+Tariff-bucket comparison for `2025-07-09` is also directionally close:
+
+- supplier CSV
+  - day: `1.2310`
+  - night: `3.2385`
+  - peak: `1.1830`
+- MyEnergi-derived import
+  - day: `1.2536`
+  - night: `2.8642`
+  - peak: `1.1901`
+
+Interpretation:
+
+- the supplier CSV is likely much closer to billed grid import than to total household consumption
+- MyEnergi minute `imp` data appears directionally comparable and therefore useful for reconciliation
+- the remaining mismatch is likely due to boundary handling, supplier reconciliation, or clock/tariff bucketing differences rather than the two sources measuring entirely different concepts
+
+## Source-of-Truth Distinction
+
+Two materially different data sources are now in scope and must stay distinct in the model:
+
+### 1. Supplier-side billing and import evidence
+
+Examples:
+
+- Energia bills
+- Energia CSV interval exports
+
+Primary uses:
+
+- reconstruct billed import, fixed charges, VAT, discounts, and export credit treatment
+- validate tariff windows and tariff-version transitions
+- provide the closest available reference to what the user was actually charged
+- provide a comparison target for MyEnergi-derived import totals
+
+### 2. MyEnergi solar-side telemetry
+
+Examples:
+
+- raw MyEnergi API payloads
+- normalized solar interval readings derived from the MyEnergi API
+
+Primary uses:
+
+- generation, export, immersion, and solar-behavior views
+- household energy modeling
+- no-solar baseline and savings analysis
+- comparison and reconciliation against supplier-side billed import
+
+These sources should not be treated as interchangeable, even if they cover overlapping periods.
+
+Implication for the model:
+
+- supplier data is the best evidence for billed import and statement reconstruction
+- MyEnergi data is the best evidence for solar behavior and internal energy-flow modeling
+- the product should support comparing and reconciling the two where periods overlap
+- supplier-side import should be treated as the stronger source for billed import validation when available
+
+### July to August 2025 billing period
+
+From the supplied bill:
+
+- billing period: 2025-07-03 to 2025-08-29
+- day rate: `0.3451`
+- night rate: `0.1848`
+- peak rate: `0.3617`
+- standing charge: `0.59` per day
+- PSO levy: `3.23` per month
+- export credit: `0.20` per unit
+
+### September to October 2025 billing period
+
+This bill clearly demonstrates a rate change inside one billing period.
+
+Observed split:
+
+- standing charge split across `40` days at `0.59` and `22` days at `0.66`
+- day units split across `0.3451` and `0.3865`
+- night units split across `0.1848` and `0.2125`
+- peak units split across `0.3617` and `0.434`
+- export units split across `0.20` and `0.185`
+
+This is the strongest current evidence that tariff versioning must work at sub-billing-period granularity.
+
+### November to January billing period
+
+From the supplied bill:
+
+- billing period: 2025-10-30 to 2026-01-02
+- day rate: `0.3865`
+- night rate: `0.2125`
+- peak rate: `0.434`
+- standing charge: `0.66` per day
+- export credit: `0.185` per unit
+
+The bill also shows Public Service Obligation levy values changing within the broader period, which means fixed-charge modeling may also need date-ranged versions, not just unit-rate versions.
+
+### January to February 2026 billing period
+
+The supplied bill for 2026-01-02 to 2026-02-27 is split into subperiods and the user has indicated that this period also reflects a mid-period rate change or renewal effect.
+
+Action:
+
+- validate the exact trigger for the split from the full bill and tariff documentation
+- confirm whether the visible line items represent changed rates, changed discounts, changed contract period, or monthly charge boundaries
 
 ## Open Decisions
 
@@ -177,10 +357,14 @@ This document should be updated from:
 - Should installation payback be reported only as a simple comparison, or also as rolling cumulative ROI/payback?
 - How should incomplete days or partial intervals affect cost modeling?
 - Which billing-period artifacts from real supplier bills must be modeled explicitly beyond usage, VAT, and standing charges?
+- Should billing-period reconstruction use daily tariff resolution, statement-line reconstruction, or both?
+- How should supplier CSV boundary dates be interpreted when statement totals do not exactly match interval totals?
+- How should reconciliation between supplier import data and MyEnergi-derived usage be represented when they differ?
 
 ## Next Inputs Needed
 
-- 2 to 3 representative bills
-- tariff documentation for the associated periods
+- tariff documentation for the supplied periods, if available
+- confirmation from supplier documentation of what the CSV represents exactly, even though initial comparisons suggest it is close to billed import
 - example dates where the current app looks right
 - example dates where the current app looks wrong or suspicious
+- MyEnergi credentials only when we are ready to validate solar-side telemetry against supplier-side billed or interval data
