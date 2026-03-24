@@ -54,6 +54,7 @@ The rewrite should make it easy for a user to answer:
 - Users can compare "with solar" vs "without solar" over any supported date range.
 - Users can maintain tariff history over time without corrupting historical analysis.
 - The app feels polished and professional on desktop and mobile.
+- Users feel confident that their energy data is private, access-controlled, and removable on request.
 
 ### Engineering success
 
@@ -61,12 +62,14 @@ The rewrite should make it easy for a user to answer:
 - Historical reporting is backed by persisted normalized data and daily summaries.
 - Local development is straightforward without depending on deployed Lambda infrastructure.
 - The system supports multiple users and installations from the start.
+- Jobs, application logs, and operational telemetry are visible in a central location.
 
 ### Operational success
 
 - Running costs stay low enough for a hobby product.
 - Scheduled data ingestion and backfills can run unattended.
 - The application can onboard a small number of beta users without manual code changes.
+- Operational tooling remains simple enough to manage roughly 100 beta users without stitching together multiple logging surfaces.
 
 ## Non-Goals For Early Stages
 
@@ -81,4 +84,5 @@ The rewrite should make it easy for a user to answer:
 - Optimize for user decisions, not dashboard density.
 - Prefer explicit financial assumptions over hidden formulas.
 - Keep operational cost and maintenance burden low.
+- Default to strong privacy boundaries and least-privilege access.
 - Build for confidence first, visual polish second, and feature breadth third.
