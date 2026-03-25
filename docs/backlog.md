@@ -10,6 +10,12 @@ Status values:
 - `Done`
 - `Deferred`
 
+Epic tracking:
+
+- When all active items in an epic are complete for the intended phase, mark the epic section heading with `Done`.
+- Do not mark an epic done just because discovery notes exist; it should reflect meaningful completion of the scoped work.
+- When GitHub Issues are adopted for execution, keep this Markdown file as the roadmap view and link issue IDs back into the relevant backlog items.
+
 ## Phase 1: Discovery and Product Definition
 
 | ID | Epic | Title | Objective | Acceptance Criteria | Dependencies | Status | Notes / Discoveries |
@@ -54,6 +60,7 @@ Status values:
 | P-013 | Auth / Multi-user | Design user auth and terms acceptance | Define supported auth providers, approval-gated signup, and mandatory terms/privacy acceptance. | Auth and signup requirements are documented, including Google and terms acceptance. | P-001, P-007 | Todo | Keep onboarding low-friction but explicit about data use and deletion rights. |
 | P-014 | Auth / Multi-user | Design account entitlements and gifted pro access | Define how premium entitlements work, including gifted pro access from an admin view. | Entitlement model supports gifted pro access and future premium gating. | P-001, P-007 | Deferred | Useful for testing premium features before adding payment flows. |
 | P-015 | Data Model | Design provider-tenant growth model | Keep the data model compatible with future provider-level or white-label onboarding without making it core beta scope. | Architecture and schema notes identify how a provider or organization tenant could be added later. | P-002 | Deferred | Commercialization path for provider partnerships and bulk user onboarding. |
+| P-016 | Deployment / Operations | Set up GitHub execution access | Enable issue and pull-request workflows from this environment so implementation work can be tracked and reviewed properly. | GitHub CLI or equivalent access is configured, authenticated, and verified for issue creation and PR workflows on this repo. | P-001 | Todo | High priority before active feature implementation so commits, issues, and PRs can be linked cleanly. |
 
 ## Phase 4: Product and UX
 
@@ -93,14 +100,15 @@ Status values:
 
 ## Current Priorities
 
-1. Resolve the open financial-model decisions in `docs/calculation-spec.md` using the supplied Energia bills and supplier CSV exports.
-2. Create the provider reconciliation analysis tool and use it to tighten DST and boundary handling.
-3. Define how supplier-side interval data and MyEnergi telemetry will be reconciled.
-4. Turn the architecture direction into a concrete schema proposal.
-5. Define the canonical energy model and provider adapter boundary before writing product code.
-6. Define the privacy, deletion, centralized job/logging, and provider health-check model before writing product code.
-7. Define the beta access, approval, and auth onboarding model before writing product code.
-8. Define the information architecture and overview/historical UX before writing product code.
+1. Set up GitHub execution access so issues and PRs can be created from this environment.
+2. Resolve the open financial-model decisions in `docs/calculation-spec.md` using the supplied Energia bills and supplier CSV exports.
+3. Create the provider reconciliation analysis tool and use it to tighten DST and boundary handling.
+4. Define how supplier-side interval data and MyEnergi telemetry will be reconciled.
+5. Turn the architecture direction into a concrete schema proposal.
+6. Define the canonical energy model and provider adapter boundary before writing product code.
+7. Define the privacy, deletion, centralized job/logging, and provider health-check model before writing product code.
+8. Define the beta access, approval, and auth onboarding model before writing product code.
+9. Define the information architecture and overview/historical UX before writing product code.
 
 ## Active Risks
 
