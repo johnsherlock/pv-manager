@@ -4,7 +4,7 @@
 
 This document is the working source of truth for savings and bill-impact logic. It starts with what is known from the existing codebase and product intent, and it must be revised when bills, tariff documents, and sample datasets are added.
 
-Anything uncertain should stay explicit in the "Open Decisions" section until validated.
+Anything uncertain should stay explicit in the remaining evidence questions until validated.
 
 Supplier bills and manually exported supplier CSV files referenced here are development-only validation evidence. They are not intended to become runtime application inputs or a user-facing upload feature.
 
@@ -88,48 +88,105 @@ The current proof of concept includes logic for:
 
 Observed values in the current code are implementation detail only and should not be treated as validated business truth.
 
-## Calculation Areas To Validate
+## Proposed Calculation Rules
+
+These rules are the current product-direction defaults. They are intended to unblock schema and application design now, while later fixture work and bill reconstruction tests can still tighten edge cases.
 
 ### 1. Import cost
 
-Validate:
+Proposed rule:
 
-- how import is bucketed into tariff windows
-- whether discounts are applied before or after VAT
-- whether standing charges should be apportioned daily or by billing period
-- whether free-energy windows are applied as zero-cost import or as credited import
+- import is priced by tariff window using the tariff version active at the local interval timestamp
+- bill reconstruction should use local installation time, not UTC bucket boundaries
+- discounts should be modeled as supplier-plan rules attached to the tariff version and applied before VAT unless bill evidence proves otherwise for a specific supplier
+- free-energy windows, when a tariff includes them, should be modeled as zero-priced import in those intervals rather than as a separate credit line
+
+Implication:
+
+- the runtime product can calculate actual import cost from interval import plus tariff-version history alone
+- supplier bills remain the validation source for whether a supplier applies any statement-level adjustments beyond the tariff metadata
 
 ### 2. Export treatment
 
-Validate:
+Proposed rule:
 
-- whether export is a separate credit line or offsets import directly
-- whether export should be included in "savings" or shown alongside savings
-- whether export should be treated differently across tariff plans
+- export should be modeled as a separate credit line, not as negative import
+- the product should show `import cost`, `fixed charges`, `export credit`, and `net bill impact` separately
+- `actual.netCost` should equal `actual.importCost + actual.fixedCharges - actual.exportCredit`
+- solar `savings` should be calculated from the difference between `withoutSolar.netCost` and `actual.netCost`, so export contributes to savings through the net bill impact
+- the UI should still expose export value separately so users can distinguish self-consumption value from export value
+
+Reasoning:
+
+- this best matches the bill semantics seen so far, where export appears as its own line/value rather than rewriting import usage
+- it also aligns with the product requirement to explain export clearly rather than hiding it inside a single savings number
 
 ### 3. No-solar baseline
 
-Validate:
+Proposed rule:
 
-- whether baseline demand should be modeled as `consumption` or `import + self-consumed generation`
-- whether immersion-diverted energy should be treated as household demand, avoided export, or a distinct category
-- whether the same tariff windows and fixed charges apply unchanged in the baseline
+- the no-solar baseline should use actual household demand, not billed import, as the counterfactual load shape
+- baseline demand should be derived from canonical consumption readings, which are currently modeled from MyEnergi as `import + generation - export - immersionDiverted`
+- baseline import should be the demand that would have remained if solar generation were removed while household behavior stayed otherwise unchanged
+- export becomes zero in the no-solar scenario
+- the same tariff windows and fixed-charge rules should apply in the baseline because the household is assumed to be on the same plan in the same period
+
+Immersion default:
+
+- immersion-diverted energy should remain explicitly tracked as its own field in the canonical model
+- for v1 baseline calculations, immersion-diverted energy should be treated as displaced electric demand and therefore part of solar-attributed value
+- immersion-boosted energy should not be counted as solar savings because it is already grid-powered usage
+
+Why this default:
+
+- it keeps the baseline focused on "what electricity would have been imported without solar"
+- it avoids using supplier import as the baseline, which would erase the very solar effect we are trying to measure
+- it preserves a future escape hatch if some installations need a different treatment for diverted immersion load
 
 ### 4. Fixed charges
 
-Validate:
+Proposed rule:
 
-- standing charge treatment
-- PSO or equivalent recurring charges
-- any supplier discounts or credits that depend on billing period rather than interval usage
+- standing charges, PSO, and other recurring billed charges should be modeled as date-ranged tariff-version properties or related fixed-charge versions
+- fixed charges should be included in both `actual` and `withoutSolar` scenarios when they would have applied regardless of solar production
+- savings should therefore usually come from reduced import cost and export credit rather than from fixed-charge changes
+- period calculations should prorate fixed charges by local calendar day coverage unless supplier evidence shows a different supplier-specific rule
+- statement-only credits or discounts that do not arise from interval usage should be modeled separately from interval energy pricing
+
+Implication:
+
+- we need fixed-charge versioning alongside unit-rate versioning, because the supplied bills already show charge changes inside broader periods
 
 ### 5. Tariff versioning
 
-Validate:
+Proposed rule:
 
-- how periods spanning plan changes are partitioned
-- whether bills must be reconstructed daily, monthly, or by billing period
-- whether tariff metadata should include supplier name and product identifier for auditability
+- tariff versions must be date-ranged and resolved at sub-billing-period granularity
+- a calculation over any range should partition intervals by the tariff version active at each local timestamp, then aggregate the results
+- fixed charges should also support dated versions rather than being assumed constant across a whole contract
+- tariff metadata should include supplier name, product name, and an audit-friendly version label or identifier
+- bill reconstruction should operate in two stages:
+  - interval-level cost attribution by tariff version
+  - statement-level aggregation for comparison against supplier bills
+
+Implication:
+
+- historical recalculation must remain possible when users correct tariff validity windows retrospectively
+
+### 6. Tariff validity versus contract dates
+
+Proposed rule:
+
+- tariff validity windows and contract end dates must be modeled separately
+- tariff validity controls which rates are used for calculation
+- contract end dates are reminders and lifecycle metadata, not calculation inputs by themselves
+- users must be able to correct tariff validity retrospectively and trigger recalculation for affected periods
+- if a contract continues but supplier rates change, a new tariff version must be created without assuming the contract itself ended
+
+Implication:
+
+- the runtime model needs both dated tariff versions and optional contract reminder fields
+- historical accuracy depends on tariff validity data, not on contract labels alone
 
 ## Proposed Domain Outputs
 
@@ -263,6 +320,29 @@ Interpretation:
 - MyEnergi minute `imp` data appears directionally comparable and therefore useful for reconciliation
 - the remaining mismatch is likely due to boundary handling, supplier reconciliation, or clock/tariff bucketing differences rather than the two sources measuring entirely different concepts
 
+### Supplier CSV half-hour label interpretation
+
+For `2025-05-07`, comparing the supplier CSV row against MyEnergi minute `imp` data strongly suggests that each supplier half-hour column labels the interval that starts at that timestamp rather than the interval that ends there.
+
+Observed result:
+
+- interpreting `12:00` as `12:00-12:29` matches the MyEnergi-derived import closely
+- interpreting `12:00` as `11:30-11:59` does not match
+- across the full `2025-05-07` day, the leading-interval interpretation is much closer than the trailing-interval interpretation
+
+Example comparisons:
+
+- `08:00` CSV `0.0130`, API leading-window `0.0134`, API trailing-window `0.7103`
+- `12:00` CSV `0.1015`, API leading-window `0.1017`, API trailing-window `0.0220`
+- `15:30` CSV `0.0590`, API leading-window `0.0586`, API trailing-window `0.0808`
+
+Current working interpretation:
+
+- a supplier CSV row for a given date covers local time from `00:00` through `23:59` on that displayed date
+- a half-hour column such as `12:00` should be interpreted as the interval beginning at `12:00`, not ending there
+
+This should remain the default interpretation unless future DST-edge evidence proves a different supplier convention during clock changes.
+
 ### Strong alignment example: 2025-11-01
 
 For `2025-11-01`, the supplier CSV and the MyEnergi-derived import align very closely:
@@ -375,23 +455,26 @@ The bill also shows Public Service Obligation levy values changing within the br
 
 ### January to February 2026 billing period
 
-The supplied bill for 2026-01-02 to 2026-02-27 is split into subperiods and the user has indicated that this period also reflects a mid-period rate change or renewal effect.
+The supplied bill for 2026-01-02 to 2026-02-27 is split into subperiods because the user renewed their contract on `2026-01-09`, so new rates applied after that date.
 
-Action:
+Implication:
 
-- validate the exact trigger for the split from the full bill and tariff documentation
-- confirm whether the visible line items represent changed rates, changed discounts, changed contract period, or monthly charge boundaries
+- tariff versions must support effective-date changes inside a billing period
+- contract renewal can trigger a new tariff version, but the calculation model should still resolve rates from tariff validity periods rather than from a contract label alone
 
-## Open Decisions
+## Resolved Product Defaults
 
-- Does export reduce the reported bill directly or sit beside import savings as a separate value?
-- Should savings be reported net of standing charges, or should standing charges always remain in both scenarios?
-- Should installation payback be reported only as a simple comparison, or also as rolling cumulative ROI/payback?
-- How should incomplete days or partial intervals affect cost modeling?
-- Which billing-period artifacts from real supplier bills must be modeled explicitly beyond usage, VAT, and standing charges?
-- Should billing-period reconstruction use daily tariff resolution, statement-line reconstruction, or both?
-- How should supplier CSV boundary dates be interpreted when statement totals do not exactly match interval totals?
-- How should reconciliation between supplier import data and MyEnergi-derived usage be represented when they differ?
+- The product should expose one primary `total savings` metric, while still showing export value as a separate line item. A narrower `self-consumption savings` metric can be deferred unless user testing proves it is necessary.
+- Installation payback should be shown first as a simple comparison against install or finance cost for the chosen period. Rolling cumulative ROI/payback can remain a later enhancement rather than a Phase 2 dependency.
+- Incomplete days or partial intervals should be flagged explicitly. They may still appear in operational views, but they should be excluded from validated bill-comparison outputs unless the user deliberately includes them with a warning.
+- Billing-period reconstruction should explicitly model interval usage charges, export credit, VAT, standing charges, PSO, and tariff-version splits. One-off goodwill credits, arrears, or non-energy corrections should stay outside the core savings model unless they recur and can be represented cleanly.
+- Internal validation should support both statement-line comparison and daily reconstructed views. Statement-level totals are the acceptance target, while daily views are for debugging and reconciliation.
+- When supplier CSV boundaries disagree with bill totals, the supplier bill should win as the authoritative validation target. CSV intervals should be treated as supporting evidence used to diagnose boundary, DST, or rounding issues rather than as the final truth.
+- Internal reconciliation reports should show totals and variance for the whole period plus day/night/peak buckets, including both absolute kWh difference and percentage difference, with a short classification such as `aligned`, `close`, or `investigate`.
+
+## Remaining Open Evidence Questions
+
+- What exact boundary convention does the supplier CSV use when its interval totals differ slightly from statement totals?
 
 ## Next Inputs Needed
 

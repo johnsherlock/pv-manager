@@ -16,7 +16,7 @@ Epic tracking:
 - Do not mark an epic done just because discovery notes exist; it should reflect meaningful completion of the scoped work.
 - When GitHub Issues are adopted for execution, keep this Markdown file as the roadmap view and link issue IDs back into the relevant backlog items.
 
-## Phase 1: Discovery and Product Definition
+## Phase 1: Discovery and Product Definition `Done`
 
 | ID | Epic | Title | Objective | Acceptance Criteria | Dependencies | Status | Notes / Discoveries |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -32,14 +32,14 @@ Epic tracking:
 | ID | Epic | Title | Objective | Acceptance Criteria | Dependencies | Status | Notes / Discoveries |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | F-001 | Financial Model | Create calculation spec | Turn product intent and current known rules into an explicit working spec. | `docs/calculation-spec.md` exists with known logic, open decisions, and required evidence. | D-001, D-002 | Done | Must be revised when bills and sample data arrive. |
-| F-002 | Financial Model | Define "saving" | Decide what counts as savings and how it is presented. | Savings definition is written and approved in the calculation spec. | F-001, D-004 | Todo | Needs bill-backed validation. |
-| F-003 | Financial Model | Define no-solar baseline | Decide how the counterfactual bill is modeled. | Baseline logic is written with examples and edge cases. | F-001, D-004 | Todo | High-impact modeling decision. |
-| F-004 | Financial Model | Define export treatment | Decide whether export offsets import directly or is shown separately. | Export treatment is documented and testable. | F-001, D-004 | Todo | Must align with real bill semantics. |
-| F-005 | Financial Model | Define fixed-charge handling | Validate standing charge, PSO, VAT, discount, and bill-period rules. | Fixed charges and tax treatment are documented with examples. | F-001, D-004 | In Progress | Bills now show both unit-rate and fixed-charge splits, including PSO changes inside broader periods. |
-| F-006 | Financial Model | Define tariff versioning rules | Model plan changes across time without breaking history. | Date-ranged tariff rules are documented and examples span a plan change. | F-001 | In Progress | Sept-Oct 2025 provides a concrete mid-billing-period rate-change example. |
+| F-002 | Financial Model | Define "saving" | Decide what counts as savings and how it is presented. | Savings definition is written and approved in the calculation spec. | F-001, D-004 | Done | Savings now defaults to `withoutSolar.netCost - actual.netCost`, with export value still shown separately. |
+| F-003 | Financial Model | Define no-solar baseline | Decide how the counterfactual bill is modeled. | Baseline logic is written with examples and edge cases. | F-001, D-004 | Done | Default now uses actual household demand as the baseline load shape rather than supplier import totals. |
+| F-004 | Financial Model | Define export treatment | Decide whether export offsets import directly or is shown separately. | Export treatment is documented and testable. | F-001, D-004 | Done | Export is modeled as a separate credit line that rolls into net bill impact rather than negative import. |
+| F-005 | Financial Model | Define fixed-charge handling | Validate standing charge, PSO, VAT, discount, and bill-period rules. | Fixed charges and tax treatment are documented with examples. | F-001, D-004 | Done | Fixed charges now default to date-ranged tariff properties present in both scenarios; remaining work is evidence validation, not rules definition. |
+| F-006 | Financial Model | Define tariff versioning rules | Model plan changes across time without breaking history. | Date-ranged tariff rules are documented and examples span a plan change. | F-001 | Done | Tariff and fixed-charge versions now resolve at sub-billing-period granularity; Sept-Oct 2025 remains the key validation case. |
 | F-007 | Financial Model | Build golden fixtures | Turn bills and sample datasets into repeatable validation fixtures. | Fixture set exists with expected outputs for multiple periods. | D-004, F-002, F-003, F-004, F-005 | Todo | Use anonymized or reduced samples where possible. |
-| F-008 | Financial Model | Define supplier-vs-solar reconciliation rules | Decide how supplier interval evidence and MyEnergi telemetry are compared when validating bills and usage models during development. | Reconciliation approach is documented, including expected mismatches and what source is authoritative for each validation use case. | D-004, F-007 | In Progress | This is a development-only validation track, not an end-user product feature. |
-| F-009 | Financial Model | Define tariff validity versus contract dates | Separate tariff validity windows from contract end dates and define how reminders and recalculation should work. | The model distinguishes tariff validity from contract dates and supports retrospective correction. | F-006 | Todo | Suppliers can change rates mid-contract, so contract dates are not sufficient for calculation logic. |
+| F-008 | Financial Model | Define supplier-vs-solar reconciliation rules | Decide how supplier interval evidence and MyEnergi telemetry are compared when validating bills and usage models during development. | Reconciliation approach is documented, including expected mismatches and what source is authoritative for each validation use case. | D-004, F-007 | Done | Reconciliation is now defined as internal validation only, with supplier bills as authority and CSV/MyEnergi comparisons used for diagnostics. |
+| F-009 | Financial Model | Define tariff validity versus contract dates | Separate tariff validity windows from contract end dates and define how reminders and recalculation should work. | The model distinguishes tariff validity from contract dates and supports retrospective correction. | F-006 | Done | Tariff validity now drives calculations, while contract dates remain reminder metadata only. |
 
 ## Phase 3: Data Model and Platform
 
