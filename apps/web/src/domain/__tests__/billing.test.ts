@@ -7,7 +7,7 @@ import {
   type FixedChargeVersion,
   type IntervalReading,
   type TariffVersion,
-} from './billing';
+} from '../billing';
 
 const tariffVersions: TariffVersion[] = [
   {
