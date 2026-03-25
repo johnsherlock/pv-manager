@@ -54,13 +54,16 @@ Epic tracking:
 | P-007 | Auth / Multi-user | Design privacy and deletion model | Ensure account deletion, data removal, and least-privilege access are first-class in the schema and architecture. | Deletion, retention, and access-control requirements are documented and mapped to entities. | D-006, P-002 | Done | Architecture now defines ownership boundaries, deletion workflow, retention defaults, and least-privilege access expectations. |
 | P-008 | Ingestion | Define canonical energy model | Create a provider-agnostic internal reading format so core logic is insulated from MyEnergi-specific payloads. | Canonical reading fields and adapter boundary are documented and reflected in schema design. | P-002, P-003 | Done | Canonical reading fields and tariff-local-time assumptions are now documented in architecture and reflected in the proposed schema. |
 | P-009 | Ingestion | Design provider adapter contract | Define how provider-specific import code maps raw payloads into canonical readings. | Adapter responsibilities and input/output contract are documented. | P-008 | Done | Architecture now defines adapter responsibilities, I/O shape, timezone handling, and MyEnergi-first assumptions without leaking provider schema into core logic. |
-| P-010 | Data Model | Keep validation evidence outside the runtime ingestion model | Ensure supplier CSV and bill evidence can inform validation without becoming a product ingestion path or runtime dependency. | Architecture and schema keep runtime product data centered on provider telemetry and user-entered tariff/bill metadata, while dev-only validation tooling stays separate. | P-005, F-008 | Todo | Supplier CSVs are manual evidence for calibration and regression checks, not supported user uploads. |
+| P-010 | Data Model | Keep validation evidence outside the runtime ingestion model | Ensure supplier CSV and bill evidence can inform validation without becoming a product ingestion path or runtime dependency. | Architecture and schema keep runtime product data centered on provider telemetry and user-entered tariff/bill metadata, while dev-only validation tooling stays separate. | P-005, F-008 | Done | The rewrite app now lives separately under `apps/web`, with runtime schema/code focused on product data and supplier CSV evidence kept out of the app model. |
 | P-011 | Deployment / Operations | Design provider health-check jobs | Define the hourly provider-health check, stale-data detection rules, and internal job flow for alerting users. | Health-check cadence, failure heuristics, and job responsibilities are documented. | P-003, P-006 | Todo | Start with hourly checks and email notifications. |
 | P-012 | Auth / Multi-user | Design beta access request and invite flow | Define how prospective users request access, how admins approve them, and how invites are issued securely. | The beta request, approval, and invitation flow is documented end to end. | P-001, P-007 | Todo | Initial beta should stay gated and MyEnergi-only. |
 | P-013 | Auth / Multi-user | Design user auth and terms acceptance | Define supported auth providers, approval-gated signup, and mandatory terms/privacy acceptance. | Auth and signup requirements are documented, including Google and terms acceptance. | P-001, P-007 | Todo | Keep onboarding low-friction but explicit about data use and deletion rights. |
 | P-014 | Auth / Multi-user | Design account entitlements and gifted pro access | Define how premium entitlements work, including gifted pro access from an admin view. | Entitlement model supports gifted pro access and future premium gating. | P-001, P-007 | Deferred | Useful for testing premium features before adding payment flows. |
 | P-015 | Data Model | Design provider-tenant growth model | Keep the data model compatible with future provider-level or white-label onboarding without making it core beta scope. | Architecture and schema notes identify how a provider or organization tenant could be added later. | P-002 | Deferred | Commercialization path for provider partnerships and bulk user onboarding. |
 | P-016 | Deployment / Operations | Set up GitHub execution access | Enable issue and pull-request workflows from this environment so implementation work can be tracked and reviewed properly. | GitHub CLI or equivalent access is configured, authenticated, and verified for issue creation and PR workflows on this repo. | P-001 | Todo | High priority before active feature implementation so commits, issues, and PRs can be linked cleanly. |
+| P-017 | Rewrite App | Scaffold separate rewrite application | Create a separate codebase for the rewrite inside the repo so legacy and new product work do not interfere with each other. | A standalone rewrite app exists with its own package boundary, build, and database configuration. | P-001 | Done | `apps/web` now contains a separate Next.js + Drizzle rewrite app that builds successfully without modifying the legacy root app. |
+| P-018 | Rewrite App | Create first database migration baseline | Turn the schema proposal into an executable migration baseline for the rewrite app. | The rewrite app contains generated Drizzle migrations that match the current schema design. | P-005, P-017 | Done | Initial Drizzle schema and migration were added under `apps/web/src/db` and `apps/web/drizzle`. |
+| P-019 | Rewrite App | Add first domain services over the schema | Start implementation of billing-oriented domain logic that uses the rewrite model rather than legacy code. | A first domain module exists for core billing/tariff behavior and is independent of the legacy app. | F-002, F-003, F-004, P-018 | Done | `apps/web/src/domain/billing.ts` now holds first-pass tariff resolution and billing comparison logic. |
 
 ## Phase 4: Product and UX
 
@@ -91,6 +94,7 @@ Epic tracking:
 | ID | Epic | Title | Objective | Acceptance Criteria | Dependencies | Status | Notes / Discoveries |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Q-001 | Testing / Quality | Define validation strategy | Decide how bills, fixtures, and UI checks will validate correctness. | Quality strategy is written and tied to backlog items. | F-007, U-001 | Todo | Should combine unit, fixture, and e2e checks. |
+| Q-001a | Testing / Quality | Establish rewrite unit-test harness | Put a lightweight unit-test setup in place for the rewrite so domain logic can be tested as it is introduced. | The rewrite app has a working unit-test runner and at least one passing domain test suite. | P-017 | Done | `apps/web` now uses Vitest and has passing domain tests under `__tests__`. |
 | Q-002 | Testing / Quality | Add billing parity tests | Ensure calculations match expected bill outcomes. | Golden tests exist for multiple billing periods. | F-007 | Todo | Core confidence gate before beta. |
 | Q-003 | Testing / Quality | Add tariff transition tests | Ensure date-ranged tariff changes produce correct outputs. | Regression tests cover periods spanning tariff changes. | F-006, F-007 | Todo | High-risk edge case. |
 | Q-004 | Deployment / Operations | Define beta release workflow | Document how the new app will be tested by you first, then invited beta users. | Release workflow and rollout criteria are documented. | P-001, Q-001 | Todo | Keep scope small and operational overhead low. |
@@ -100,15 +104,13 @@ Epic tracking:
 
 ## Current Priorities
 
-1. Set up GitHub execution access so issues and PRs can be created from this environment.
-2. Resolve the open financial-model decisions in `docs/calculation-spec.md` using the supplied Energia bills and supplier CSV exports as validation evidence.
-3. Create the provider reconciliation analysis tool and use it to tighten DST and boundary handling during development.
-4. Define how supplier-side evidence and MyEnergi telemetry will be reconciled in internal validation.
-5. Turn the architecture direction into a concrete schema proposal.
-6. Define the canonical energy model and provider adapter boundary before writing product code.
-7. Define the privacy, deletion, centralized job/logging, and provider health-check model before writing product code.
-8. Define the beta access, approval, and auth onboarding model before writing product code.
-9. Define the information architecture and overview/historical UX before writing product code.
+1. Define a tighter MVP slice and start executing one story at a time with explicit acceptance criteria.
+2. Build development fixtures and golden financial test cases from the supplied bills and validation data.
+3. Add tariff-transition and billing-parity tests on top of the new rewrite domain layer.
+4. Seed the rewrite database with sample user, installation, tariff, and reading data for local development.
+5. Build the first server-side read path in `apps/web` that exercises the billing domain logic against stored data.
+6. Define provider health-check jobs and centralized job/logging behavior before background ingestion code expands.
+7. Define beta access, auth onboarding, and initial product information architecture before broadening UI implementation.
 
 ## Active Risks
 
