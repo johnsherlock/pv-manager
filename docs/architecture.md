@@ -118,11 +118,6 @@ Scheduled Jobs
 - optional archival of provider-native payloads for debugging, repair, and adapter evolution
 - explicitly separate from the canonical reading model used by product logic
 
-### SupplierIntervalImport
-
-- optional normalized representation of supplier-side interval data, kept distinct from solar-provider telemetry
-- used for bill reconstruction, validation, and reconciliation rather than as a direct replacement for solar-source readings
-
 ### DailySummary
 
 - precomputed daily totals for reporting and faster aggregation
@@ -146,12 +141,7 @@ Scheduled Jobs
 7. Data-health metadata is updated.
 8. A `JobRun` record and centralized logs capture outcome, counts, and failures.
 
-Supplier-side interval imports, when available, should follow a parallel but separate path:
-
-1. ingest supplier-native CSV or billing export data
-2. normalize it into a supplier-side interval model
-3. use it for bill reconstruction and reconciliation
-4. do not collapse it blindly into solar-provider telemetry
+Supplier bills and manually exported supplier interval files may still be used during development as offline validation evidence, but they are not part of the intended product ingestion workflow.
 
 ## Canonical Energy Model
 
@@ -166,8 +156,8 @@ Instead:
 For beta v1:
 
 - MyEnergi is expected to be the primary solar telemetry source
-- supplier billing data and supplier interval exports are separate evidence streams
-- comparison between supplier-side import and MyEnergi-derived behavior should be supported as validation tooling and, later, as user-facing insight
+- supplier bills and manually exported supplier interval data are validation evidence for development, not runtime product inputs
+- comparison between supplier-side import evidence and MyEnergi-derived behavior should be supported as internal validation tooling, not as a beta user-facing workflow
 - provider-specific timezone behavior should be normalized inside the adapter boundary rather than assumed by the core model
 
 The initial product can be MyEnergi-only while still enforcing this boundary.
@@ -258,6 +248,7 @@ Requirements:
 - first-pass MyEnergi adapter
 - canonical energy-reading model
 - savings engine package
+- internal validation tooling for bill and supplier-data comparison
 - authenticated app shell
 - overview, live, history, and tariff setup pages
 - supplier-data reconciliation strategy

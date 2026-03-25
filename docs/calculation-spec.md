@@ -6,6 +6,8 @@ This document is the working source of truth for savings and bill-impact logic. 
 
 Anything uncertain should stay explicit in the "Open Decisions" section until validated.
 
+Supplier bills and manually exported supplier CSV files referenced here are development-only validation evidence. They are not intended to become runtime application inputs or a user-facing upload feature.
+
 ## Primary Financial Outputs
 
 The product should be able to compute, for any supported period:
@@ -163,9 +165,9 @@ type BillingComparison = {
 
 This document should be updated from:
 
-- uploaded energy bills
+- supplied energy bills
 - tariff documentation or screenshots
-- supplier CSV exports
+- manually exported supplier CSV evidence
 - sample MyEnergi exports
 - known-good periods where expected savings are understood
 - reference observations from the current app
@@ -231,7 +233,7 @@ Initial bucketing of this CSV using the bill's day/night/peak windows approximat
 - daylight-saving or clock-change handling
 - meter reconciliation or rounding behavior
 
-This is useful because it gives us a concrete fixture for bill-reconstruction tests and for later reconciliation against MyEnergi-derived household usage.
+This is useful because it gives us a concrete fixture for bill-reconstruction tests and for internal reconciliation against MyEnergi-derived household usage during development.
 
 ### Initial supplier-versus-MyEnergi comparison
 
@@ -303,6 +305,12 @@ Primary uses:
 - provide the closest available reference to what the user was actually charged
 - provide a comparison target for MyEnergi-derived import totals
 
+Important boundary:
+
+- this evidence is for development-time validation and calibration
+- it is not a planned end-user ingestion path for the product
+- users should not need to upload supplier CSVs for the app to work
+
 ### 2. MyEnergi solar-side telemetry
 
 Examples:
@@ -315,7 +323,7 @@ Primary uses:
 - generation, export, immersion, and solar-behavior views
 - household energy modeling
 - no-solar baseline and savings analysis
-- comparison and reconciliation against supplier-side billed import
+- comparison and reconciliation against supplier-side billed import during internal validation
 
 These sources should not be treated as interchangeable, even if they cover overlapping periods.
 
@@ -323,7 +331,7 @@ Implication for the model:
 
 - supplier data is the best evidence for billed import and statement reconstruction
 - MyEnergi data is the best evidence for solar behavior and internal energy-flow modeling
-- the product should support comparing and reconciling the two where periods overlap
+- development tooling should support comparing and reconciling the two where periods overlap
 - supplier-side import should be treated as the stronger source for billed import validation when available
 
 ### July to August 2025 billing period
