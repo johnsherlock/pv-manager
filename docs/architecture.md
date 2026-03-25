@@ -168,6 +168,7 @@ For beta v1:
 - MyEnergi is expected to be the primary solar telemetry source
 - supplier billing data and supplier interval exports are separate evidence streams
 - comparison between supplier-side import and MyEnergi-derived behavior should be supported as validation tooling and, later, as user-facing insight
+- provider-specific timezone behavior should be normalized inside the adapter boundary rather than assumed by the core model
 
 The initial product can be MyEnergi-only while still enforcing this boundary.
 
@@ -180,6 +181,12 @@ Minimum canonical fields expected in the internal model:
 - exported energy
 - consumed energy, whether provided directly or derived
 - optional provider metadata for traceability
+
+Timezone note:
+
+- many providers may expose timestamps in UTC or another provider-defined convention
+- the adapter must normalize raw timestamps into a canonical representation with explicit timezone context
+- DST and date-boundary handling are adapter concerns first, not savings-engine concerns
 
 ## Job Types
 

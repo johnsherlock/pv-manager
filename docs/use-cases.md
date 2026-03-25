@@ -92,6 +92,18 @@ Acceptance notes:
 - Flag missing or partial days.
 - Surface backfill status and ingestion failures.
 
+### UC-009a API health monitoring and alerts
+
+As a user, I want the app to detect when my provider integration appears unhealthy so I am not left blind when data stops flowing.
+
+Acceptance notes:
+
+- If current-day data looks incomplete or suspicious in the app, show an in-product warning.
+- Run a background health check on a regular cadence, initially hourly.
+- Notify the user when the provider integration appears unhealthy or stale.
+- Support email notifications first, with push-based/mobile notification options left open for later.
+- Keep health logic aware that provider outages or device issues may require a local reboot or user action.
+
 ### UC-010 Beta multi-user support
 
 As an operator, I want multiple users to access isolated data and tariff setups so the product can be tested beyond a single household.
@@ -111,6 +123,18 @@ Acceptance notes:
 - Provider-specific credentials and schemas stay behind server-side adapters.
 - Product calculations and views use a canonical internal reading model.
 - The initial release may support only MyEnergi, but should not hardwire MyEnergi payload structure into domain logic.
+
+### UC-010b Tariff validity and contract reminders
+
+As a user, I want to record when my tariff rates are valid and when my contract ends so the app can warn me when my rate data may be out of date.
+
+Acceptance notes:
+
+- Users can set rate validity start and end dates independently of a contract end date.
+- If no tariff end date is supplied, treat the rates as current until replaced.
+- Users can record contract end dates separately so the app can remind them to review their plan.
+- The system can notify users when a tariff validity window or contract end date has passed.
+- Users can correct tariff data retrospectively and trigger recalculation of affected reporting periods.
 
 ### UC-011 Privacy and account deletion
 
@@ -197,3 +221,4 @@ These are useful product directions that should remain visible in planning, but 
 - best generation day callouts for week, month, and year
 - annual wrap-up reports with highlights and charts
 - weather-informed projections for upcoming days
+- push-based mobile notifications for provider-health issues

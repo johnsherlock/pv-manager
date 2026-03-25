@@ -261,6 +261,30 @@ Interpretation:
 - MyEnergi minute `imp` data appears directionally comparable and therefore useful for reconciliation
 - the remaining mismatch is likely due to boundary handling, supplier reconciliation, or clock/tariff bucketing differences rather than the two sources measuring entirely different concepts
 
+### Strong alignment example: 2025-11-01
+
+For `2025-11-01`, the supplier CSV and the MyEnergi-derived import align very closely:
+
+- supplier CSV total: `14.0040 kWh`
+- MyEnergi-derived import total: `13.9277 kWh`
+
+Tariff buckets also align closely:
+
+- supplier CSV
+  - day: `7.3345`
+  - night: `3.5955`
+  - peak: `3.0740`
+- MyEnergi-derived import
+  - day: `7.3011`
+  - night: `3.5713`
+  - peak: `3.0554`
+
+This is currently the clearest evidence that:
+
+- the timezone-adjusted API can be normalized correctly by filtering on returned local date fields
+- MyEnergi `imp` is a strong comparison source for supplier-side import data
+- earlier summer mismatches are likely dominated by boundary or DST effects rather than a bad mapping model
+
 ## Source-of-Truth Distinction
 
 Two materially different data sources are now in scope and must stay distinct in the model:
