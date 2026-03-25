@@ -48,3 +48,4 @@ src/**/*.js
 src/**/*.d.ts
 .playwright-cli/
 output/playwright/
+apps/**/.next/
