@@ -27,7 +27,7 @@ export const users = pgTable('users', {
 
 export const installations = pgTable('installations', {
   id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   timezone: text('timezone').notNull(),
   locale: text('locale').notNull().default('en-IE'),
@@ -44,7 +44,7 @@ export const installations = pgTable('installations', {
 
 export const tariffPlans = pgTable('tariff_plans', {
   id: uuid('id').defaultRandom().primaryKey(),
-  installationId: uuid('installation_id').notNull().references(() => installations.id),
+  installationId: uuid('installation_id').notNull().references(() => installations.id, { onDelete: 'cascade' }),
   supplierName: text('supplier_name').notNull(),
   planName: text('plan_name').notNull(),
   productCode: text('product_code'),
@@ -58,7 +58,7 @@ export const tariffPlans = pgTable('tariff_plans', {
 
 export const tariffPlanVersions = pgTable('tariff_plan_versions', {
   id: uuid('id').defaultRandom().primaryKey(),
-  tariffPlanId: uuid('tariff_plan_id').notNull().references(() => tariffPlans.id),
+  tariffPlanId: uuid('tariff_plan_id').notNull().references(() => tariffPlans.id, { onDelete: 'cascade' }),
   versionLabel: text('version_label').notNull(),
   validFromLocalDate: date('valid_from_local_date').notNull(),
   validToLocalDate: date('valid_to_local_date'),
@@ -83,7 +83,7 @@ export const tariffPlanVersions = pgTable('tariff_plan_versions', {
 
 export const tariffFixedChargeVersions = pgTable('tariff_fixed_charge_versions', {
   id: uuid('id').defaultRandom().primaryKey(),
-  tariffPlanVersionId: uuid('tariff_plan_version_id').notNull().references(() => tariffPlanVersions.id),
+  tariffPlanVersionId: uuid('tariff_plan_version_id').notNull().references(() => tariffPlanVersions.id, { onDelete: 'cascade' }),
   chargeType: text('charge_type').notNull(),
   amount: numeric('amount', { precision: 12, scale: 6 }).notNull(),
   unit: text('unit').notNull(),
@@ -102,8 +102,8 @@ export const tariffFixedChargeVersions = pgTable('tariff_fixed_charge_versions',
 
 export const installationContracts = pgTable('installation_contracts', {
   id: uuid('id').defaultRandom().primaryKey(),
-  installationId: uuid('installation_id').notNull().references(() => installations.id),
-  tariffPlanId: uuid('tariff_plan_id').references(() => tariffPlans.id),
+  installationId: uuid('installation_id').notNull().references(() => installations.id, { onDelete: 'cascade' }),
+  tariffPlanId: uuid('tariff_plan_id').references(() => tariffPlans.id, { onDelete: 'set null' }),
   contractStartDate: date('contract_start_date'),
   contractEndDate: date('contract_end_date'),
   expectedReviewDate: date('expected_review_date'),
@@ -115,7 +115,7 @@ export const installationContracts = pgTable('installation_contracts', {
 
 export const providerConnections = pgTable('provider_connections', {
   id: uuid('id').defaultRandom().primaryKey(),
-  installationId: uuid('installation_id').notNull().references(() => installations.id),
+  installationId: uuid('installation_id').notNull().references(() => installations.id, { onDelete: 'cascade' }),
   providerType: text('provider_type').notNull(),
   status: text('status').notNull().default('active'),
   credentialRef: text('credential_ref'),
@@ -131,8 +131,8 @@ export const providerConnections = pgTable('provider_connections', {
 
 export const energyReadings = pgTable('energy_readings', {
   id: uuid('id').defaultRandom().primaryKey(),
-  installationId: uuid('installation_id').notNull().references(() => installations.id),
-  providerConnectionId: uuid('provider_connection_id').notNull().references(() => providerConnections.id),
+  installationId: uuid('installation_id').notNull().references(() => installations.id, { onDelete: 'cascade' }),
+  providerConnectionId: uuid('provider_connection_id').notNull().references(() => providerConnections.id, { onDelete: 'cascade' }),
   intervalStartUtc: timestamp('interval_start_utc', { withTimezone: true }).notNull(),
   intervalEndUtc: timestamp('interval_end_utc', { withTimezone: true }).notNull(),
   localDate: date('local_date').notNull(),
@@ -161,7 +161,7 @@ export const energyReadings = pgTable('energy_readings', {
 
 export const dailySummaries = pgTable('daily_summaries', {
   id: uuid('id').defaultRandom().primaryKey(),
-  installationId: uuid('installation_id').notNull().references(() => installations.id),
+  installationId: uuid('installation_id').notNull().references(() => installations.id, { onDelete: 'cascade' }),
   localDate: date('local_date').notNull(),
   importKwh: numeric('import_kwh', { precision: 14, scale: 6 }).notNull().default('0'),
   exportKwh: numeric('export_kwh', { precision: 14, scale: 6 }).notNull().default('0'),
@@ -180,7 +180,7 @@ export const dailySummaries = pgTable('daily_summaries', {
 
 export const billingComparisons = pgTable('billing_comparisons', {
   id: uuid('id').defaultRandom().primaryKey(),
-  installationId: uuid('installation_id').notNull().references(() => installations.id),
+  installationId: uuid('installation_id').notNull().references(() => installations.id, { onDelete: 'cascade' }),
   periodStartLocalDate: date('period_start_local_date').notNull(),
   periodEndLocalDate: date('period_end_local_date').notNull(),
   comparisonGranularity: text('comparison_granularity').notNull(),
@@ -213,7 +213,7 @@ export const billingComparisons = pgTable('billing_comparisons', {
 export const jobRuns = pgTable('job_runs', {
   id: uuid('id').defaultRandom().primaryKey(),
   jobType: text('job_type').notNull(),
-  installationId: uuid('installation_id').references(() => installations.id),
+  installationId: uuid('installation_id').references(() => installations.id, { onDelete: 'set null' }),
   status: text('status').notNull(),
   startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
   finishedAt: timestamp('finished_at', { withTimezone: true }),
@@ -225,8 +225,8 @@ export const jobRuns = pgTable('job_runs', {
 
 export const providerRawImports = pgTable('provider_raw_imports', {
   id: uuid('id').defaultRandom().primaryKey(),
-  providerConnectionId: uuid('provider_connection_id').notNull().references(() => providerConnections.id),
-  importRunId: uuid('import_run_id').references(() => jobRuns.id),
+  providerConnectionId: uuid('provider_connection_id').notNull().references(() => providerConnections.id, { onDelete: 'cascade' }),
+  importRunId: uuid('import_run_id').references(() => jobRuns.id, { onDelete: 'set null' }),
   payloadStorageKey: text('payload_storage_key').notNull(),
   payloadDate: date('payload_date'),
   payloadKind: text('payload_kind').notNull(),
@@ -235,8 +235,8 @@ export const providerRawImports = pgTable('provider_raw_imports', {
 
 export const dataHealthEvents = pgTable('data_health_events', {
   id: uuid('id').defaultRandom().primaryKey(),
-  installationId: uuid('installation_id').notNull().references(() => installations.id),
-  providerConnectionId: uuid('provider_connection_id').references(() => providerConnections.id),
+  installationId: uuid('installation_id').notNull().references(() => installations.id, { onDelete: 'cascade' }),
+  providerConnectionId: uuid('provider_connection_id').references(() => providerConnections.id, { onDelete: 'set null' }),
   eventType: text('event_type').notNull(),
   severity: text('severity').notNull(),
   status: text('status').notNull(),
@@ -248,7 +248,7 @@ export const dataHealthEvents = pgTable('data_health_events', {
 
 export const deletionRequests = pgTable('deletion_requests', {
   id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   status: text('status').notNull(),
   requestedAt: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
