@@ -2,6 +2,13 @@
 
 This backlog is the working delivery tracker for the rewrite. It should be updated as work is completed or as discoveries introduce new items.
 
+Execution discipline:
+
+- Pull one active story at a time into `In Progress`.
+- Every active story must have explicit acceptance criteria before implementation starts.
+- Prefer finishing a vertical slice with verification and commit history before starting the next story.
+- Keep "Current Priorities" short and map them to concrete backlog items wherever possible.
+
 Status values:
 
 - `Todo`
@@ -27,7 +34,7 @@ Epic tracking:
 | D-005 | Discovery | Define success metrics | Decide how we will judge the rewrite for product quality and correctness. | Product and engineering success metrics are documented. | D-001 | Done | Included in the product brief. |
 | D-006 | Discovery | Define privacy expectations | Capture beta-user privacy, deletion, and operator-access expectations before implementation starts. | Privacy requirements are documented and reflected in architecture and backlog. | D-001 | Done | Seeded from user feedback on privacy and trust. |
 
-## Phase 2: Financial Model and Validation
+## Phase 2: Financial Model and Validation `In Progress`
 
 | ID | Epic | Title | Objective | Acceptance Criteria | Dependencies | Status | Notes / Discoveries |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -64,6 +71,8 @@ Epic tracking:
 | P-017 | Rewrite App | Scaffold separate rewrite application | Create a separate codebase for the rewrite inside the repo so legacy and new product work do not interfere with each other. | A standalone rewrite app exists with its own package boundary, build, and database configuration. | P-001 | Done | `apps/web` now contains a separate Next.js + Drizzle rewrite app that builds successfully without modifying the legacy root app. |
 | P-018 | Rewrite App | Create first database migration baseline | Turn the schema proposal into an executable migration baseline for the rewrite app. | The rewrite app contains generated Drizzle migrations that match the current schema design. | P-005, P-017 | Done | Initial Drizzle schema and migration were added under `apps/web/src/db` and `apps/web/drizzle`. |
 | P-019 | Rewrite App | Add first domain services over the schema | Start implementation of billing-oriented domain logic that uses the rewrite model rather than legacy code. | A first domain module exists for core billing/tariff behavior and is independent of the legacy app. | F-002, F-003, F-004, P-018 | Done | `apps/web/src/domain/billing.ts` now holds first-pass tariff resolution and billing comparison logic. |
+| P-020 | Rewrite App | Seed rewrite database with development fixture data | Create a lightweight seed path so the rewrite app can be exercised locally with a sample user, installation, tariff setup, and representative readings. | A repeatable seed command exists in `apps/web`; it inserts a coherent sample dataset spanning tariff windows; documentation notes how to run it locally. | P-018, P-019 | Todo | Keep this development-only and small enough to inspect manually. |
+| P-021 | Rewrite App | Build first server-side billing read path | Expose one server-side path that loads stored readings and tariff data, runs the billing domain logic, and returns a structured result for the app to render. | A server-side route or page in `apps/web` reads from the rewrite schema, invokes the billing domain service, and renders or returns a verifiable billing summary from seeded data. | P-019, P-020 | Todo | This is the first real vertical slice from storage through domain logic into app output. |
 
 ## Phase 4: Product and UX
 
@@ -101,16 +110,17 @@ Epic tracking:
 | Q-005 | Testing / Quality | Define privacy and deletion verification | Ensure deletion and access controls are tested, not just documented. | Test plan includes account deletion, data isolation, and restricted operator access scenarios. | P-007 | Todo | Important for beta trust. |
 | Q-006 | Testing / Quality | Create provider reconciliation analysis tool | Build a repeatable repo-side tool to compare supplier CSV evidence against MyEnergi API data by date, interval, tariff bucket, and billed cost. | A script or tool exists that fetches API data, normalizes it, compares it to supplier CSV and bill data, and outputs useful diagnostics for development and regression testing. | F-008, P-008 | Todo | This is internal validation tooling only, not product functionality. |
 | Q-007 | Testing / Quality | Define beta-access and auth verification | Ensure approval-gated signup, invite flow, terms acceptance, and auth-provider behavior are tested. | Test plan covers request, approval, invite, signup, and entitlement edge cases. | P-012, P-013, U-014, U-015 | Deferred | Important once beta onboarding moves from planning into implementation. |
+| Q-008 | Testing / Quality | Add seed-backed integration coverage for the first billing slice | Verify that seeded tariff, installation, and reading data can be loaded through the rewrite persistence model and produce the expected billing summary. | A test exercises the first server-side billing slice against seeded or fixture-backed data and asserts the returned billing summary shape and key values. | P-020, P-021, Q-001a | Todo | Keep this narrower than e2e; the goal is confidence in the first vertical slice. |
 
 ## Current Priorities
 
-1. Define a tighter MVP slice and start executing one story at a time with explicit acceptance criteria.
-2. Build development fixtures and golden financial test cases from the supplied bills and validation data.
-3. Add tariff-transition and billing-parity tests on top of the new rewrite domain layer.
-4. Seed the rewrite database with sample user, installation, tariff, and reading data for local development.
-5. Build the first server-side read path in `apps/web` that exercises the billing domain logic against stored data.
-6. Define provider health-check jobs and centralized job/logging behavior before background ingestion code expands.
-7. Define beta access, auth onboarding, and initial product information architecture before broadening UI implementation.
+1. `P-020` Seed the rewrite database with sample user, installation, tariff, and reading data for local development.
+2. `P-021` Build the first server-side read path in `apps/web` that exercises billing domain logic against stored data.
+3. `Q-008` Add seed-backed integration coverage for that first billing slice.
+4. `F-007` Build development fixtures and golden financial test cases from the supplied bills and validation data.
+5. `Q-002` and `Q-003` Add billing-parity and tariff-transition regression tests on top of the new domain layer.
+6. `P-006` and `P-011` Define provider health-check jobs and centralized job/logging behavior before background ingestion code expands.
+7. `P-012`, `P-013`, and `U-001` Define beta access, auth onboarding, and the initial product information architecture before broadening UI implementation.
 
 ## Active Risks
 
