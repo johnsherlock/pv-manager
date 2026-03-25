@@ -182,6 +182,7 @@ Proposed rule:
 - contract end dates are reminders and lifecycle metadata, not calculation inputs by themselves
 - users must be able to correct tariff validity retrospectively and trigger recalculation for affected periods
 - if a contract continues but supplier rates change, a new tariff version must be created without assuming the contract itself ended
+- if a contract passes its expected renewal or review date without a newer tariff version being entered, the product should warn that the configured rates may now be stale or optimistic
 
 Implication:
 
