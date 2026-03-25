@@ -50,6 +50,10 @@ Status values:
 | P-009 | Ingestion | Design provider adapter contract | Define how provider-specific import code maps raw payloads into canonical readings. | Adapter responsibilities and input/output contract are documented. | P-008 | Deferred | Do enough for MyEnergi first without overbuilding multi-provider support; include provider-specific timestamp and timezone normalization rules at the adapter boundary. |
 | P-010 | Ingestion | Model supplier-side interval imports separately | Keep supplier billing/interval data distinct from solar-provider telemetry while allowing reconciliation. | Architecture and schema distinguish supplier interval imports from canonical solar readings. | P-005, F-008 | Todo | Needed because Energia CSV data is not the same source or schema as MyEnergi. |
 | P-011 | Deployment / Operations | Design provider health-check jobs | Define the hourly provider-health check, stale-data detection rules, and internal job flow for alerting users. | Health-check cadence, failure heuristics, and job responsibilities are documented. | P-003, P-006 | Todo | Start with hourly checks and email notifications. |
+| P-012 | Auth / Multi-user | Design beta access request and invite flow | Define how prospective users request access, how admins approve them, and how invites are issued securely. | The beta request, approval, and invitation flow is documented end to end. | P-001, P-007 | Todo | Initial beta should stay gated and MyEnergi-only. |
+| P-013 | Auth / Multi-user | Design user auth and terms acceptance | Define supported auth providers, approval-gated signup, and mandatory terms/privacy acceptance. | Auth and signup requirements are documented, including Google and terms acceptance. | P-001, P-007 | Todo | Keep onboarding low-friction but explicit about data use and deletion rights. |
+| P-014 | Auth / Multi-user | Design account entitlements and gifted pro access | Define how premium entitlements work, including gifted pro access from an admin view. | Entitlement model supports gifted pro access and future premium gating. | P-001, P-007 | Deferred | Useful for testing premium features before adding payment flows. |
+| P-015 | Data Model | Design provider-tenant growth model | Keep the data model compatible with future provider-level or white-label onboarding without making it core beta scope. | Architecture and schema notes identify how a provider or organization tenant could be added later. | P-002 | Deferred | Commercialization path for provider partnerships and bulk user onboarding. |
 
 ## Phase 4: Product and UX
 
@@ -64,10 +68,16 @@ Status values:
 | U-007 | UX / Visual Design | Rationalize charts | Keep only charts that answer a clear user question. | Chart inventory exists with purpose per chart and removed charts identified. | U-002, U-003, U-004 | Todo | Donut chart is intentionally under review. |
 | U-012 | Live Data | Surface current-day data health warnings | Show users when current-day data appears incomplete, stale, or suspicious. | Live and current-day views display clear warnings when health heuristics fail. | U-004, P-011 | Todo | Important because users may otherwise miss provider/device outages. |
 | U-013 | Tariff Management | Add tariff-validity and contract reminders | Notify users when tariff validity or contract dates have passed and their setup may be stale. | UX supports reminders, warnings, and easy correction of tariff validity periods. | U-005, F-009 | Todo | Contract end date and tariff validity are related but separate concepts. |
+| U-014 | Auth / Multi-user | Build beta access request form | Let prospective users request beta access with email and provider/setup details. | A request form and admin review workflow are designed and scoped. | P-012 | Todo | Keep initial eligibility limited to supported providers, starting with MyEnergi. |
+| U-015 | Auth / Multi-user | Design signup and common auth flows | Support approval-gated signup via Google and other common auth methods, with required terms acceptance. | Signup and login flows are documented with auth options and terms acceptance points. | P-013 | Todo | Must make privacy/data-use expectations clear during onboarding. |
 | U-008 | Historical Views | Add same-day-last-year comparisons | Preserve the idea of seasonal comparison insights as a later feature. | Use case and future requirements are documented. | U-003 | Deferred | Long-finger item, not needed for initial beta. |
 | U-009 | Historical Views | Add best-day insights | Surface highest-generation or standout-performance days in chosen periods. | Future requirements are documented with candidate metrics. | U-003 | Deferred | Fun and useful, but not launch-critical. |
 | U-010 | UX / Visual Design | Design annual wrap-up | Create a year-end summary concept with stats, highlights, and charts. | Future requirements are documented for later scoping. | U-002, U-003 | Deferred | Engagement feature for later. |
 | U-011 | Live Data | Add forecast-informed outlook | Explore adding weather-informed projection for upcoming days. | Future requirements and data-source assumptions are documented. | U-004 | Deferred | Not part of initial core delivery. |
+| U-016 | UX / Visual Design | Design periodic summary digests | Support end-of-day, week, and month summaries by email, push, or in-app delivery. | Requirements are documented for recurring and on-demand summaries. | U-002, U-003, P-011 | Deferred | Likely premium feature rather than beta launch scope. |
+| U-017 | UX / Visual Design | Design AI insight experiences | Define AI-generated reports, optimization suggestions, and weather-informed reminders. | Future requirements are documented with clear boundaries between insight, prediction, and automation. | U-002, U-003, U-011 | Deferred | Premium feature; keep value proposition strong before implementation. |
+| U-018 | UX / Visual Design | Design admin approvals and gifted access screens | Define admin UX for beta approvals, invites, and gifted pro access. | Admin flows are documented for approval and entitlement management. | U-014, P-014 | Deferred | Needed before broader beta ops and premium experiments. |
+| U-019 | UX / Visual Design | Keep provider-whitelabel UX in mind | Ensure UX foundations could support provider-branded or provider-managed access later. | IA and design notes call out likely extension points for provider-led onboarding. | U-001, P-015 | Deferred | Commercialization path, not immediate product scope. |
 
 ## Phase 5: Quality and Delivery
 
@@ -79,6 +89,7 @@ Status values:
 | Q-004 | Deployment / Operations | Define beta release workflow | Document how the new app will be tested by you first, then invited beta users. | Release workflow and rollout criteria are documented. | P-001, Q-001 | Todo | Keep scope small and operational overhead low. |
 | Q-005 | Testing / Quality | Define privacy and deletion verification | Ensure deletion and access controls are tested, not just documented. | Test plan includes account deletion, data isolation, and restricted operator access scenarios. | P-007 | Todo | Important for beta trust. |
 | Q-006 | Testing / Quality | Create provider reconciliation analysis tool | Build a repeatable repo tool to compare supplier CSV data against MyEnergi API data by date, interval, tariff bucket, and billed cost. | A script or tool exists that fetches API data, normalizes it, compares it to supplier CSV and bill data, and outputs useful diagnostics. | F-008, P-008 | Todo | Use this to validate DST handling, boundary effects, provider timestamp normalization, bill reconstruction, and future regression tests. |
+| Q-007 | Testing / Quality | Define beta-access and auth verification | Ensure approval-gated signup, invite flow, terms acceptance, and auth-provider behavior are tested. | Test plan covers request, approval, invite, signup, and entitlement edge cases. | P-012, P-013, U-014, U-015 | Deferred | Important once beta onboarding moves from planning into implementation. |
 
 ## Current Priorities
 
@@ -88,7 +99,8 @@ Status values:
 4. Turn the architecture direction into a concrete schema proposal.
 5. Define the canonical energy model and provider adapter boundary before writing product code.
 6. Define the privacy, deletion, centralized job/logging, and provider health-check model before writing product code.
-7. Define the information architecture and overview/historical UX before writing product code.
+7. Define the beta access, approval, and auth onboarding model before writing product code.
+8. Define the information architecture and overview/historical UX before writing product code.
 
 ## Active Risks
 

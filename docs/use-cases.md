@@ -136,6 +136,39 @@ Acceptance notes:
 - The system can notify users when a tariff validity window or contract end date has passed.
 - Users can correct tariff data retrospectively and trigger recalculation of affected reporting periods.
 
+### UC-010c Beta access request and approval
+
+As a prospective user, I want to request beta access and tell the team what solar/provider setup I have so I can be approved for the right type of onboarding.
+
+Acceptance notes:
+
+- Prospective users can submit email, provider details, and relevant setup notes.
+- Initial beta access is limited to users with a supported provider, starting with MyEnergi.
+- Users are told that provider credentials or API access will be required for supported integrations.
+- Requests flow into an admin review and approval process.
+- Approved users receive a secure invitation or signup link.
+
+### UC-010d Auth, signup, and terms acceptance
+
+As a user, I want to sign up using common login methods and accept the platform terms so I can access the product with a low-friction, trustworthy onboarding flow.
+
+Acceptance notes:
+
+- Support Google and other common authentication methods.
+- Require acceptance of terms and privacy conditions at signup.
+- Make data usage, deletion rights, and GDPR-related expectations clear.
+- Keep signup gated behind approval during beta.
+
+### UC-010e Gifted pro access
+
+As an operator, I want to grant pro access to selected users so I can test premium features without requiring payment flows first.
+
+Acceptance notes:
+
+- Admins can assign or revoke gifted pro entitlements.
+- Gifted access is auditable.
+- Premium feature gating respects gifted access.
+
 ### UC-011 Privacy and account deletion
 
 As a user, I want confidence that my energy and billing data is private and deletable so I can trust the product with household data.
@@ -187,6 +220,37 @@ Acceptance notes:
 - Make the projected nature of the data explicit.
 - Keep this feature out of the initial core delivery.
 
+### UC-016 Periodic summaries and digests
+
+As a user, I want optional end-of-day, week, or month summaries so I can keep up with my solar performance without opening the app constantly.
+
+Acceptance notes:
+
+- Support email first, with push notifications and in-app delivery considered over time.
+- Allow on-demand summaries for chosen dates or ranges.
+- Treat this as a likely premium feature rather than a beta requirement.
+
+### UC-017 AI-driven insights and recommendations
+
+As a user, I want AI-driven analysis of my energy data so I can spot patterns, improve usage, and make better decisions.
+
+Acceptance notes:
+
+- Insights should identify meaningful patterns rather than generic summaries.
+- Recommendations should clearly distinguish observation from prediction.
+- Weather-informed appliance-running suggestions should use localized forecasts where available.
+- Treat this as a premium, later-stage feature.
+
+### UC-018 Provider-led and white-label growth
+
+As an operator, I want the product to remain compatible with provider partnerships so that a solar provider could eventually offer it to many customers at once.
+
+Acceptance notes:
+
+- Keep the architecture compatible with a provider or organization tenant model.
+- Support the idea of provider-level customer onboarding or whitelabel access later.
+- Treat this as a commercialization path, not an initial beta requirement.
+
 ## Questions The Product Must Answer
 
 - What did my home cost me in electricity over a chosen period?
@@ -222,3 +286,6 @@ These are useful product directions that should remain visible in planning, but 
 - annual wrap-up reports with highlights and charts
 - weather-informed projections for upcoming days
 - push-based mobile notifications for provider-health issues
+- periodic summary emails or push digests
+- AI-driven optimization insights and appliance-timing recommendations
+- provider partnerships and white-label distribution
