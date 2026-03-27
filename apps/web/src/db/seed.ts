@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { db, pool } from './client';
 import {
   users,
@@ -216,16 +217,16 @@ async function seed() {
     await tx.insert(dailySummaries).values(summaryRows).onConflictDoUpdate({
       target: [dailySummaries.installationId, dailySummaries.localDate],
       set: {
-        importKwh: dailySummaries.importKwh,
-        exportKwh: dailySummaries.exportKwh,
-        generatedKwh: dailySummaries.generatedKwh,
-        consumedKwh: dailySummaries.consumedKwh,
-        immersionDivertedKwh: dailySummaries.immersionDivertedKwh,
-        immersionBoostedKwh: dailySummaries.immersionBoostedKwh,
-        selfConsumptionRatio: dailySummaries.selfConsumptionRatio,
-        gridDependenceRatio: dailySummaries.gridDependenceRatio,
-        isPartial: dailySummaries.isPartial,
-        rebuiltAt: dailySummaries.rebuiltAt,
+        importKwh: sql`excluded.import_kwh`,
+        exportKwh: sql`excluded.export_kwh`,
+        generatedKwh: sql`excluded.generated_kwh`,
+        consumedKwh: sql`excluded.consumed_kwh`,
+        immersionDivertedKwh: sql`excluded.immersion_diverted_kwh`,
+        immersionBoostedKwh: sql`excluded.immersion_boosted_kwh`,
+        selfConsumptionRatio: sql`excluded.self_consumption_ratio`,
+        gridDependenceRatio: sql`excluded.grid_dependence_ratio`,
+        isPartial: sql`excluded.is_partial`,
+        rebuiltAt: sql`excluded.rebuilt_at`,
       },
     });
     console.log(`  daily_summaries: ok (${summaryRows.length} rows)`);
