@@ -213,7 +213,21 @@ async function seed() {
     console.log('  tariff_fixed_charge_versions: ok');
 
     const summaryRows = [...v1Days, ...v2Days].map(buildSummaryRow);
-    await tx.insert(dailySummaries).values(summaryRows).onConflictDoNothing();
+    await tx.insert(dailySummaries).values(summaryRows).onConflictDoUpdate({
+      target: [dailySummaries.installationId, dailySummaries.localDate],
+      set: {
+        importKwh: dailySummaries.importKwh,
+        exportKwh: dailySummaries.exportKwh,
+        generatedKwh: dailySummaries.generatedKwh,
+        consumedKwh: dailySummaries.consumedKwh,
+        immersionDivertedKwh: dailySummaries.immersionDivertedKwh,
+        immersionBoostedKwh: dailySummaries.immersionBoostedKwh,
+        selfConsumptionRatio: dailySummaries.selfConsumptionRatio,
+        gridDependenceRatio: dailySummaries.gridDependenceRatio,
+        isPartial: dailySummaries.isPartial,
+        rebuiltAt: dailySummaries.rebuiltAt,
+      },
+    });
     console.log(`  daily_summaries: ok (${summaryRows.length} rows)`);
   });
 }
