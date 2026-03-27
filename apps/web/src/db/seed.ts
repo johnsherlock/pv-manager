@@ -131,7 +131,20 @@ async function seed() {
       monthlyFinancePaymentAmount: '158.33',
       financeTermMonths: 60,
       providerType: 'myenergi',
-    }).onConflictDoNothing();
+    }).onConflictDoUpdate({
+      target: installations.id,
+      set: {
+        name: sql`excluded.name`,
+        timezone: sql`excluded.timezone`,
+        locale: sql`excluded.locale`,
+        currencyCode: sql`excluded.currency_code`,
+        financeMode: sql`excluded.finance_mode`,
+        installCostAmount: sql`excluded.install_cost_amount`,
+        monthlyFinancePaymentAmount: sql`excluded.monthly_finance_payment_amount`,
+        financeTermMonths: sql`excluded.finance_term_months`,
+        providerType: sql`excluded.provider_type`,
+      },
+    });
     console.log('  installations: ok');
 
     await tx.insert(providerConnections).values({
@@ -186,7 +199,24 @@ async function seed() {
         peakEndLocalTime: '19:00',
         isActiveDefault: true,
       },
-    ]).onConflictDoNothing();
+    ]).onConflictDoUpdate({
+      target: tariffPlanVersions.id,
+      set: {
+        versionLabel: sql`excluded.version_label`,
+        validFromLocalDate: sql`excluded.valid_from_local_date`,
+        validToLocalDate: sql`excluded.valid_to_local_date`,
+        dayRate: sql`excluded.day_rate`,
+        nightRate: sql`excluded.night_rate`,
+        peakRate: sql`excluded.peak_rate`,
+        exportRate: sql`excluded.export_rate`,
+        vatRate: sql`excluded.vat_rate`,
+        nightStartLocalTime: sql`excluded.night_start_local_time`,
+        nightEndLocalTime: sql`excluded.night_end_local_time`,
+        peakStartLocalTime: sql`excluded.peak_start_local_time`,
+        peakEndLocalTime: sql`excluded.peak_end_local_time`,
+        isActiveDefault: sql`excluded.is_active_default`,
+      },
+    });
     console.log('  tariff_plan_versions: ok');
 
     await tx.insert(tariffFixedChargeVersions).values([
@@ -210,7 +240,17 @@ async function seed() {
         validFromLocalDate: '2025-10-10',
         validToLocalDate: null,
       },
-    ]).onConflictDoNothing();
+    ]).onConflictDoUpdate({
+      target: tariffFixedChargeVersions.id,
+      set: {
+        chargeType: sql`excluded.charge_type`,
+        amount: sql`excluded.amount`,
+        unit: sql`excluded.unit`,
+        vatInclusive: sql`excluded.vat_inclusive`,
+        validFromLocalDate: sql`excluded.valid_from_local_date`,
+        validToLocalDate: sql`excluded.valid_to_local_date`,
+      },
+    });
     console.log('  tariff_fixed_charge_versions: ok');
 
     const summaryRows = [...v1Days, ...v2Days].map(buildSummaryRow);
