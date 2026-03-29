@@ -1,6 +1,4 @@
 import { eq } from 'drizzle-orm';
-import { db } from '../db/client';
-import { installations, tariffPlans, tariffPlanVersions } from '../db/schema';
 import type { MinuteReading, PeriodReading, DayDetailResponse } from './types';
 
 // ---------------------------------------------------------------------------
@@ -56,6 +54,33 @@ export type LivePoint = {
 
 const STALE_MINUTES = 30;
 
+type LiveLoaderDbModule = typeof import('../db/client');
+type LiveLoaderSchemaModule = typeof import('../db/schema');
+
+let _dbDeps:
+  | Promise<{
+      db: LiveLoaderDbModule['db'];
+      installations: LiveLoaderSchemaModule['installations'];
+      tariffPlans: LiveLoaderSchemaModule['tariffPlans'];
+      tariffPlanVersions: LiveLoaderSchemaModule['tariffPlanVersions'];
+    }>
+  | null = null;
+
+async function getDbDeps() {
+  if (!_dbDeps) {
+    _dbDeps = Promise.all([import('../db/client'), import('../db/schema')]).then(
+      ([client, schema]) => ({
+        db: client.db,
+        installations: schema.installations,
+        tariffPlans: schema.tariffPlans,
+        tariffPlanVersions: schema.tariffPlanVersions,
+      }),
+    );
+  }
+
+  return _dbDeps;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -75,6 +100,7 @@ function pad2(n: number): string {
 export async function loadInstallationContext(
   installationId: string,
 ): Promise<InstallationContext | null> {
+  const { db, installations } = await getDbDeps();
   const rows = await db
     .select()
     .from(installations)
@@ -98,6 +124,7 @@ export async function loadTariffContext(
   installationId: string,
   date: string,
 ): Promise<TariffContext | null> {
+  const { db, tariffPlans, tariffPlanVersions } = await getDbDeps();
   const planRows = await db
     .select()
     .from(tariffPlans)
