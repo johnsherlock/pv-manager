@@ -52,6 +52,7 @@ type SeriesKey = 'generation' | 'consumption' | 'import' | 'export' | 'immersion
 export type LiveScreenProps = {
   today: string;
   displayDate: string;
+  initialLiveTime: string;
   installationContext: { name: string } | null;
   timezone: string;
   screenState: ScreenState;
@@ -1294,6 +1295,7 @@ function DisconnectedState() {
 export function LiveScreen({
   today,
   displayDate,
+  initialLiveTime,
   timezone,
   screenState,
   health,
@@ -1314,7 +1316,7 @@ export function LiveScreen({
   const [activeSeries, setActiveSeries] = useState<SeriesKey[]>(MINUTE_DEFAULT_SERIES);
   const [warningDetailsOpen, setWarningDetailsOpen] = useState(false);
   const [warningDismissed, setWarningDismissed] = useState(false);
-  const [liveTime, setLiveTime] = useState(() => formatClockTime(new Date(), timezone));
+  const [liveTime, setLiveTime] = useState(initialLiveTime);
 
   const baseChartData = useMemo(() => {
     if (resolution === '30min') return halfHourChartData;

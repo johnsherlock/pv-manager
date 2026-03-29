@@ -100,6 +100,13 @@ export default async function LivePage() {
     <LiveScreen
       today={today}
       displayDate={formatDisplayDate(today, effectiveTimezone)}
+      initialLiveTime={new Intl.DateTimeFormat('en-IE', {
+        timeZone: effectiveTimezone,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      }).format(now)}
       installationContext={installationContext ? { name: installationContext.name } : null}
       screenState={screenState}
       health={{
