@@ -81,6 +81,24 @@ async function getDbDeps() {
   return _dbDeps;
 }
 
+function getClockMinutes(now: Date, timezone?: string): number {
+  if (!timezone) {
+    return now.getHours() * 60 + now.getMinutes();
+  }
+
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(now);
+
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value ?? '0');
+
+  return hour * 60 + minute;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -192,22 +210,27 @@ export function deriveScreenState(
   health: DayDetailResponse['health'],
   minuteData: MinuteReading[],
   now: Date,
+  timezone?: string,
 ): 'healthy' | 'stale' | 'warning' | 'disconnected' {
   if (minuteData.length === 0) return 'disconnected';
   if (health.hasSuspiciousReadings) return 'warning';
 
   const last = minuteData[minuteData.length - 1];
   const lastMin = last.hour * 60 + last.minute;
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const nowMin = getClockMinutes(now, timezone);
   const stale = Math.max(0, nowMin - lastMin);
 
   return stale > STALE_MINUTES ? 'stale' : 'healthy';
 }
 
-export function getMinutesStale(minuteData: MinuteReading[], now: Date): number | null {
+export function getMinutesStale(
+  minuteData: MinuteReading[],
+  now: Date,
+  timezone?: string,
+): number | null {
   if (minuteData.length === 0) return null;
   const last = minuteData[minuteData.length - 1];
-  return Math.max(0, now.getHours() * 60 + now.getMinutes() - (last.hour * 60 + last.minute));
+  return Math.max(0, getClockMinutes(now, timezone) - (last.hour * 60 + last.minute));
 }
 
 export function getLastReadingLocalTime(minuteData: MinuteReading[]): string | null {

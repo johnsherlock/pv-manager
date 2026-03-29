@@ -110,6 +110,12 @@ describe('deriveScreenState', () => {
     const data = [makeMinute(10, 10)];
     expect(deriveScreenState(makeHealth(), data, now)).toBe('healthy');
   });
+
+  it('uses installation timezone when computing staleness', () => {
+    const now = new Date('2024-06-01T09:45:00Z');
+    const data = [makeMinute(10, 10)];
+    expect(deriveScreenState(makeHealth(), data, now, 'Europe/Dublin')).toBe('stale');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -131,6 +137,12 @@ describe('getMinutesStale', () => {
     const now = new Date('2024-06-01T11:05:00');
     const data = [makeMinute(11, 5)];
     expect(getMinutesStale(data, now)).toBe(0);
+  });
+
+  it('computes stale minutes in installation timezone', () => {
+    const now = new Date('2024-06-01T09:45:00Z');
+    const data = [makeMinute(10, 10)];
+    expect(getMinutesStale(data, now, 'Europe/Dublin')).toBe(35);
   });
 });
 
@@ -237,6 +249,12 @@ describe('computeFinancialEstimate', () => {
     const tariffNoExport: TariffContext = { ...baseTariff, exportRate: null };
     const estimate = computeFinancialEstimate(summary, tariffNoExport);
     expect(estimate.exportCredit).toBe(0);
+  });
+
+  it('returns a negative net bill impact when export credit exceeds import cost', () => {
+    const summary = makeSummary({ totalImportKwh: 1, totalExportKwh: 10, totalGeneratedKwh: 10 });
+    const estimate = computeFinancialEstimate(summary, baseTariff);
+    expect(estimate.netBillImpact).toBeLessThan(0);
   });
 });
 

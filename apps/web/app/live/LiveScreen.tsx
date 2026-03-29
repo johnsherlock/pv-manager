@@ -121,9 +121,9 @@ function formatKwh(kwh: number): string {
   return `${kwh.toFixed(1)} kWh`;
 }
 
-function formatEuro(value: number): string {
-  const abs = Math.abs(value);
-  return `€${abs.toFixed(2)}`;
+function formatEuro(value: number, preserveSign = false): string {
+  const sign = preserveSign && value < 0 ? '-' : '';
+  return `${sign}€${Math.abs(value).toFixed(2)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -697,7 +697,7 @@ function ValuePanel({
     },
     {
       label: 'Net bill impact',
-      value: formatEuro(estimate.netBillImpact),
+      value: formatEuro(estimate.netBillImpact, true),
       tone: estimate.netBillImpact <= 0 ? 'text-emerald-300' : 'text-cyan-300',
     },
   ];

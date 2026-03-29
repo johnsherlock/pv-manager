@@ -13,6 +13,8 @@ import {
 } from '@/src/live/loader';
 import { LiveScreen } from './LiveScreen';
 
+export const dynamic = 'force-dynamic';
+
 // ---------------------------------------------------------------------------
 // Single-user seed path — no auth or user selection for the local-dev slice.
 // ---------------------------------------------------------------------------
@@ -57,9 +59,10 @@ export default async function LivePage() {
 
   // Build the normalised day-detail from raw minute readings.
   const dayDetail = buildDayDetail(today, minuteData, fetchedAt);
+  const installationTimezone = installationContext?.timezone ?? 'Europe/Dublin';
 
   // Derive screen state from health signals and freshness.
-  const screenState = deriveScreenState(dayDetail.health, minuteData, now);
+  const screenState = deriveScreenState(dayDetail.health, minuteData, now, installationTimezone);
 
   // Current instantaneous metrics from the most recent reading.
   const currentMetrics = getCurrentMetrics(minuteData);
@@ -94,7 +97,7 @@ export default async function LivePage() {
       installationContext={installationContext ? { name: installationContext.name } : null}
       screenState={screenState}
       health={{
-        minutesStale: getMinutesStale(minuteData, now),
+        minutesStale: getMinutesStale(minuteData, now, installationTimezone),
         lastReadingLocalTime: getLastReadingLocalTime(minuteData),
       }}
       hasTariff={tariffContext !== null}
