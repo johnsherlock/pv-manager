@@ -8,6 +8,7 @@ import {
   getCurrentMetrics,
   computeFinancialEstimate,
   minuteDataToFiveMinPoints,
+  minuteDataToChartPoints,
   periodDataToChartPoints,
 } from '../loader';
 
@@ -300,6 +301,32 @@ describe('minuteDataToFiveMinPoints', () => {
     const points = minuteDataToFiveMinPoints(data);
     const times = points.map((p) => p.time);
     expect(times).toEqual([...times].sort());
+  });
+});
+
+// ---------------------------------------------------------------------------
+// minuteDataToChartPoints
+// ---------------------------------------------------------------------------
+
+describe('minuteDataToChartPoints', () => {
+  it('returns empty array for no data', () => {
+    expect(minuteDataToChartPoints([])).toEqual([]);
+  });
+
+  it('converts each minute record directly to a chart point', () => {
+    const points = minuteDataToChartPoints([
+      makeMinute(10, 7, { generatedKwh: 0.05, consumedKwh: 0.04, importKwh: 0.01, exportKwh: 0 }),
+    ]);
+
+    expect(points).toEqual([
+      {
+        time: '10:07',
+        generation: 3,
+        consumption: 2.4,
+        import: 0.6,
+        export: 0,
+      },
+    ]);
   });
 });
 

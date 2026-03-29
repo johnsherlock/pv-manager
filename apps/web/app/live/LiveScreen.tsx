@@ -41,7 +41,7 @@ import type {
 // ---------------------------------------------------------------------------
 
 type ScreenState = 'healthy' | 'stale' | 'warning' | 'disconnected';
-type Resolution = '5min' | '15min' | 'hour';
+type Resolution = '1min' | '30min' | '1hour';
 type ViewMode = 'line' | 'cumulative';
 type SeriesKey = 'generation' | 'consumption' | 'import' | 'export';
 
@@ -58,7 +58,7 @@ export type LiveScreenProps = {
   hasCoordinates: boolean;
   hasCapacity: boolean;
   currentMetrics: CurrentMetrics | null;
-  fiveMinChartData: LivePoint[];
+  minuteChartData: LivePoint[];
   halfHourChartData: LivePoint[];
   hourChartData: LivePoint[];
   todayTotals: {
@@ -107,6 +107,12 @@ function applyViewMode(data: LivePoint[], viewMode: ViewMode): LivePoint[] {
 
 function formatSeriesLabel(key: SeriesKey) {
   return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+function formatResolutionLabel(value: Resolution) {
+  if (value === '1min') return '1min';
+  if (value === '30min') return '30min';
+  return '1hour';
 }
 
 function formatKw(value: number) {
@@ -480,10 +486,12 @@ function ToggleGroup<T extends string>({
   value,
   options,
   onChange,
+  renderLabel,
 }: {
   value: T;
   options: readonly T[];
   onChange: (value: T) => void;
+  renderLabel?: (value: T) => string;
 }) {
   return (
     <div className="inline-flex rounded-full border border-slate-700 bg-slate-900/70 p-1">
@@ -497,7 +505,7 @@ function ToggleGroup<T extends string>({
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          {option}
+          {renderLabel ? renderLabel(option) : option}
         </button>
       ))}
     </div>
@@ -541,8 +549,9 @@ function LiveTrendChart({
         <div className="flex flex-wrap gap-2">
           <ToggleGroup
             value={resolution}
-            options={['5min', '15min', 'hour'] as const}
+            options={['1min', '30min', '1hour'] as const}
             onChange={onResolutionChange}
+            renderLabel={formatResolutionLabel}
           />
           <ToggleGroup
             value={viewMode}
@@ -597,7 +606,7 @@ function LiveTrendChart({
               <defs>
                 {SERIES_ORDER.map((key) => (
                   <linearGradient key={key} id={`fill-${key}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="4%" stopColor={SERIES_COLORS[key]} stopOpacity={0.28} />
+                    <stop offset="4%" stopColor={SERIES_COLORS[key]} stopOpacity={0.16} />
                     <stop offset="96%" stopColor={SERIES_COLORS[key]} stopOpacity={0} />
                   </linearGradient>
                 ))}
@@ -635,12 +644,12 @@ function LiveTrendChart({
               {SERIES_ORDER.filter((series) => activeSeries.includes(series)).map((series) => (
                 <Area
                   key={series}
-                  type="monotone"
+                  type="linear"
                   dataKey={series}
                   stroke={SERIES_COLORS[series]}
                   fill={`url(#fill-${series})`}
-                  strokeWidth={series === 'import' ? 1.75 : 2.2}
-                  activeDot={{ r: 4 }}
+                  strokeWidth={series === 'import' ? 1 : 1.25}
+                  activeDot={{ r: 2.5, strokeWidth: 0 }}
                   dot={false}
                 />
               ))}
@@ -810,8 +819,8 @@ function SolarCoveragePanel({
             <AreaChart data={coverageData} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
               <defs>
                 <linearGradient id="coverage-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.34} />
-                  <stop offset="70%" stopColor="#86efac" stopOpacity={0.18} />
+                  <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.2} />
+                  <stop offset="70%" stopColor="#86efac" stopOpacity={0.1} />
                   <stop offset="100%" stopColor="#86efac" stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -841,11 +850,11 @@ function SolarCoveragePanel({
                 formatter={(value) => [`${Number(value ?? 0)}%`, 'Solar coverage']}
               />
               <Area
-                type="monotone"
+                type="linear"
                 dataKey="coverage"
                 stroke="#facc15"
                 fill="url(#coverage-fill)"
-                strokeWidth={2.4}
+                strokeWidth={1.2}
                 dot={false}
               />
             </AreaChart>
@@ -1056,21 +1065,21 @@ export function LiveScreen({
   hasCoordinates,
   hasCapacity,
   currentMetrics,
-  fiveMinChartData,
+  minuteChartData,
   halfHourChartData,
   hourChartData,
   todayTotals,
   financialEstimate,
 }: LiveScreenProps) {
-  const [resolution, setResolution] = useState<Resolution>('5min');
+  const [resolution, setResolution] = useState<Resolution>('1min');
   const [viewMode, setViewMode] = useState<ViewMode>('line');
   const [activeSeries, setActiveSeries] = useState<SeriesKey[]>(SERIES_ORDER);
 
   const baseChartData = useMemo(() => {
-    if (resolution === '15min') return halfHourChartData;
-    if (resolution === 'hour') return hourChartData;
-    return fiveMinChartData;
-  }, [resolution, fiveMinChartData, halfHourChartData, hourChartData]);
+    if (resolution === '30min') return halfHourChartData;
+    if (resolution === '1hour') return hourChartData;
+    return minuteChartData;
+  }, [resolution, minuteChartData, halfHourChartData, hourChartData]);
 
   const chartData = useMemo(
     () => applyViewMode(baseChartData, viewMode),

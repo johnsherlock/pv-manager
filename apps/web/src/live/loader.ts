@@ -298,6 +298,16 @@ export function minuteDataToFiveMinPoints(minuteData: MinuteReading[]): LivePoin
     }));
 }
 
+export function minuteDataToChartPoints(minuteData: MinuteReading[]): LivePoint[] {
+  return minuteData.map((m) => ({
+    time: `${pad2(m.hour)}:${pad2(m.minute)}`,
+    generation: r2(m.generatedKwh * 60),
+    consumption: r2(m.consumedKwh * 60),
+    import: r2(m.importKwh * 60),
+    export: r2(m.exportKwh * 60),
+  }));
+}
+
 /**
  * Convert aggregated period readings to chart points.
  * @param periodMinutes - Duration of each period (30 for half-hour, 60 for hourly)
