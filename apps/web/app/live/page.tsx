@@ -10,6 +10,7 @@ import {
   getCurrentMetrics,
   minuteDataToChartPoints,
   periodDataToChartPoints,
+  periodDataToCostPoints,
 } from '@/src/live/loader';
 import { LiveScreen } from './LiveScreen';
 
@@ -59,7 +60,7 @@ export default async function LivePage() {
   ]);
 
   // Build the normalised day-detail from raw minute readings.
-  const dayDetail = buildDayDetail(today, minuteData, fetchedAt);
+  const dayDetail = buildDayDetail(today, minuteData, fetchedAt, effectiveTimezone);
 
   // Derive screen state from health signals and freshness.
   const screenState = deriveScreenState(dayDetail.health, minuteData, now, effectiveTimezone);
@@ -79,6 +80,10 @@ export default async function LivePage() {
   const minuteChartData = minuteDataToChartPoints(minuteData);
   const halfHourChartData = periodDataToChartPoints(dayDetail.halfHourData, 30);
   const hourChartData = periodDataToChartPoints(dayDetail.hourData, 60);
+  const costChartData =
+    tariffContext && screenState !== 'disconnected'
+      ? periodDataToCostPoints(dayDetail.halfHourData, today, tariffContext)
+      : [];
 
   const todayTotals =
     screenState !== 'disconnected'
@@ -87,6 +92,7 @@ export default async function LivePage() {
           consumedKwh: dayDetail.summary.totalConsumedKwh,
           importKwh: dayDetail.summary.totalImportKwh,
           exportKwh: dayDetail.summary.totalExportKwh,
+          immersionDivertedKwh: dayDetail.summary.totalImmersionDivertedKwh,
         }
       : null;
 
@@ -99,7 +105,16 @@ export default async function LivePage() {
       health={{
         minutesStale: getMinutesStale(minuteData, now, effectiveTimezone),
         lastReadingLocalTime: getLastReadingLocalTime(minuteData),
+        refreshedAtLocalTime: new Intl.DateTimeFormat('en-IE', {
+          timeZone: effectiveTimezone,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }).format(now),
+        warningDetails: dayDetail.health.warningDetails,
       }}
+      timezone={effectiveTimezone}
       hasTariff={tariffContext !== null}
       hasCoordinates={false}
       hasCapacity={false}
@@ -107,6 +122,7 @@ export default async function LivePage() {
       minuteChartData={minuteChartData}
       halfHourChartData={halfHourChartData}
       hourChartData={hourChartData}
+      costChartData={costChartData}
       todayTotals={todayTotals}
       financialEstimate={financialEstimate}
     />

@@ -10,6 +10,7 @@ import {
   minuteDataToFiveMinPoints,
   minuteDataToChartPoints,
   periodDataToChartPoints,
+  periodDataToCostPoints,
 } from '../loader';
 
 // ---------------------------------------------------------------------------
@@ -72,11 +73,20 @@ function makeSummary(overrides: Partial<DayDetailResponse['summary']> = {}): Day
 }
 
 const baseTariff: TariffContext = {
+  versionId: 'tariff-v1',
   supplierName: 'Test',
   planName: 'Standard',
   dayRate: 0.40,
+  nightRate: null,
+  peakRate: null,
   exportRate: 0.21,
   vatRate: 0.09,
+  discountRuleType: null,
+  discountValue: null,
+  nightStartLocalTime: null,
+  nightEndLocalTime: null,
+  peakStartLocalTime: null,
+  peakEndLocalTime: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -190,6 +200,7 @@ describe('getCurrentMetrics', () => {
     expect(metrics!.generatedKw).toBe(3);
     expect(metrics!.consumedKw).toBe(2.4);
     expect(metrics!.exportKw).toBe(0.6);
+    expect(metrics!.immersionKw).toBe(0);
   });
 
   it('computes solarShare correctly', () => {
@@ -325,6 +336,8 @@ describe('minuteDataToChartPoints', () => {
         consumption: 2.4,
         import: 0.6,
         export: 0,
+        immersion: 0,
+        intervalHours: 1 / 60,
       },
     ]);
   });
@@ -348,6 +361,7 @@ describe('periodDataToChartPoints', () => {
     expect(points[0].consumption).toBe(2);  // 1.0 * 2
     expect(points[0].import).toBe(0.4);     // 0.2 * 2
     expect(points[0].export).toBe(1.4);     // 0.7 * 2
+    expect(points[0].intervalHours).toBe(0.5);
   });
 
   it('converts hourly kWh to kW (factor 1)', () => {
@@ -358,11 +372,63 @@ describe('periodDataToChartPoints', () => {
     expect(points[0].generation).toBe(3);
     expect(points[0].consumption).toBe(2.5);
     expect(points[0].export).toBe(0.5);
+    expect(points[0].intervalHours).toBe(1);
   });
 
   it('formats time with zero-padding', () => {
     const periods = [makePeriod(9, 0)];
     const points = periodDataToChartPoints(periods, 30);
     expect(points[0].time).toBe('09:00');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// periodDataToCostPoints
+// ---------------------------------------------------------------------------
+
+describe('periodDataToCostPoints', () => {
+  it('builds half-hour import, savings, and export values in euro', () => {
+    const periods = [
+      makePeriod(10, 0, {
+        generatedKwh: 1.5,
+        consumedKwh: 2,
+        importKwh: 0.5,
+        exportKwh: 0.2,
+        immersionDivertedKwh: 0.1,
+      }),
+    ];
+
+    const points = periodDataToCostPoints(periods, '2026-03-30', baseTariff);
+
+    expect(points).toEqual([
+      {
+        time: '10:00',
+        importCost: 0.22,
+        savings: 0.52,
+        exportCredit: 0.04,
+      },
+    ]);
+  });
+
+  it('works with time-of-use windows for half-hour intervals', () => {
+    const touTariff: TariffContext = {
+      ...baseTariff,
+      nightRate: 0.2,
+      peakRate: 0.6,
+      nightStartLocalTime: '23:00',
+      nightEndLocalTime: '08:00',
+      peakStartLocalTime: '17:00',
+      peakEndLocalTime: '19:00',
+    };
+
+    const periods = [
+      makePeriod(7, 30, { importKwh: 1 }),
+      makePeriod(17, 0, { importKwh: 1 }),
+      makePeriod(12, 0, { importKwh: 1 }),
+    ];
+
+    const points = periodDataToCostPoints(periods, '2026-03-30', touTariff);
+
+    expect(points.map((point) => point.importCost)).toEqual([0.22, 0.65, 0.44]);
   });
 });

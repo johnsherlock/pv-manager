@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Area,
   AreaChart,
@@ -20,6 +21,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Eye,
+  EyeOff,
   Home,
   RefreshCw,
   Sun,
@@ -31,6 +34,7 @@ import {
   Zap,
 } from 'lucide-react';
 import type {
+  CostPoint,
   CurrentMetrics,
   FinancialEstimate,
   LivePoint,
@@ -43,16 +47,25 @@ import type {
 type ScreenState = 'healthy' | 'stale' | 'warning' | 'disconnected';
 type Resolution = '1min' | '30min' | '1hour';
 type ViewMode = 'line' | 'cumulative';
-type SeriesKey = 'generation' | 'consumption' | 'import' | 'export';
+type SeriesKey = 'generation' | 'consumption' | 'import' | 'export' | 'immersion';
 
 export type LiveScreenProps = {
   today: string;
   displayDate: string;
   installationContext: { name: string } | null;
+  timezone: string;
   screenState: ScreenState;
   health: {
     minutesStale: number | null;
     lastReadingLocalTime: string | null;
+    refreshedAtLocalTime: string;
+    warningDetails: {
+      kind: 'missing-interval';
+      missingMinutes: number;
+      gapStartsAt: string;
+      gapEndsAt: string;
+      message: string;
+    } | null;
   };
   hasTariff: boolean;
   hasCoordinates: boolean;
@@ -61,11 +74,13 @@ export type LiveScreenProps = {
   minuteChartData: LivePoint[];
   halfHourChartData: LivePoint[];
   hourChartData: LivePoint[];
+  costChartData: CostPoint[];
   todayTotals: {
     generatedKwh: number;
     consumedKwh: number;
     importKwh: number;
     exportKwh: number;
+    immersionDivertedKwh: number;
   } | null;
   financialEstimate: FinancialEstimate | null;
 };
@@ -74,39 +89,75 @@ export type LiveScreenProps = {
 // Constants
 // ---------------------------------------------------------------------------
 
-const SERIES_ORDER: SeriesKey[] = ['generation', 'consumption', 'import', 'export'];
+const SERIES_ORDER: SeriesKey[] = ['generation', 'consumption', 'import', 'immersion', 'export'];
+const MINUTE_DEFAULT_SERIES: SeriesKey[] = ['generation', 'consumption'];
 const SERIES_COLORS: Record<SeriesKey, string> = {
   generation: '#fbbf24',
-  consumption: '#94a3b8',
+  consumption: '#f97316',
   import: '#64748b',
   export: '#34d399',
+  immersion: '#ef4444',
+};
+const COST_SERIES_ORDER = ['importCost', 'savings', 'exportCredit'] as const;
+type CostSeriesKey = (typeof COST_SERIES_ORDER)[number];
+const COST_SERIES_COLORS: Record<CostSeriesKey, string> = {
+  importCost: '#f472b6',
+  savings: '#4ade80',
+  exportCredit: '#60a5fa',
 };
 
 // ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
 
-function applyViewMode(data: LivePoint[], viewMode: ViewMode): LivePoint[] {
+function applyViewMode(data: LivePoint[], viewMode: ViewMode, resolution: Resolution): LivePoint[] {
   if (viewMode === 'line') return data;
 
-  const running = { generation: 0, consumption: 0, import: 0, export: 0 };
+  const running = { generation: 0, consumption: 0, import: 0, export: 0, immersion: 0 };
   return data.map((point) => {
-    running.generation += point.generation;
-    running.consumption += point.consumption;
-    running.import += point.import;
-    running.export += point.export;
+    const factor = resolution === '1min' ? 1 : point.intervalHours;
+    running.generation += point.generation * factor;
+    running.consumption += point.consumption * factor;
+    running.import += point.import * factor;
+    running.export += point.export * factor;
+    running.immersion += point.immersion * factor;
     return {
       time: point.time,
       generation: Number(running.generation.toFixed(2)),
       consumption: Number(running.consumption.toFixed(2)),
       import: Number(running.import.toFixed(2)),
       export: Number(running.export.toFixed(2)),
+      immersion: Number(running.immersion.toFixed(2)),
+      intervalHours: point.intervalHours,
+    };
+  });
+}
+
+function applyCostViewMode(data: CostPoint[], viewMode: ViewMode): CostPoint[] {
+  if (viewMode === 'line') return data;
+
+  const running = { importCost: 0, savings: 0, exportCredit: 0 };
+  return data.map((point) => {
+    running.importCost += point.importCost;
+    running.savings += point.savings;
+    running.exportCredit += point.exportCredit;
+    return {
+      time: point.time,
+      importCost: Number(running.importCost.toFixed(2)),
+      savings: Number(running.savings.toFixed(2)),
+      exportCredit: Number(running.exportCredit.toFixed(2)),
     };
   });
 }
 
 function formatSeriesLabel(key: SeriesKey) {
   return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+function formatCostSeriesLabel(key: CostSeriesKey) {
+  if (key === 'importCost') return 'Import €';
+  if (key === 'exportCredit') return 'Export €';
+  return 'Savings €';
 }
 
 function formatResolutionLabel(value: Resolution) {
@@ -124,12 +175,27 @@ function formatW(kw: number): string {
 }
 
 function formatKwh(kwh: number): string {
-  return `${kwh.toFixed(1)} kWh`;
+  return `${kwh.toFixed(2)} kWh`;
 }
 
 function formatEuro(value: number, preserveSign = false): string {
   const sign = preserveSign && value < 0 ? '-' : '';
   return `${sign}€${Math.abs(value).toFixed(2)}`;
+}
+
+function formatEuroTick(value: number): string {
+  if (value === 0) return '€0';
+  return `€${value.toFixed(2)}`;
+}
+
+function formatClockTime(date: Date, timezone: string): string {
+  return new Intl.DateTimeFormat('en-IE', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(date);
 }
 
 // ---------------------------------------------------------------------------
@@ -214,21 +280,24 @@ function NavBar({ screenState }: { screenState: ScreenState }) {
 function TrustBadge({
   screenState,
   health,
+  dismissed,
+  onOpenDetails,
 }: {
   screenState: ScreenState;
   health: LiveScreenProps['health'];
+  dismissed?: boolean;
+  onOpenDetails?: () => void;
 }) {
   function label(): string {
-    const stale = health.minutesStale;
     switch (screenState) {
       case 'healthy':
-        return stale === 0 ? 'Live now' : `Updated ${stale} min ago`;
+        return `Updated ${health.refreshedAtLocalTime}`;
       case 'stale':
-        return stale !== null ? `Last seen ${stale} min ago` : 'Data delayed';
-      case 'warning':
         return health.lastReadingLocalTime
-          ? `Suspicious reading at ${health.lastReadingLocalTime}`
-          : 'Suspicious reading detected';
+          ? `Last reading ${health.lastReadingLocalTime}`
+          : 'Data delayed';
+      case 'warning':
+        return dismissed ? 'Data quality note dismissed' : 'Data quality review needed';
       case 'disconnected':
         return 'Provider disconnected';
     }
@@ -255,16 +324,29 @@ function TrustBadge({
 
   const item = config[screenState];
   return (
-    <span
+    <button
+      type="button"
+      onClick={screenState === 'warning' ? onOpenDetails : undefined}
       className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${item.className}`}
     >
       {item.icon}
       {label()}
-    </span>
+    </button>
   );
 }
 
-function WarningBanner({ screenState }: { screenState: ScreenState }) {
+function WarningBanner({
+  screenState,
+  health,
+  dismissed,
+  onOpenDetails,
+}: {
+  screenState: ScreenState;
+  health: LiveScreenProps['health'];
+  dismissed?: boolean;
+  onOpenDetails?: () => void;
+}) {
+  if (screenState === 'warning' && dismissed) return null;
   if (screenState === 'healthy') return null;
 
   const config = {
@@ -276,9 +358,11 @@ function WarningBanner({ screenState }: { screenState: ScreenState }) {
       icon: <Clock size={15} className="mt-0.5 shrink-0" />,
     },
     warning: {
-      title: 'One reading looks suspicious',
-      body: 'A recent interval contains an unusual gap or value. This may be a provider reporting issue rather than a real change.',
-      cta: 'Review Data Health',
+      title: 'A data gap needs review',
+      body:
+        health.warningDetails?.message ??
+        'A recent interval contains an unusual gap or missing live readings.',
+      cta: 'Review details',
       className: 'border-orange-500/20 bg-orange-500/10 text-orange-200',
       icon: <AlertTriangle size={15} className="mt-0.5 shrink-0" />,
     },
@@ -299,7 +383,71 @@ function WarningBanner({ screenState }: { screenState: ScreenState }) {
           <p className="text-sm font-semibold">{config.title}</p>
           <p className="mt-0.5 text-sm text-inherit/80">{config.body}</p>
         </div>
-        <button className="text-xs font-semibold underline underline-offset-4">{config.cta}</button>
+        <button
+          type="button"
+          onClick={screenState === 'warning' ? onOpenDetails : undefined}
+          className="text-xs font-semibold underline underline-offset-4"
+        >
+          {config.cta}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function WarningDetailsModal({
+  health,
+  open,
+  onClose,
+  onDismiss,
+}: {
+  health: LiveScreenProps['health'];
+  open: boolean;
+  onClose: () => void;
+  onDismiss: () => void;
+}) {
+  if (!open || !health.warningDetails) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4">
+      <div className="w-full max-w-md rounded-[28px] border border-slate-800 bg-[#111b2b] p-5 shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Data quality
+        </p>
+        <h3 className="mt-1 text-lg font-semibold text-slate-50">Missing live readings detected</h3>
+        <p className="mt-3 text-sm text-slate-300">{health.warningDetails.message}</p>
+        <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/70 px-3 py-3 text-sm text-slate-300">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-slate-400">Gap window</span>
+            <span className="font-mono">
+              {health.warningDetails.gapStartsAt} to {health.warningDetails.gapEndsAt}
+            </span>
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <span className="text-slate-400">Missing minutes</span>
+            <span className="font-mono">{health.warningDetails.missingMinutes}</span>
+          </div>
+        </div>
+        <p className="mt-4 text-sm text-slate-400">
+          This note is based on missing minute records in the provider feed. If you trust the data,
+          you can dismiss the warning for this session.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="rounded-full bg-amber-300 px-4 py-2 text-sm font-semibold text-slate-950"
+          >
+            Dismiss warning
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -472,7 +620,7 @@ function InsightStrip({
           </div>
           {hasCapacity && (
             <div className="flex items-center justify-between">
-              <span className="text-slate-400">Grid share</span>
+              <span className="text-slate-400">Grid draw</span>
               <span className="font-semibold text-cyan-300">{gridShare}%</span>
             </div>
           )}
@@ -514,6 +662,7 @@ function ToggleGroup<T extends string>({
 
 function LiveTrendChart({
   data,
+  costData,
   screenState,
   resolution,
   onResolutionChange,
@@ -523,6 +672,7 @@ function LiveTrendChart({
   onToggleSeries,
 }: {
   data: LivePoint[];
+  costData: CostPoint[];
   screenState: ScreenState;
   resolution: Resolution;
   onResolutionChange: (resolution: Resolution) => void;
@@ -532,6 +682,17 @@ function LiveTrendChart({
   onToggleSeries: (series: SeriesKey) => void;
 }) {
   const isStale = screenState === 'stale' || screenState === 'warning';
+  const cumulativeUsesEnergyUnits = viewMode === 'cumulative' && resolution !== '1min';
+  const axisUnit = cumulativeUsesEnergyUnits ? 'kWh' : 'kW';
+  const showFilledMinuteView = resolution === '1min' && viewMode === 'line';
+  const visibleData = data.flatMap((point) =>
+    activeSeries.map((series) => point[series]),
+  );
+  const maxVisibleValue = visibleData.reduce((max, value) => Math.max(max, value), 0);
+  const yAxisMax =
+    maxVisibleValue <= 0
+      ? 1
+      : Number((Math.ceil((maxVisibleValue * 1.1) / 0.5) * 0.5).toFixed(2));
 
   return (
     <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-5 shadow-[0_30px_70px_rgba(2,6,23,0.34)]">
@@ -589,13 +750,15 @@ function LiveTrendChart({
                 />
                 {formatSeriesLabel(series)}
               </span>
-              <span className="text-[11px]">{active ? 'Visible' : 'Hidden'}</span>
+              <span className="text-[11px] text-slate-400">
+                {active ? <Eye size={13} /> : <EyeOff size={13} />}
+              </span>
             </button>
           );
         })}
       </div>
 
-      <div className="mt-4 h-[280px] rounded-[24px] border border-slate-800 bg-[#0b1321] p-3">
+      <div className="mt-4 h-[400px] rounded-[24px] border border-slate-800 bg-[#0b1321] p-3">
         {data.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-500">
             No live data available
@@ -606,7 +769,8 @@ function LiveTrendChart({
               <defs>
                 {SERIES_ORDER.map((key) => (
                   <linearGradient key={key} id={`fill-${key}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="4%" stopColor={SERIES_COLORS[key]} stopOpacity={0.16} />
+                    <stop offset="0%" stopColor={SERIES_COLORS[key]} stopOpacity={showFilledMinuteView ? 0.34 : 0.12} />
+                    <stop offset="70%" stopColor={SERIES_COLORS[key]} stopOpacity={showFilledMinuteView ? 0.16 : 0.04} />
                     <stop offset="96%" stopColor={SERIES_COLORS[key]} stopOpacity={0} />
                   </linearGradient>
                 ))}
@@ -619,11 +783,12 @@ function LiveTrendChart({
                 axisLine={false}
               />
               <YAxis
+                domain={[0, yAxisMax]}
                 stroke="#475569"
                 tick={{ fill: '#64748b', fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `${value}kW`}
+                tickFormatter={(value) => `${value}${axisUnit}`}
               />
               <Tooltip
                 contentStyle={{
@@ -633,7 +798,9 @@ function LiveTrendChart({
                   color: '#e2e8f0',
                 }}
                 formatter={(value, name) => [
-                  formatKw(typeof value === 'number' ? value : Number(value ?? 0)),
+                  cumulativeUsesEnergyUnits
+                    ? formatKwh(typeof value === 'number' ? value : Number(value ?? 0))
+                    : formatKw(typeof value === 'number' ? value : Number(value ?? 0)),
                   formatSeriesLabel(name as SeriesKey),
                 ]}
               />
@@ -648,6 +815,7 @@ function LiveTrendChart({
                   dataKey={series}
                   stroke={SERIES_COLORS[series]}
                   fill={`url(#fill-${series})`}
+                  fillOpacity={showFilledMinuteView ? 0.5 : 0}
                   strokeWidth={series === 'import' ? 1 : 1.25}
                   activeDot={{ r: 2.5, strokeWidth: 0 }}
                   dot={false}
@@ -656,6 +824,71 @@ function LiveTrendChart({
             </AreaChart>
           </ResponsiveContainer>
         )}
+      </div>
+
+      <div className="mt-5">
+        <div className="mb-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Energy value
+          </p>
+          <p className="mt-1 text-sm text-slate-400">
+            Half-hour import cost, solar savings, and export value through the day.
+          </p>
+        </div>
+        <div className="h-[240px] rounded-[24px] border border-slate-800 bg-[#0b1321] p-3">
+          {costData.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-sm text-slate-500">
+              No tariff-backed value data available
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={costData} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
+                <XAxis
+                  dataKey="time"
+                  stroke="#475569"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="#475569"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => formatEuroTick(Number(value))}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    border: '1px solid rgba(71,85,105,0.55)',
+                    borderRadius: 16,
+                    color: '#e2e8f0',
+                  }}
+                  formatter={(value, name) => [
+                    formatEuro(typeof value === 'number' ? value : Number(value ?? 0)),
+                    formatCostSeriesLabel(name as CostSeriesKey),
+                  ]}
+                />
+                <Legend
+                  wrapperStyle={{ fontSize: 11, color: '#94a3b8', paddingTop: 12 }}
+                  formatter={(value) => formatCostSeriesLabel(value as CostSeriesKey)}
+                />
+                {COST_SERIES_ORDER.map((series) => (
+                  <Area
+                    key={series}
+                    type="linear"
+                    dataKey={series}
+                    stroke={COST_SERIES_COLORS[series]}
+                    fillOpacity={0}
+                    strokeWidth={1.25}
+                    activeDot={{ r: 2.5, strokeWidth: 0 }}
+                    dot={false}
+                  />
+                ))}
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -727,10 +960,17 @@ function ValuePanel({
           </div>
         ))}
       </div>
-      <div className="mt-4 rounded-2xl border border-slate-700/40 bg-slate-900/40 px-3 py-2 text-xs text-slate-400">
-        Estimate uses the flat day rate. Time-of-use breakdown available once interval data is
-        persisted.
-      </div>
+      <details className="mt-4 rounded-2xl border border-slate-700/40 bg-slate-900/40 px-3 py-2 text-xs text-slate-400">
+        <summary className="cursor-pointer list-none font-semibold text-amber-300">
+          How these values are calculated
+        </summary>
+        <div className="mt-3 space-y-2 text-slate-300">
+          <p>Import cost = total imported kWh x active tariff rate x VAT.</p>
+          <p>Export credit = total exported kWh x export rate.</p>
+          <p>Solar savings = generated minus exported kWh x active tariff rate x VAT.</p>
+          <p>Net bill impact = import cost - export credit.</p>
+        </div>
+      </details>
     </div>
   );
 }
@@ -748,6 +988,11 @@ function TodayPanel({
         { label: 'Consumed', value: formatKwh(totals.consumedKwh), tone: 'text-slate-200' },
         { label: 'Imported', value: formatKwh(totals.importKwh), tone: 'text-slate-400' },
         { label: 'Exported', value: formatKwh(totals.exportKwh), tone: 'text-emerald-300' },
+        {
+          label: 'Immersion',
+          value: formatKwh(totals.immersionDivertedKwh),
+          tone: 'text-rose-300',
+        },
       ]
     : [];
 
@@ -778,15 +1023,17 @@ function TodayPanel({
 }
 
 function SolarCoveragePanel({
-  hourChartData,
+  chartData,
   currentSolarShare,
-  gridShare,
+  overallSolarCoverage,
+  currentGridDraw,
 }: {
-  hourChartData: LivePoint[];
+  chartData: LivePoint[];
   currentSolarShare: number;
-  gridShare: number;
+  overallSolarCoverage: number | null;
+  currentGridDraw: number;
 }) {
-  const coverageData = hourChartData.map((pt) => ({
+  const coverageData = chartData.map((pt) => ({
     time: pt.time,
     coverage:
       pt.consumption > 0
@@ -795,11 +1042,6 @@ function SolarCoveragePanel({
         ? 100
         : 0,
   }));
-
-  const best =
-    coverageData.length > 0
-      ? coverageData.reduce((cur, pt) => (pt.coverage > cur.coverage ? pt : cur))
-      : null;
 
   return (
     <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-5">
@@ -867,21 +1109,14 @@ function SolarCoveragePanel({
           <p className="mt-1 font-mono text-lg font-semibold text-amber-300">{currentSolarShare}%</p>
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 px-3 py-2">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Best hour</p>
+          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Today overall</p>
           <p className="mt-1 font-mono text-lg font-semibold text-emerald-300">
-            {best ? (
-              <>
-                {best.coverage}%{' '}
-                <span className="text-sm text-slate-500">@ {best.time}</span>
-              </>
-            ) : (
-              '—'
-            )}
+            {overallSolarCoverage !== null ? `${overallSolarCoverage}%` : '—'}
           </p>
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 px-3 py-2">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Grid share</p>
-          <p className="mt-1 font-mono text-lg font-semibold text-slate-300">{gridShare}%</p>
+          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Grid draw</p>
+          <p className="mt-1 font-mono text-lg font-semibold text-slate-300">{currentGridDraw}%</p>
         </div>
       </div>
     </div>
@@ -1059,6 +1294,7 @@ function DisconnectedState() {
 export function LiveScreen({
   today,
   displayDate,
+  timezone,
   screenState,
   health,
   hasTariff,
@@ -1068,12 +1304,17 @@ export function LiveScreen({
   minuteChartData,
   halfHourChartData,
   hourChartData,
+  costChartData,
   todayTotals,
   financialEstimate,
 }: LiveScreenProps) {
+  const router = useRouter();
   const [resolution, setResolution] = useState<Resolution>('1min');
   const [viewMode, setViewMode] = useState<ViewMode>('line');
-  const [activeSeries, setActiveSeries] = useState<SeriesKey[]>(SERIES_ORDER);
+  const [activeSeries, setActiveSeries] = useState<SeriesKey[]>(MINUTE_DEFAULT_SERIES);
+  const [warningDetailsOpen, setWarningDetailsOpen] = useState(false);
+  const [warningDismissed, setWarningDismissed] = useState(false);
+  const [liveTime, setLiveTime] = useState(() => formatClockTime(new Date(), timezone));
 
   const baseChartData = useMemo(() => {
     if (resolution === '30min') return halfHourChartData;
@@ -1082,9 +1323,79 @@ export function LiveScreen({
   }, [resolution, minuteChartData, halfHourChartData, hourChartData]);
 
   const chartData = useMemo(
-    () => applyViewMode(baseChartData, viewMode),
-    [baseChartData, viewMode],
+    () => applyViewMode(baseChartData, viewMode, resolution),
+    [baseChartData, viewMode, resolution],
   );
+  const valueChartData = useMemo(
+    () => applyCostViewMode(costChartData, viewMode),
+    [costChartData, viewMode],
+  );
+  const overallSolarCoverage =
+    todayTotals && todayTotals.consumedKwh > 0
+      ? Math.round(
+          Math.min(
+            100,
+            Math.max(0, ((todayTotals.consumedKwh - todayTotals.importKwh) / todayTotals.consumedKwh) * 100),
+          ),
+        )
+      : null;
+
+  const displayScreenState: ScreenState =
+    screenState === 'warning' && warningDismissed
+      ? (health.minutesStale ?? 0) > 30
+        ? 'stale'
+        : 'healthy'
+      : screenState;
+
+  useEffect(() => {
+    setActiveSeries(resolution === '1min' ? MINUTE_DEFAULT_SERIES : SERIES_ORDER);
+  }, [resolution]);
+
+  useEffect(() => {
+    let refreshTimeoutId: number | null = null;
+    let clockIntervalId: number | null = null;
+
+    const updateClock = () => {
+      setLiveTime(formatClockTime(new Date(), timezone));
+    };
+
+    const clearRefreshTimer = () => {
+      if (refreshTimeoutId !== null) {
+        window.clearTimeout(refreshTimeoutId);
+        refreshTimeoutId = null;
+      }
+    };
+
+    const scheduleRefresh = () => {
+      clearRefreshTimer();
+      if (document.visibilityState !== 'visible') return;
+      refreshTimeoutId = window.setTimeout(() => {
+        router.refresh();
+        scheduleRefresh();
+      }, 60_000);
+    };
+
+    const handleVisibilityChange = () => {
+      updateClock();
+      if (document.visibilityState === 'visible') {
+        router.refresh();
+        scheduleRefresh();
+      } else {
+        clearRefreshTimer();
+      }
+    };
+
+    updateClock();
+    clockIntervalId = window.setInterval(updateClock, 1_000);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    scheduleRefresh();
+
+    return () => {
+      clearRefreshTimer();
+      if (clockIntervalId !== null) window.clearInterval(clockIntervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [router, timezone]);
 
   function toggleSeries(series: SeriesKey) {
     setActiveSeries((current) => {
@@ -1095,8 +1406,8 @@ export function LiveScreen({
     });
   }
 
-  const isStale = screenState === 'stale' || screenState === 'warning';
-  const isDisconnected = screenState === 'disconnected';
+  const isStale = displayScreenState === 'stale' || displayScreenState === 'warning';
+  const isDisconnected = displayScreenState === 'disconnected';
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.08),_transparent_28%),linear-gradient(180deg,#050b14_0%,#0b1220_100%)] font-sans text-slate-100">
@@ -1105,15 +1416,28 @@ export function LiveScreen({
         hasCoordinates={hasCoordinates}
         hasCapacity={hasCapacity}
       />
-      <NavBar screenState={screenState} />
-      <WarningBanner screenState={screenState} />
+      <NavBar screenState={displayScreenState} />
+      <WarningBanner
+        screenState={displayScreenState}
+        health={health}
+        dismissed={warningDismissed}
+        onOpenDetails={() => setWarningDetailsOpen(true)}
+      />
 
       <div className="border-b border-slate-800 bg-[#0c1422]/80">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <TrustBadge screenState={screenState} health={health} />
+          <TrustBadge
+            screenState={displayScreenState}
+            health={health}
+            dismissed={warningDismissed}
+            onOpenDetails={() => setWarningDetailsOpen(true)}
+          />
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
             <span className="rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1.5">
               {displayDate}
+            </span>
+            <span className="inline-flex min-w-[92px] justify-center rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1.5">
+              {liveTime}
             </span>
             <span className="rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1.5">
               {isDisconnected ? 'No feed' : 'Live now'}
@@ -1192,7 +1516,8 @@ export function LiveScreen({
               <div className="grid gap-4 xl:grid-cols-[1.7fr_1fr]">
                 <LiveTrendChart
                   data={chartData}
-                  screenState={screenState}
+                  costData={valueChartData}
+                  screenState={displayScreenState}
                   resolution={resolution}
                   onResolutionChange={setResolution}
                   viewMode={viewMode}
@@ -1203,11 +1528,12 @@ export function LiveScreen({
 
                 <div className="space-y-4">
                   <ValuePanel hasTariff={hasTariff} estimate={financialEstimate} />
-                  <TodayPanel totals={todayTotals} screenState={screenState} />
+                  <TodayPanel totals={todayTotals} screenState={displayScreenState} />
                   <SolarCoveragePanel
-                    hourChartData={hourChartData}
+                    chartData={baseChartData}
                     currentSolarShare={currentMetrics?.solarShare ?? 0}
-                    gridShare={currentMetrics?.gridShare ?? 100}
+                    overallSolarCoverage={overallSolarCoverage}
+                    currentGridDraw={currentMetrics?.gridShare ?? 100}
                   />
                 </div>
               </div>
@@ -1235,6 +1561,15 @@ export function LiveScreen({
           </>
         )}
       </main>
+      <WarningDetailsModal
+        health={health}
+        open={warningDetailsOpen}
+        onClose={() => setWarningDetailsOpen(false)}
+        onDismiss={() => {
+          setWarningDismissed(true);
+          setWarningDetailsOpen(false);
+        }}
+      />
     </div>
   );
 }

@@ -1,4 +1,11 @@
 import { eq } from 'drizzle-orm';
+import {
+  calculateIntervalExportCredit,
+  calculateIntervalImportCost,
+  calculateWithoutSolarImportKwh,
+  type IntervalReading,
+  type TariffVersion,
+} from '../domain/billing';
 import type { MinuteReading, PeriodReading, DayDetailResponse } from './types';
 
 // ---------------------------------------------------------------------------
@@ -14,11 +21,20 @@ export type InstallationContext = {
 };
 
 export type TariffContext = {
+  versionId: string;
   supplierName: string;
   planName: string;
   dayRate: number;
+  nightRate: number | null;
+  peakRate: number | null;
   exportRate: number | null;
   vatRate: number | null;
+  discountRuleType: 'percentage' | null;
+  discountValue: number | null;
+  nightStartLocalTime: string | null;
+  nightEndLocalTime: string | null;
+  peakStartLocalTime: string | null;
+  peakEndLocalTime: string | null;
 };
 
 export type FinancialEstimate = {
@@ -35,6 +51,7 @@ export type CurrentMetrics = {
   consumedKw: number;
   importKw: number;
   exportKw: number;
+  immersionKw: number;
   solarShare: number; // 0–100
   gridShare: number;  // 0–100
 };
@@ -46,6 +63,15 @@ export type LivePoint = {
   consumption: number; // kW
   import: number;      // kW
   export: number;      // kW
+  immersion: number;   // kW
+  intervalHours: number;
+};
+
+export type CostPoint = {
+  time: string;
+  importCost: number;
+  savings: number;
+  exportCredit: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -167,11 +193,21 @@ export async function loadTariffContext(
   if (!active) return null;
 
   return {
+    versionId: active.id,
     supplierName: plan.supplierName,
     planName: plan.planName,
     dayRate: Number(active.dayRate),
-    exportRate: active.exportRate ? Number(active.exportRate) : null,
-    vatRate: active.vatRate ? Number(active.vatRate) : null,
+    nightRate: active.nightRate != null ? Number(active.nightRate) : null,
+    peakRate: active.peakRate != null ? Number(active.peakRate) : null,
+    exportRate: active.exportRate != null ? Number(active.exportRate) : null,
+    vatRate: active.vatRate != null ? Number(active.vatRate) : null,
+    discountRuleType:
+      active.discountRuleType === 'percentage' ? 'percentage' : null,
+    discountValue: active.discountValue != null ? Number(active.discountValue) : null,
+    nightStartLocalTime: active.nightStartLocalTime ?? null,
+    nightEndLocalTime: active.nightEndLocalTime ?? null,
+    peakStartLocalTime: active.peakStartLocalTime ?? null,
+    peakEndLocalTime: active.peakEndLocalTime ?? null,
   };
 }
 
@@ -252,12 +288,21 @@ export function getCurrentMetrics(minuteData: MinuteReading[]): CurrentMetrics |
   const consumedKw = r2(last.consumedKwh * 60);
   const importKw = r2(last.importKwh * 60);
   const exportKw = r2(last.exportKwh * 60);
+  const immersionKw = r2(last.immersionDivertedKwh * 60);
 
   const solarConsumedKw = Math.max(0, generatedKw - exportKw);
   const solarShare =
     consumedKw > 0 ? Math.round(Math.min(100, (solarConsumedKw / consumedKw) * 100)) : 0;
 
-  return { generatedKw, consumedKw, importKw, exportKw, solarShare, gridShare: 100 - solarShare };
+  return {
+    generatedKw,
+    consumedKw,
+    importKw,
+    exportKw,
+    immersionKw,
+    solarShare,
+    gridShare: 100 - solarShare,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -271,17 +316,25 @@ export function getCurrentMetrics(minuteData: MinuteReading[]): CurrentMetrics |
 export function minuteDataToFiveMinPoints(minuteData: MinuteReading[]): LivePoint[] {
   const buckets = new Map<
     string,
-    { sumGen: number; sumConp: number; sumImp: number; sumExp: number; count: number }
+    { sumGen: number; sumConp: number; sumImp: number; sumExp: number; sumImm: number; count: number }
   >();
 
   for (const m of minuteData) {
     const block = Math.floor(m.minute / 5) * 5;
     const key = `${pad2(m.hour)}:${pad2(block)}`;
-    const b = buckets.get(key) ?? { sumGen: 0, sumConp: 0, sumImp: 0, sumExp: 0, count: 0 };
+    const b = buckets.get(key) ?? {
+      sumGen: 0,
+      sumConp: 0,
+      sumImp: 0,
+      sumExp: 0,
+      sumImm: 0,
+      count: 0,
+    };
     b.sumGen += m.generatedKwh;
     b.sumConp += m.consumedKwh;
     b.sumImp += m.importKwh;
     b.sumExp += m.exportKwh;
+    b.sumImm += m.immersionDivertedKwh;
     b.count++;
     buckets.set(key, b);
   }
@@ -295,6 +348,8 @@ export function minuteDataToFiveMinPoints(minuteData: MinuteReading[]): LivePoin
       consumption: r2((b.sumConp / b.count) * 60),
       import: r2((b.sumImp / b.count) * 60),
       export: r2((b.sumExp / b.count) * 60),
+      immersion: r2((b.sumImm / b.count) * 60),
+      intervalHours: 5 / 60,
     }));
 }
 
@@ -305,6 +360,8 @@ export function minuteDataToChartPoints(minuteData: MinuteReading[]): LivePoint[
     consumption: r2(m.consumedKwh * 60),
     import: r2(m.importKwh * 60),
     export: r2(m.exportKwh * 60),
+    immersion: r2(m.immersionDivertedKwh * 60),
+    intervalHours: 1 / 60,
   }));
 }
 
@@ -324,5 +381,64 @@ export function periodDataToChartPoints(
     consumption: r2(p.consumedKwh * factor),
     import: r2(p.importKwh * factor),
     export: r2(p.exportKwh * factor),
+    immersion: r2(p.immersionDivertedKwh * factor),
+    intervalHours: periodMinutes / 60,
   }));
+}
+
+function toBillingTariffVersion(tariff: TariffContext, date: string): TariffVersion {
+  return {
+    id: tariff.versionId,
+    validFromLocalDate: date,
+    validToLocalDate: date,
+    dayRate: tariff.dayRate,
+    nightRate: tariff.nightRate,
+    peakRate: tariff.peakRate,
+    exportRate: tariff.exportRate,
+    vatRate: tariff.vatRate,
+    discountRuleType: tariff.discountRuleType,
+    discountValue: tariff.discountValue,
+    nightStartLocalTime: tariff.nightStartLocalTime,
+    nightEndLocalTime: tariff.nightEndLocalTime,
+    peakStartLocalTime: tariff.peakStartLocalTime,
+    peakEndLocalTime: tariff.peakEndLocalTime,
+  };
+}
+
+function toIntervalReading(date: string, period: PeriodReading): IntervalReading {
+  return {
+    intervalStartLocal: `${date}T${pad2(period.hour)}:${pad2(period.minute)}`,
+    importKwh: period.importKwh,
+    exportKwh: period.exportKwh,
+    generatedKwh: period.generatedKwh,
+    consumedKwh: period.consumedKwh,
+    immersionDivertedKwh: period.immersionDivertedKwh,
+    immersionBoostedKwh: period.immersionBoostedKwh,
+  };
+}
+
+export function periodDataToCostPoints(
+  periods: PeriodReading[],
+  date: string,
+  tariff: TariffContext,
+): CostPoint[] {
+  const tariffVersion = toBillingTariffVersion(tariff, date);
+
+  return periods.map((period) => {
+    const reading = toIntervalReading(date, period);
+    const importCost = calculateIntervalImportCost(reading, tariffVersion);
+    const exportCredit = calculateIntervalExportCredit(reading, tariffVersion);
+    const withoutSolarReading: IntervalReading = {
+      ...reading,
+      importKwh: calculateWithoutSolarImportKwh(reading),
+    };
+    const savings = calculateIntervalImportCost(withoutSolarReading, tariffVersion) - importCost;
+
+    return {
+      time: `${pad2(period.hour)}:${pad2(period.minute)}`,
+      importCost: r2(importCost),
+      savings: r2(savings),
+      exportCredit: r2(exportCredit),
+    };
+  });
 }
