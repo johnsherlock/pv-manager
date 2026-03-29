@@ -1,0 +1,268 @@
+import { eq } from 'drizzle-orm';
+import { db } from '../db/client';
+import { installations, tariffPlans, tariffPlanVersions } from '../db/schema';
+import type { MinuteReading, PeriodReading, DayDetailResponse } from './types';
+
+// ---------------------------------------------------------------------------
+// Domain types
+// ---------------------------------------------------------------------------
+
+export type InstallationContext = {
+  id: string;
+  name: string;
+  timezone: string;
+  financeMode: string | null;
+  monthlyFinancePayment: number | null;
+};
+
+export type TariffContext = {
+  supplierName: string;
+  planName: string;
+  dayRate: number;
+  exportRate: number | null;
+  vatRate: number | null;
+};
+
+export type FinancialEstimate = {
+  importCost: number;
+  exportCredit: number;
+  solarSavings: number;
+  netBillImpact: number;
+  /** Estimate uses the day rate for all intervals — time-of-use splitting requires interval data. */
+  note: 'simplified-daily-rate';
+};
+
+export type CurrentMetrics = {
+  generatedKw: number;
+  consumedKw: number;
+  importKw: number;
+  exportKw: number;
+  solarShare: number; // 0–100
+  gridShare: number;  // 0–100
+};
+
+/** A chart-ready data point with kW values for all four energy flows. */
+export type LivePoint = {
+  time: string;        // "HH:MM"
+  generation: number;  // kW
+  consumption: number; // kW
+  import: number;      // kW
+  export: number;      // kW
+};
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const STALE_MINUTES = 30;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function r2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+// ---------------------------------------------------------------------------
+// DB loaders
+// ---------------------------------------------------------------------------
+
+export async function loadInstallationContext(
+  installationId: string,
+): Promise<InstallationContext | null> {
+  const rows = await db
+    .select()
+    .from(installations)
+    .where(eq(installations.id, installationId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  const row = rows[0];
+  return {
+    id: row.id,
+    name: row.name,
+    timezone: row.timezone,
+    financeMode: row.financeMode,
+    monthlyFinancePayment: row.monthlyFinancePaymentAmount
+      ? Number(row.monthlyFinancePaymentAmount)
+      : null,
+  };
+}
+
+export async function loadTariffContext(
+  installationId: string,
+  date: string,
+): Promise<TariffContext | null> {
+  const planRows = await db
+    .select()
+    .from(tariffPlans)
+    .where(eq(tariffPlans.installationId, installationId))
+    .limit(1);
+
+  if (planRows.length === 0) return null;
+  const plan = planRows[0];
+
+  const allVersions = await db
+    .select()
+    .from(tariffPlanVersions)
+    .where(eq(tariffPlanVersions.tariffPlanId, plan.id));
+
+  // Find the version whose validity window covers the requested date.
+  const active = allVersions.find(
+    (v) =>
+      v.validFromLocalDate <= date &&
+      (v.validToLocalDate === null || v.validToLocalDate >= date),
+  );
+
+  if (!active) return null;
+
+  return {
+    supplierName: plan.supplierName,
+    planName: plan.planName,
+    dayRate: Number(active.dayRate),
+    exportRate: active.exportRate ? Number(active.exportRate) : null,
+    vatRate: active.vatRate ? Number(active.vatRate) : null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Financial estimate
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute a simplified financial estimate for the current day using only the
+ * day rate. Time-of-use splitting (peak / night) is not applied here because
+ * the interval readings are stored as kWh totals, not timestamped per-minute
+ * kWh that could be resolved against a tariff window.
+ */
+export function computeFinancialEstimate(
+  summary: DayDetailResponse['summary'],
+  tariff: TariffContext,
+): FinancialEstimate {
+  const vat = 1 + (tariff.vatRate ?? 0);
+  const dayRate = tariff.dayRate;
+  const exportRate = tariff.exportRate ?? 0;
+
+  const importCost = r2(summary.totalImportKwh * dayRate * vat);
+  const exportCredit = r2(summary.totalExportKwh * exportRate);
+  const solarConsumed = Math.max(0, summary.totalGeneratedKwh - summary.totalExportKwh);
+  const solarSavings = r2(solarConsumed * dayRate * vat);
+  const netBillImpact = r2(importCost - exportCredit);
+
+  return { importCost, exportCredit, solarSavings, netBillImpact, note: 'simplified-daily-rate' };
+}
+
+// ---------------------------------------------------------------------------
+// Screen state derivation
+// ---------------------------------------------------------------------------
+
+export function deriveScreenState(
+  health: DayDetailResponse['health'],
+  minuteData: MinuteReading[],
+  now: Date,
+): 'healthy' | 'stale' | 'warning' | 'disconnected' {
+  if (minuteData.length === 0) return 'disconnected';
+  if (health.hasSuspiciousReadings) return 'warning';
+
+  const last = minuteData[minuteData.length - 1];
+  const lastMin = last.hour * 60 + last.minute;
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const stale = Math.max(0, nowMin - lastMin);
+
+  return stale > STALE_MINUTES ? 'stale' : 'healthy';
+}
+
+export function getMinutesStale(minuteData: MinuteReading[], now: Date): number | null {
+  if (minuteData.length === 0) return null;
+  const last = minuteData[minuteData.length - 1];
+  return Math.max(0, now.getHours() * 60 + now.getMinutes() - (last.hour * 60 + last.minute));
+}
+
+export function getLastReadingLocalTime(minuteData: MinuteReading[]): string | null {
+  if (minuteData.length === 0) return null;
+  const last = minuteData[minuteData.length - 1];
+  return `${pad2(last.hour)}:${pad2(last.minute)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Current metrics (instantaneous kW from the most recent minute reading)
+// ---------------------------------------------------------------------------
+
+export function getCurrentMetrics(minuteData: MinuteReading[]): CurrentMetrics | null {
+  if (minuteData.length === 0) return null;
+  const last = minuteData[minuteData.length - 1];
+
+  // kWh per minute → kW: multiply by 60
+  const generatedKw = r2(last.generatedKwh * 60);
+  const consumedKw = r2(last.consumedKwh * 60);
+  const importKw = r2(last.importKwh * 60);
+  const exportKw = r2(last.exportKwh * 60);
+
+  const solarConsumedKw = Math.max(0, generatedKw - exportKw);
+  const solarShare =
+    consumedKw > 0 ? Math.round(Math.min(100, (solarConsumedKw / consumedKw) * 100)) : 0;
+
+  return { generatedKw, consumedKw, importKw, exportKw, solarShare, gridShare: 100 - solarShare };
+}
+
+// ---------------------------------------------------------------------------
+// Chart data conversion
+// ---------------------------------------------------------------------------
+
+/**
+ * Aggregate minute readings into 5-minute chart points.
+ * Within each 5-minute bucket the values are averaged, then converted to kW.
+ */
+export function minuteDataToFiveMinPoints(minuteData: MinuteReading[]): LivePoint[] {
+  const buckets = new Map<
+    string,
+    { sumGen: number; sumConp: number; sumImp: number; sumExp: number; count: number }
+  >();
+
+  for (const m of minuteData) {
+    const block = Math.floor(m.minute / 5) * 5;
+    const key = `${pad2(m.hour)}:${pad2(block)}`;
+    const b = buckets.get(key) ?? { sumGen: 0, sumConp: 0, sumImp: 0, sumExp: 0, count: 0 };
+    b.sumGen += m.generatedKwh;
+    b.sumConp += m.consumedKwh;
+    b.sumImp += m.importKwh;
+    b.sumExp += m.exportKwh;
+    b.count++;
+    buckets.set(key, b);
+  }
+
+  return Array.from(buckets.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([time, b]) => ({
+      time,
+      // Average kWh per minute in the bucket, converted to kW (×60)
+      generation: r2((b.sumGen / b.count) * 60),
+      consumption: r2((b.sumConp / b.count) * 60),
+      import: r2((b.sumImp / b.count) * 60),
+      export: r2((b.sumExp / b.count) * 60),
+    }));
+}
+
+/**
+ * Convert aggregated period readings to chart points.
+ * @param periodMinutes - Duration of each period (30 for half-hour, 60 for hourly)
+ */
+export function periodDataToChartPoints(
+  periods: PeriodReading[],
+  periodMinutes: number,
+): LivePoint[] {
+  // kW = kWh / hours = kWh * 60 / periodMinutes
+  const factor = 60 / periodMinutes;
+  return periods.map((p) => ({
+    time: `${pad2(p.hour)}:${pad2(p.minute)}`,
+    generation: r2(p.generatedKwh * factor),
+    consumption: r2(p.consumedKwh * factor),
+    import: r2(p.importKwh * factor),
+    export: r2(p.exportKwh * factor),
+  }));
+}
