@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Area,
   AreaChart,
@@ -17,9 +17,12 @@ import {
   AlertTriangle,
   ArrowDownToLine,
   ArrowUpFromLine,
+  Calendar,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Clock,
   Eye,
   EyeOff,
@@ -53,6 +56,8 @@ export type LiveScreenProps = {
   today: string;
   displayDate: string;
   initialLiveTime: string;
+  selectedDate: string;
+  isHistoricalDate: boolean;
   installationContext: { name: string } | null;
   timezone: string;
   screenState: ScreenState;
@@ -197,6 +202,59 @@ function formatClockTime(date: Date, timezone: string): string {
     second: '2-digit',
     hour12: false,
   }).format(date);
+}
+
+function parseIsoDate(isoDate: string): Date {
+  return new Date(`${isoDate}T12:00:00`);
+}
+
+function addDays(isoDate: string, days: number): string {
+  const date = parseIsoDate(isoDate);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfMonth(isoDate: string): Date {
+  const date = parseIsoDate(isoDate);
+  return new Date(date.getFullYear(), date.getMonth(), 1, 12);
+}
+
+function shiftMonth(isoDate: string, months: number): string {
+  const date = startOfMonth(isoDate);
+  date.setMonth(date.getMonth() + months);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatMonthYear(isoDate: string): string {
+  return new Intl.DateTimeFormat('en-IE', {
+    month: 'long',
+    year: 'numeric',
+  }).format(parseIsoDate(isoDate));
+}
+
+function getMonthName(isoDate: string): string {
+  return new Intl.DateTimeFormat('en-IE', { month: 'long' }).format(parseIsoDate(isoDate));
+}
+
+function getMonthDays(visibleMonth: string) {
+  const monthStart = startOfMonth(visibleMonth);
+  const month = monthStart.getMonth();
+  const gridStart = new Date(monthStart);
+  gridStart.setDate(monthStart.getDate() - monthStart.getDay());
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + index);
+    return {
+      iso: date.toISOString().slice(0, 10),
+      dayNumber: date.getDate(),
+      inMonth: date.getMonth() === month,
+    };
+  });
+}
+
+function buildLiveUrl(pathname: string, date: string, today: string): string {
+  return date === today ? pathname : `${pathname}?date=${date}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -657,6 +715,155 @@ function ToggleGroup<T extends string>({
           {renderLabel ? renderLabel(option) : option}
         </button>
       ))}
+    </div>
+  );
+}
+
+function DatePickerControl({
+  selectedDate,
+  displayDate,
+  today,
+  isHistoricalDate,
+  onSelectDate,
+}: {
+  selectedDate: string;
+  displayDate: string;
+  today: string;
+  isHistoricalDate: boolean;
+  onSelectDate: (date: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [visibleMonth, setVisibleMonth] = useState(() => `${selectedDate.slice(0, 7)}-01`);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const days = useMemo(() => getMonthDays(visibleMonth), [visibleMonth]);
+
+  useEffect(() => {
+    setVisibleMonth(`${selectedDate.slice(0, 7)}-01`);
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!popoverRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={popoverRef} className="relative flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => onSelectDate(addDays(selectedDate, -1))}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 bg-slate-900/70 text-slate-300 transition-colors hover:border-slate-600 hover:text-slate-100"
+        aria-label="Previous day"
+      >
+        <ChevronsLeft size={14} />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1.5 text-xs text-slate-200 transition-colors hover:border-slate-600"
+      >
+        <Calendar size={13} className="text-slate-400" />
+        <span>{displayDate}</span>
+      </button>
+
+      {isHistoricalDate && (
+        <button
+          type="button"
+          onClick={() => onSelectDate(addDays(selectedDate, 1))}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 bg-slate-900/70 text-slate-300 transition-colors hover:border-slate-600 hover:text-slate-100"
+          aria-label="Next day"
+        >
+          <ChevronsRight size={14} />
+        </button>
+      )}
+
+      {open && (
+        <div className="absolute right-0 top-11 z-30 w-[320px] rounded-[24px] border border-slate-700 bg-[#f4f1ea] text-slate-900 shadow-[0_30px_80px_rgba(2,6,23,0.4)]">
+          <div className="border-b border-stone-300 px-4 py-4">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <button
+                type="button"
+                onClick={() => setVisibleMonth(shiftMonth(visibleMonth, -1))}
+                className="font-medium text-slate-700 transition-colors hover:text-slate-950"
+              >
+                {`<< ${getMonthName(shiftMonth(visibleMonth, -1))}`}
+              </button>
+              <span className="text-2xl font-semibold text-slate-950">{formatMonthYear(visibleMonth)}</span>
+              <button
+                type="button"
+                onClick={() => setVisibleMonth(shiftMonth(visibleMonth, 1))}
+                className="font-medium text-slate-700 transition-colors hover:text-slate-950"
+              >
+                {`${getMonthName(shiftMonth(visibleMonth, 1))} >>`}
+              </button>
+            </div>
+          </div>
+
+          <div className="px-4 py-4">
+            <div className="grid grid-cols-7 gap-y-2 text-center text-sm text-slate-700">
+              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
+                <div key={day} className="pb-1">
+                  {day}
+                </div>
+              ))}
+              {days.map((day) => {
+                const isSelected = day.iso === selectedDate;
+                const isFuture = day.iso > today;
+                return (
+                  <button
+                    key={day.iso}
+                    type="button"
+                    disabled={isFuture}
+                    onClick={() => {
+                      onSelectDate(day.iso);
+                      setOpen(false);
+                    }}
+                    className={`mx-auto flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${
+                      isSelected
+                        ? 'bg-sky-700 font-semibold text-white'
+                        : day.inMonth
+                        ? 'text-slate-900 hover:bg-sky-100'
+                        : 'text-stone-400'
+                    } ${isFuture ? 'cursor-not-allowed text-stone-300 hover:bg-transparent' : ''}`}
+                  >
+                    {day.dayNumber}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="border-t border-stone-300 px-4 py-3">
+            <button
+              type="button"
+              onClick={() => {
+                onSelectDate(today);
+                setOpen(false);
+              }}
+              className="w-full text-center text-base font-semibold text-slate-900 transition-colors hover:text-sky-800"
+            >
+              Back to Today
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1296,6 +1503,8 @@ export function LiveScreen({
   today,
   displayDate,
   initialLiveTime,
+  selectedDate,
+  isHistoricalDate,
   timezone,
   screenState,
   health,
@@ -1311,6 +1520,7 @@ export function LiveScreen({
   financialEstimate,
 }: LiveScreenProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [resolution, setResolution] = useState<Resolution>('1min');
   const [viewMode, setViewMode] = useState<ViewMode>('line');
   const [activeSeries, setActiveSeries] = useState<SeriesKey[]>(MINUTE_DEFAULT_SERIES);
@@ -1354,6 +1564,8 @@ export function LiveScreen({
   }, [resolution]);
 
   useEffect(() => {
+    if (isHistoricalDate) return;
+
     let refreshTimeoutId: number | null = null;
     let clockIntervalId: number | null = null;
 
@@ -1397,7 +1609,11 @@ export function LiveScreen({
       if (clockIntervalId !== null) window.clearInterval(clockIntervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [router, timezone]);
+  }, [router, timezone, isHistoricalDate]);
+
+  function navigateToDate(date: string) {
+    router.push(buildLiveUrl(pathname, date, today));
+  }
 
   function toggleSeries(series: SeriesKey) {
     setActiveSeries((current) => {
@@ -1435,14 +1651,18 @@ export function LiveScreen({
             onOpenDetails={() => setWarningDetailsOpen(true)}
           />
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-            <span className="rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1.5">
-              {displayDate}
-            </span>
+            <DatePickerControl
+              selectedDate={selectedDate}
+              displayDate={displayDate}
+              today={today}
+              isHistoricalDate={isHistoricalDate}
+              onSelectDate={navigateToDate}
+            />
             <span className="inline-flex min-w-[92px] justify-center rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1.5">
               {liveTime}
             </span>
             <span className="rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1.5">
-              {isDisconnected ? 'No feed' : 'Live now'}
+              {isDisconnected ? 'No feed' : isHistoricalDate ? 'Selected day' : 'Live now'}
             </span>
           </div>
         </div>
