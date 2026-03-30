@@ -1,4 +1,4 @@
-import type { MinuteReading, PeriodReading, DayDetailResponse } from './types';
+import type { MinuteReading, PeriodReading, DayDetailResponse, HealthIncident } from './types';
 
 // Gap threshold: flag suspicious if more than 5 consecutive minutes are missing
 const SUSPICIOUS_GAP_THRESHOLD = 5;
@@ -221,6 +221,10 @@ export function buildHealth(
 ): DayDetailResponse['health'] {
   const { expectedRecordCount, validOffsets } = getLocalTimeline(date, timezone);
   const gapScanUpperBound = getGapScanUpperBound(date, timezone, fetchedAt, validOffsets);
+  const expectedMinutes =
+    gapScanUpperBound === null
+      ? 0
+      : Array.from(validOffsets).filter((offset) => offset <= gapScanUpperBound).length;
   const recordCount = minutes.length;
   const completenessRatio = expectedRecordCount > 0 ? recordCount / expectedRecordCount : 0;
   const isPartialDay = recordCount < expectedRecordCount;
@@ -236,17 +240,15 @@ export function buildHealth(
           (gapScanUpperBound === null || offset <= gapScanUpperBound),
       ),
   );
+  const coveredMinutes = presentMinutes.size;
+  const uptimePercent = expectedMinutes > 0 ? (coveredMinutes / expectedMinutes) * 100 : 0;
 
   // Find the range actually covered: from first to last record
   const allOffsets = Array.from(presentMinutes).sort((a, b) => a - b);
   let hasSuspiciousReadings = false;
-  let warningDetails: DayDetailResponse['health']['warningDetails'] = null;
+  const incidents: HealthIncident[] = [];
 
   if (allOffsets.length > 0) {
-    let maxGap = 0;
-    let gapStart: number | null = null;
-    let gapEnd: number | null = null;
-
     for (let i = 1; i < allOffsets.length; i++) {
       let gap = 0;
       let firstMissing: number | null = null;
@@ -259,31 +261,36 @@ export function buildHealth(
         lastMissing = offset;
       }
 
-      if (gap > maxGap && firstMissing !== null && lastMissing !== null) {
-        maxGap = gap;
-        gapStart = firstMissing;
-        gapEnd = lastMissing;
+      if (
+        gap > SUSPICIOUS_GAP_THRESHOLD &&
+        firstMissing !== null &&
+        lastMissing !== null
+      ) {
+        incidents.push({
+          id: `missing-interval:${firstMissing}-${lastMissing}:${gap}`,
+          kind: 'missing-interval',
+          missingMinutes: gap,
+          gapStartsAt: toClock(firstMissing),
+          gapEndsAt: toClock(lastMissing),
+          message: `Missing ${gap} consecutive minute readings between ${toClock(firstMissing)} and ${toClock(lastMissing)}.`,
+        });
       }
     }
-
-    hasSuspiciousReadings = maxGap > SUSPICIOUS_GAP_THRESHOLD;
-    if (hasSuspiciousReadings && gapStart !== null && gapEnd !== null) {
-      warningDetails = {
-        kind: 'missing-interval',
-        missingMinutes: maxGap,
-        gapStartsAt: toClock(gapStart),
-        gapEndsAt: toClock(gapEnd),
-        message: `Missing ${maxGap} consecutive minute readings between ${toClock(gapStart)} and ${toClock(gapEnd)}.`,
-      };
-    }
   }
+
+  incidents.sort((a, b) => a.gapStartsAt.localeCompare(b.gapStartsAt));
+  hasSuspiciousReadings = incidents.length > 0;
 
   return {
     recordCount,
     isPartialDay,
     completenessRatio,
+    expectedMinutes,
+    coveredMinutes,
+    uptimePercent,
     hasSuspiciousReadings,
-    warningDetails,
+    incidents,
+    primaryIncident: incidents[0] ?? null,
     fetchedAt,
   };
 }
