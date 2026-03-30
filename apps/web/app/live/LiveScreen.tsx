@@ -209,6 +209,22 @@ function getDismissalStorageKey(date: string, timezone: string): string {
   return `pv-manager:live-warning-dismissals:${timezone}:${date}`;
 }
 
+function getChartPrefsStorageKey(timezone: string): string {
+  return `pv-manager:live-chart-prefs:${timezone}`;
+}
+
+function isResolution(value: string): value is Resolution {
+  return value === '1min' || value === '30min' || value === '1hour';
+}
+
+function isViewMode(value: string): value is ViewMode {
+  return value === 'line' || value === 'cumulative';
+}
+
+function isSeriesKey(value: string): value is SeriesKey {
+  return SERIES_ORDER.includes(value as SeriesKey);
+}
+
 function applyCostViewMode(data: CostPoint[], viewMode: ViewMode): CostPoint[] {
   if (viewMode === 'line') return data;
 
@@ -1112,20 +1128,20 @@ function LiveTrendChart({
             <button
               key={series}
               onClick={() => onToggleSeries(series)}
-              className={`flex items-center justify-between rounded-2xl border px-3 py-2 text-left text-xs transition-colors ${
+              className={`flex min-w-0 items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-left text-[11px] leading-none transition-colors ${
                 active
                   ? 'border-slate-600 bg-slate-900/70 text-slate-100'
                   : 'border-slate-800 bg-slate-950/60 text-slate-500'
               }`}
             >
-              <span className="flex items-center gap-2">
+              <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
                 <span
-                  className="h-2.5 w-2.5 rounded-full"
+                  className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: SERIES_COLORS[series] }}
                 />
-                {formatSeriesLabel(series)}
+                <span className="truncate">{formatSeriesLabel(series)}</span>
               </span>
-              <span className="text-[11px] text-slate-400">
+              <span className="shrink-0 text-[10px] text-slate-400">
                 {active ? <Eye size={13} /> : <EyeOff size={13} />}
               </span>
             </button>
@@ -1688,9 +1704,43 @@ export function LiveScreen({
 }: LiveScreenProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [resolution, setResolution] = useState<Resolution>('1min');
-  const [viewMode, setViewMode] = useState<ViewMode>('line');
-  const [activeSeries, setActiveSeries] = useState<SeriesKey[]>(MINUTE_DEFAULT_SERIES);
+  const chartPrefsStorageKey = useMemo(() => getChartPrefsStorageKey(timezone), [timezone]);
+  const [resolution, setResolution] = useState<Resolution>(() => {
+    if (typeof window === 'undefined') return '1min';
+    try {
+      const raw = window.localStorage.getItem(getChartPrefsStorageKey(timezone));
+      if (!raw) return '1min';
+      const parsed = JSON.parse(raw);
+      return isResolution(parsed?.resolution) ? parsed.resolution : '1min';
+    } catch {
+      return '1min';
+    }
+  });
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === 'undefined') return 'line';
+    try {
+      const raw = window.localStorage.getItem(getChartPrefsStorageKey(timezone));
+      if (!raw) return 'line';
+      const parsed = JSON.parse(raw);
+      return isViewMode(parsed?.viewMode) ? parsed.viewMode : 'line';
+    } catch {
+      return 'line';
+    }
+  });
+  const [activeSeries, setActiveSeries] = useState<SeriesKey[]>(() => {
+    if (typeof window === 'undefined') return MINUTE_DEFAULT_SERIES;
+    try {
+      const raw = window.localStorage.getItem(getChartPrefsStorageKey(timezone));
+      if (!raw) return MINUTE_DEFAULT_SERIES;
+      const parsed = JSON.parse(raw);
+      const series = Array.isArray(parsed?.activeSeries)
+        ? parsed.activeSeries.filter((value: string) => isSeriesKey(value))
+        : [];
+      return series.length > 0 ? series : MINUTE_DEFAULT_SERIES;
+    } catch {
+      return MINUTE_DEFAULT_SERIES;
+    }
+  });
   const [warningDetailsOpen, setWarningDetailsOpen] = useState(false);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [dismissedIncidentIds, setDismissedIncidentIds] = useState<string[]>([]);
@@ -1747,8 +1797,30 @@ export function LiveScreen({
   );
 
   useEffect(() => {
-    setActiveSeries(resolution === '1min' ? MINUTE_DEFAULT_SERIES : SERIES_ORDER);
+    setActiveSeries((current) => {
+      if (current.length === 0) {
+        return resolution === '1min' ? MINUTE_DEFAULT_SERIES : SERIES_ORDER;
+      }
+
+      const next = current.filter((series) => SERIES_ORDER.includes(series));
+      return next.length > 0 ? next : resolution === '1min' ? MINUTE_DEFAULT_SERIES : SERIES_ORDER;
+    });
   }, [resolution]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        chartPrefsStorageKey,
+        JSON.stringify({
+          resolution,
+          viewMode,
+          activeSeries,
+        }),
+      );
+    } catch {
+      // Ignore storage failures and keep the UI functional in-memory.
+    }
+  }, [activeSeries, chartPrefsStorageKey, resolution, viewMode]);
 
   useEffect(() => {
     try {
