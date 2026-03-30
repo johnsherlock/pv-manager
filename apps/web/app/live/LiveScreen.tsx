@@ -184,8 +184,25 @@ function getUptimeTone(uptimePercent: number): { border: string; background: str
   return {
     border: mixColor(tone, [15, 23, 42], 0.25),
     background: mixColor(tone, [2, 6, 23], 0.12),
-    text: mixColor(tone, [255, 255, 255], 0.1),
+    text: 'rgb(255 255 255)',
   };
+}
+
+function formatUptimePercent(uptimePercent: number): string {
+  return `${Math.round(uptimePercent)}%`;
+}
+
+function formatMissingMinutesSummary(expectedMinutes: number, coveredMinutes: number): string {
+  const missingMinutes = Math.max(0, expectedMinutes - coveredMinutes);
+  if (missingMinutes === 0) {
+    return 'Provider coverage is complete for the selected period.';
+  }
+
+  return `Provider coverage is slightly below complete: ${missingMinutes} minute${
+    missingMinutes === 1 ? '' : 's'
+  } ${missingMinutes === 1 ? 'is' : 'are'} missing, but ${
+    missingMinutes === 1 ? 'it does' : 'they do'
+  } not cross the outage threshold.`;
 }
 
 function getDismissalStorageKey(date: string, timezone: string): string {
@@ -551,7 +568,7 @@ function WarningDetailsModal({
           </div>
           <div className="mt-2 flex items-center justify-between gap-3">
             <span className="text-slate-400">Uptime today</span>
-            <span className="font-mono">{Math.round(health.uptimePercent)}%</span>
+            <span className="font-mono">{formatUptimePercent(health.uptimePercent)}</span>
           </div>
         </div>
         {selectedIncident ? (
@@ -572,8 +589,7 @@ function WarningDetailsModal({
           </>
         ) : (
           <p className="mt-4 text-sm text-slate-400">
-            No suspicious outage periods are currently active for this day, but the provider
-            coverage for the selected period is still below 100%.
+            {formatMissingMinutesSummary(health.expectedMinutes, health.coveredMinutes)}
           </p>
         )}
         {health.incidents.length > 0 && (
@@ -658,7 +674,7 @@ function UptimeBadge({
         color: tone.text,
       }}
     >
-      {label} {Math.round(uptimePercent)}%
+      {label} {formatUptimePercent(uptimePercent)}
     </button>
   );
 }

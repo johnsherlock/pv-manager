@@ -196,6 +196,26 @@ describe('buildHealth', () => {
     expect(health.primaryIncident).toBeNull();
   });
 
+  it('counts the repeated fall-back hour in expected and covered minutes', () => {
+    const minutes: MinuteReading[] = [];
+
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m++) {
+        minutes.push(makeMinute(h, m));
+        if (h === 1) {
+          minutes.push(makeMinute(h, m));
+        }
+      }
+    }
+
+    const health = buildHealth('2026-10-25', minutes, '2026-10-26T10:00:00.000Z', 'Europe/Dublin');
+
+    expect(health.recordCount).toBe(1500);
+    expect(health.expectedMinutes).toBe(1500);
+    expect(health.coveredMinutes).toBe(1500);
+    expect(health.uptimePercent).toBe(100);
+  });
+
   it('does not flag a gap that only exists in future-labelled minutes for the current local day', () => {
     const minutes: MinuteReading[] = [];
 
@@ -239,9 +259,9 @@ describe('buildHealth', () => {
 
     const health = buildHealth('2026-03-30', minutes, '2026-03-30T00:09:52.000Z', 'Europe/Dublin');
 
-    expect(health.expectedMinutes).toBe(70);
+    expect(health.expectedMinutes).toBe(69);
     expect(health.coveredMinutes).toBe(5);
-    expect(health.uptimePercent).toBeCloseTo(7.142857142857142);
+    expect(health.uptimePercent).toBeCloseTo(7.246376811594203);
   });
 });
 
