@@ -1072,6 +1072,7 @@ function LiveTrendChart({
   activeSeries: SeriesKey[];
   onToggleSeries: (series: SeriesKey) => void;
 }) {
+  const [hoveredSeries, setHoveredSeries] = useState<SeriesKey | null>(null);
   const isStale = screenState === 'stale' || screenState === 'warning';
   const cumulativeUsesEnergyUnits = viewMode === 'cumulative' && resolution !== '1min';
   const axisUnit = cumulativeUsesEnergyUnits ? 'kWh' : 'kW';
@@ -1121,28 +1122,33 @@ function LiveTrendChart({
         </div>
       )}
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-4 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-5">
         {SERIES_ORDER.map((series) => {
           const active = activeSeries.includes(series);
+          const isHovered = hoveredSeries === series;
           return (
             <button
               key={series}
               onClick={() => onToggleSeries(series)}
-              className={`flex min-w-0 items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-left text-[11px] leading-none transition-colors ${
+              onMouseEnter={() => setHoveredSeries(series)}
+              onMouseLeave={() => setHoveredSeries(null)}
+              className={`flex min-w-0 items-center gap-1 rounded-xl border px-2 py-1.5 text-left text-[12px] leading-none transition-colors ${
                 active
-                  ? 'border-slate-600 bg-slate-900/70 text-slate-100'
+                  ? isHovered
+                    ? 'border-slate-500 bg-slate-900 text-slate-50'
+                    : 'border-slate-600 bg-slate-900/70 text-slate-100'
                   : 'border-slate-800 bg-slate-950/60 text-slate-500'
               }`}
             >
-              <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
+              <span className="flex min-w-0 items-center gap-1 whitespace-nowrap">
                 <span
-                  className="h-2 w-2 shrink-0 rounded-full"
+                  className="h-1.5 w-1.5 shrink-0 rounded-full"
                   style={{ backgroundColor: SERIES_COLORS[series] }}
                 />
                 <span className="truncate">{formatSeriesLabel(series)}</span>
               </span>
-              <span className="shrink-0 text-[10px] text-slate-400">
-                {active ? <Eye size={13} /> : <EyeOff size={13} />}
+              <span className="ml-auto shrink-0 text-[11px] text-slate-400">
+                {active ? <Eye size={12} /> : <EyeOff size={12} />}
               </span>
             </button>
           );
@@ -1206,8 +1212,17 @@ function LiveTrendChart({
                   dataKey={series}
                   stroke={SERIES_COLORS[series]}
                   fill={`url(#fill-${series})`}
-                  fillOpacity={showFilledMinuteView ? 0.5 : 0}
-                  strokeWidth={series === 'import' ? 1 : 1.25}
+                  fillOpacity={
+                    showFilledMinuteView
+                      ? hoveredSeries && hoveredSeries !== series
+                        ? 0.08
+                        : 0.5
+                      : 0
+                  }
+                  strokeOpacity={hoveredSeries && hoveredSeries !== series ? 0.2 : 1}
+                  strokeWidth={
+                    hoveredSeries === series ? 2 : series === 'import' ? 1 : 1.25
+                  }
                   activeDot={{ r: 2.5, strokeWidth: 0 }}
                   dot={false}
                 />
@@ -1314,7 +1329,7 @@ function ValuePanel({
 
   const items = [
     {
-      label: 'Import cost so far',
+      label: 'Import cost',
       value: formatEuro(estimate.importCost),
       tone: 'text-rose-300',
     },
@@ -1340,9 +1355,7 @@ function ValuePanel({
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
         Today value
       </p>
-      <h3 className="mt-1 text-lg font-semibold text-slate-50">
-        Energy and money are telling the same story
-      </h3>
+      <h3 className="mt-1 text-lg font-semibold text-slate-50">Cost and savings so far</h3>
       <div className="mt-4 space-y-3">
         {items.map((item) => (
           <div key={item.label} className="flex items-baseline justify-between gap-3">
