@@ -60,8 +60,8 @@ export default async function HistoricalDayPage({
   const now = new Date();
   const { date } = await params;
 
-  // Validate format
-  if (!DATE_PATTERN.test(date)) {
+  // Validate format and calendar legitimacy (e.g. reject 2024-13-01 or 2024-00-10)
+  if (!DATE_PATTERN.test(date) || isNaN(new Date(`${date}T12:00:00`).getTime())) {
     redirect('/live');
   }
 
