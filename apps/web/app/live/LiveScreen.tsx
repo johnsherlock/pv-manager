@@ -1150,6 +1150,10 @@ export function LiveScreen({
   const [dismissedIncidentIds, setDismissedIncidentIds] = useState<string[]>([]);
   const [liveTime, setLiveTime] = useState(initialLiveTime);
 
+  // Touch state for swipe navigation
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
   const baseChartData = useMemo(() => {
     if (resolution === '30min') return halfHourChartData;
     if (resolution === '1hour') return hourChartData;
@@ -1312,7 +1316,11 @@ export function LiveScreen({
   }, [router, timezone, isHistoricalDate]);
 
   function navigateToDate(date: string) {
-    router.push(buildLiveUrl(pathname, date, today));
+    if (date < today) {
+      router.push(`/history/${date}`);
+    } else {
+      router.push('/live');
+    }
   }
 
   function toggleSeries(series: SeriesKey) {
@@ -1324,11 +1332,44 @@ export function LiveScreen({
     });
   }
 
+  const yesterday = addDays(today, -1);
+
+  // Touch swipe handlers — swipe right navigates to yesterday
+  function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    const target = e.target as Element;
+    if (target.closest('.recharts-responsive-container')) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }
+
+  function handleTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    // Guard: horizontal movement must dominate
+    if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
+    // Guard: minimum swipe threshold
+    if (Math.abs(deltaX) < 50) return;
+
+    if (deltaX > 0) {
+      // Swipe right = previous day (yesterday)
+      navigateToDate(yesterday);
+    }
+    // Swipe left = can't go to future, do nothing
+  }
+
   const isStale = displayScreenState === 'stale' || displayScreenState === 'warning';
   const isDisconnected = displayScreenState === 'disconnected';
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.08),_transparent_28%),linear-gradient(180deg,#050b14_0%,#0b1220_100%)] font-sans text-slate-100">
+    <div
+      className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.08),_transparent_28%),linear-gradient(180deg,#050b14_0%,#0b1220_100%)] font-sans text-slate-100"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <CapabilityBar
         hasTariff={hasTariff}
         hasCoordinates={hasCoordinates}
@@ -1355,6 +1396,16 @@ export function LiveScreen({
             }}
           />
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            {/* Prev day — navigates to yesterday's history */}
+            <button
+              type="button"
+              onClick={() => navigateToDate(yesterday)}
+              title="Previous day"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-700 bg-slate-900/70 text-slate-300 hover:text-slate-100 transition-colors"
+            >
+              <ChevronLeft size={14} />
+            </button>
+
             <DatePickerControl
               selectedDate={selectedDate}
               displayDate={displayDate}
@@ -1362,6 +1413,17 @@ export function LiveScreen({
               isHistoricalDate={isHistoricalDate}
               onSelectDate={navigateToDate}
             />
+
+            {/* Next day — disabled on Live (already on today) */}
+            <button
+              type="button"
+              disabled
+              title="Already on today"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-700 bg-slate-900/70 text-slate-300 opacity-30 cursor-not-allowed"
+            >
+              <ChevronRight size={14} />
+            </button>
+
             <span className="inline-flex min-w-[92px] justify-center rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1.5">
               {liveTime}
             </span>
