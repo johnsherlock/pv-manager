@@ -773,7 +773,7 @@ function DatePickerControl({
   }, [open]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={popoverRef}>
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
@@ -785,7 +785,6 @@ function DatePickerControl({
 
       {open && (
         <div
-          ref={popoverRef}
           className="absolute left-0 top-full z-40 mt-2 w-[280px] rounded-[20px] border border-slate-800 bg-[#111b2b] p-4 shadow-[0_20px_60px_rgba(2,6,23,0.5)]"
         >
           <div className="flex items-center justify-between gap-2">
