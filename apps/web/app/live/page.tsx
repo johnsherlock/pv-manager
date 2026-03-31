@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { fetchMinuteData } from '@/src/providers/v1/adapter';
 import { buildDayDetail } from '@/src/live/normalizer';
 import {
@@ -63,6 +64,12 @@ export default async function LivePage({
   const effectiveTimezone = installationContext?.timezone ?? 'Europe/Dublin';
   const today = getTodayLocalDate(effectiveTimezone);
   const params = await searchParams;
+
+  // Redirect historical ?date= params to the dedicated history route.
+  if (params?.date && DATE_PATTERN.test(params.date) && params.date < today) {
+    redirect(`/history/${params.date}`);
+  }
+
   const selectedDate = resolveSelectedDate(params?.date, today);
   const isHistoricalDate = selectedDate < today;
   const fetchedAt = now.toISOString();
