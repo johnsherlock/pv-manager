@@ -1194,9 +1194,7 @@ export function LiveScreen({
         setActiveSeries(series.length > 0 ? series : MINUTE_DEFAULT_SERIES);
       }
     } catch {
-      setResolution('1min');
-      setViewMode('line');
-      setActiveSeries(MINUTE_DEFAULT_SERIES);
+      // Storage read failed — leave state at defaults already set by useState.
     } finally {
       setChartPrefsReady(true);
     }

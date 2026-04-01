@@ -30,11 +30,19 @@ describe('resolveNextDayTarget', () => {
   it('navigates to /history/<nextDay> when next day is still in the past', () => {
     expect(resolveNextDayTarget('2026-03-29', '2026-03-31')).toBe('/history/2026-03-30');
   });
+
+  it('navigates to /live when next day is in the future', () => {
+    expect(resolveNextDayTarget('2026-03-31', '2026-03-31')).toBe('/live');
+  });
 });
 
 describe('resolvePrevDayTarget', () => {
   it('returns the previous day path', () => {
     expect(resolvePrevDayTarget('2026-03-30')).toBe('/history/2026-03-29');
+  });
+
+  it('crosses month boundary correctly', () => {
+    expect(resolvePrevDayTarget('2026-04-01')).toBe('/history/2026-03-31');
   });
 });
 

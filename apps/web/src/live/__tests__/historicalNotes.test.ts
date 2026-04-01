@@ -95,4 +95,24 @@ describe('buildHistoricalNotesModel', () => {
       'directional rather than exact',
     );
   });
+
+  it('uses credit language when netBillImpact is negative', () => {
+    const model = buildHistoricalNotesModel({
+      screenState: 'healthy',
+      dayTotals: baseTotals,
+      health: baseHealth,
+      hasTariff: true,
+      financialEstimate: {
+        importCost: 0.5,
+        exportCredit: 2.0,
+        solarSavings: 4.2,
+        netBillImpact: -1.5,
+        note: 'simplified-daily-rate',
+      },
+    });
+
+    expect(model.notes.find((note) => note.title === 'Tariff-aware value')?.body).toContain(
+      'net credit',
+    );
+  });
 });

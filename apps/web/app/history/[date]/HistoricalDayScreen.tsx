@@ -39,7 +39,7 @@ import {
   getMonthDays,
 } from '@/src/live/chartUtils';
 import type { CostPoint } from '@/src/live/loader';
-import { buildHistoricalNotesModel } from '@/src/live/historicalNotes';
+import { buildHistoricalNotesModel, type HistoricalNotesModel } from '@/src/live/historicalNotes';
 import {
   resolveHistoricalSwipeTarget,
   resolveNavigationTarget,
@@ -745,9 +745,7 @@ export function HistoricalDayScreen({
         setActiveSeries(series.length > 0 ? series : MINUTE_DEFAULT_SERIES);
       }
     } catch {
-      setResolution('1min');
-      setViewMode('line');
-      setActiveSeries(MINUTE_DEFAULT_SERIES);
+      // Storage read failed — leave state at defaults already set by useState.
     } finally {
       setChartPrefsReady(true);
     }
@@ -1079,7 +1077,7 @@ export function HistoricalDayScreen({
 function HistoricalNotesPanel({
   model,
 }: {
-  model: ReturnType<typeof buildHistoricalNotesModel>;
+  model: HistoricalNotesModel;
 }) {
   return (
     <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-5">

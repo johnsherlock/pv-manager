@@ -181,7 +181,10 @@ export function buildHistoricalNotesModel({
     hasTariff && financialEstimate
       ? {
           title: 'Tariff-aware value',
-          body: `Estimated net bill impact for the day was ${formatEuro(financialEstimate.netBillImpact)}, including ${formatEuro(financialEstimate.exportCredit)} of export credit and ${formatEuro(financialEstimate.solarSavings)} of solar savings. This remains a simplified day-rate estimate rather than a full bill reconstruction.`,
+          body:
+            financialEstimate.netBillImpact < 0
+              ? `Solar and export produced an estimated net credit of ${formatEuro(Math.abs(financialEstimate.netBillImpact))} for the day, including ${formatEuro(financialEstimate.exportCredit)} of export credit and ${formatEuro(financialEstimate.solarSavings)} of solar savings. This remains a simplified day-rate estimate rather than a full bill reconstruction.`
+              : `Estimated net bill impact for the day was ${formatEuro(financialEstimate.netBillImpact)}, including ${formatEuro(financialEstimate.exportCredit)} of export credit and ${formatEuro(financialEstimate.solarSavings)} of solar savings. This remains a simplified day-rate estimate rather than a full bill reconstruction.`,
           tone: 'neutral',
         }
       : {
