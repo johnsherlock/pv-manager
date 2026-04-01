@@ -874,6 +874,11 @@ export function HistoricalDayScreen({
     router.push(target);
   }
 
+  function handleTouchCancel() {
+    touchStartX.current = null;
+    touchStartY.current = null;
+  }
+
   const isDisconnected = displayScreenState === 'disconnected';
   const historicalNotes = useMemo(
     () =>
@@ -919,6 +924,7 @@ export function HistoricalDayScreen({
       style={{ touchAction: 'pan-y' }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
     >
       {/* Nav bar */}
       <header className="border-b border-slate-800 bg-[#101826]">

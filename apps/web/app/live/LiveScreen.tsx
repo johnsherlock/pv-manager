@@ -1347,6 +1347,11 @@ export function LiveScreen({
     router.push(target);
   }
 
+  function handleTouchCancel() {
+    touchStartX.current = null;
+    touchStartY.current = null;
+  }
+
   const isStale = displayScreenState === 'stale' || displayScreenState === 'warning';
   const isDisconnected = displayScreenState === 'disconnected';
 
@@ -1356,6 +1361,7 @@ export function LiveScreen({
       style={{ touchAction: 'pan-y' }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
     >
       <CapabilityBar
         hasTariff={hasTariff}
