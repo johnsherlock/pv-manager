@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
@@ -664,6 +664,7 @@ export function HistoricalDayScreen({
   financialEstimate,
 }: HistoricalDayScreenProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const chartPrefsStorageKey = useMemo(() => getChartPrefsStorageKey(timezone), [timezone]);
   const [resolution, setResolution] = useState<Resolution>('1min');
   const [viewMode, setViewMode] = useState<ViewMode>('line');
@@ -824,7 +825,9 @@ export function HistoricalDayScreen({
   }, [timezone]);
 
   function navigateToDate(date: string) {
-    router.push(resolveNavigationTarget(date, today));
+    startTransition(() => {
+      router.push(resolveNavigationTarget(date, today));
+    });
   }
 
   function toggleSeries(series: SeriesKey) {
@@ -871,7 +874,9 @@ export function HistoricalDayScreen({
     touchStartY.current = null;
     const target = resolveHistoricalSwipeTarget(deltaX, deltaY, selectedDate, today);
     if (!target) return;
-    router.push(target);
+    startTransition(() => {
+      router.push(target);
+    });
   }
 
   function handleTouchCancel() {
@@ -926,13 +931,24 @@ export function HistoricalDayScreen({
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchCancel}
     >
+      {isPending && (
+        <div className="fixed top-0 left-0 right-0 z-50 h-0.5 overflow-hidden">
+          <div
+            className="h-full w-full animate-shimmer"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, #38bdf8 50%, transparent 100%)',
+              backgroundSize: '200% 100%',
+            }}
+          />
+        </div>
+      )}
       {/* Nav bar */}
       <header className="border-b border-slate-800 bg-[#101826]">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => router.push('/live')}
+              onClick={() => startTransition(() => router.push('/live'))}
               className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
             >
               <ChevronLeft size={14} />
