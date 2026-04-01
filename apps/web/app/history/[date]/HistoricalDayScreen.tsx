@@ -45,6 +45,7 @@ import {
   resolveNavigationTarget,
   shouldIgnoreSwipeTarget,
 } from '@/src/live/swipeNavigation';
+import { getAdjacentPrefetchTargets } from '@/src/live/prefetch';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -806,6 +807,13 @@ export function HistoricalDayScreen({
       // Ignore storage failures.
     }
   }, [dismissalStorageKey, dismissedIncidentIds, health.incidents]);
+
+  // Prefetch adjacent historical day routes so navigation feels instant.
+  useEffect(() => {
+    for (const target of getAdjacentPrefetchTargets(selectedDate, today)) {
+      router.prefetch(target);
+    }
+  }, [selectedDate, today, router]);
 
   // Clock tick
   useEffect(() => {
