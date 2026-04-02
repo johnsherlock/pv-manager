@@ -975,7 +975,7 @@ export function HistoricalDayScreen(props: HistoricalDayScreenProps) {
         </div>
       )}
       {/* Nav bar */}
-      <header className="border-b border-slate-800 bg-[#101826]">
+      <header className="sticky top-0 z-40 border-b border-slate-800 bg-[#101826]">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
@@ -1008,7 +1008,7 @@ export function HistoricalDayScreen(props: HistoricalDayScreenProps) {
       />
 
       {/* Control bar */}
-      <div className="border-b border-slate-800 bg-[#0c1422]/80">
+      <div className="sticky top-14 z-30 border-b border-slate-800 bg-[#0c1422]/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-end gap-2 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2 text-xs text-slate-400">
             {/* Prev day button */}
@@ -1060,16 +1060,6 @@ export function HistoricalDayScreen(props: HistoricalDayScreenProps) {
 
       <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
         <section className="space-y-4">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-              Historical
-            </p>
-            <h2 className="mt-1 text-xl font-semibold text-slate-50">{displayDate}</h2>
-            <p className="hidden sm:block mt-1 text-sm text-slate-400">
-              Full-day energy breakdown and financial interpretation for this date.
-            </p>
-          </div>
-
           <div className="grid gap-4 xl:grid-cols-[1.7fr_1fr]">
             <DayTrendChart
               mode="historical"
