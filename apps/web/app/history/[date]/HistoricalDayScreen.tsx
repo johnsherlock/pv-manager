@@ -1130,7 +1130,7 @@ export function HistoricalDayScreen(props: HistoricalDayScreenProps) {
               Historical
             </p>
             <h2 className="mt-1 text-xl font-semibold text-slate-50">{displayDate}</h2>
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="hidden sm:block mt-1 text-sm text-slate-400">
               Full-day energy breakdown and financial interpretation for this date.
             </p>
           </div>
