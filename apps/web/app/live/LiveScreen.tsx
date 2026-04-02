@@ -219,7 +219,7 @@ function CapabilityBar({
   ];
 
   return (
-    <div className="border-b border-slate-800 bg-[#08111f] px-4 py-2 text-xs">
+    <div className="hidden sm:block border-b border-slate-800 bg-[#08111f] px-4 py-2 text-xs">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2.5">
         <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
           Setup
@@ -567,7 +567,7 @@ function SectionHeader({
           {eyebrow}
         </p>
         <h2 className="mt-1 text-xl font-semibold text-slate-50">{title}</h2>
-        <p className="mt-1 text-sm text-slate-400">{description}</p>
+        <p className="hidden sm:block mt-1 text-sm text-slate-400">{description}</p>
       </div>
       {action}
     </div>
