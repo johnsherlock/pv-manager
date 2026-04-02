@@ -202,7 +202,7 @@ export function DayTrendChart({
         })}
       </div>
 
-      <div className="mt-4 h-[400px] rounded-[24px] border border-slate-800 bg-[#0b1321] p-3">
+      <div className="mt-4 h-[260px] sm:h-[400px] rounded-[24px] border border-slate-800 bg-[#0b1321] p-3">
         {data.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-500">
             {emptyLabel}
@@ -226,7 +226,7 @@ export function DayTrendChart({
             Half-hour import cost, solar savings, and export value through the day.
           </p>
         </div>
-        <div className="h-[330px] rounded-[24px] border border-slate-800 bg-[#0b1321] p-3">
+        <div className="h-[220px] sm:h-[330px] rounded-[24px] border border-slate-800 bg-[#0b1321] p-3">
           {costData.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-slate-500">
               No tariff-backed value data available
@@ -441,7 +441,7 @@ export function SolarCoveragePanel({
         Solar coverage
       </p>
       <h3 className="mt-1 text-lg font-semibold text-slate-50">{heading}</h3>
-      <div className="mt-4 h-44 rounded-[24px] border border-slate-800 bg-[#0b1321] p-3">
+      <div className="mt-4 h-32 sm:h-44 rounded-[24px] border border-slate-800 bg-[#0b1321] p-3">
         {coverageData.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-500">
             No coverage data yet
