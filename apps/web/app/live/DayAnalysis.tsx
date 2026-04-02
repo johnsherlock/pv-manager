@@ -169,7 +169,7 @@ export function DayTrendChart({
         </div>
       )}
 
-      <div className="mt-4 grid grid-cols-2 gap-1.5 lg:grid-cols-5">
+      <div className="mt-4 grid grid-cols-3 gap-1.5 lg:grid-cols-5">
         {SERIES_ORDER.map((series) => {
           const active = activeSeries.includes(series);
           const isHovered = hoveredSeries === series;
@@ -194,7 +194,7 @@ export function DayTrendChart({
                 />
                 <span className="truncate">{formatSeriesLabel(series)}</span>
               </span>
-              <span className="ml-auto shrink-0 text-[11px] text-slate-400">
+              <span className="ml-1 shrink-0 text-[11px] text-slate-400">
                 {active ? <Eye size={12} /> : <EyeOff size={12} />}
               </span>
             </button>
