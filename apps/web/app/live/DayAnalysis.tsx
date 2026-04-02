@@ -211,7 +211,7 @@ export function DayTrendChart({
           <EChart
             option={energyOption}
             style={{ height: '100%', width: '100%' }}
-            notMerge={false}
+            notMerge={true}
             lazyUpdate={false}
           />
         )}
@@ -235,7 +235,7 @@ export function DayTrendChart({
             <EChart
               option={costOption}
               style={{ height: '100%', width: '100%' }}
-              notMerge={false}
+              notMerge={true}
               lazyUpdate={false}
             />
           )}
@@ -450,7 +450,7 @@ export function SolarCoveragePanel({
           <EChart
             option={coverageOption}
             style={{ height: '100%', width: '100%' }}
-            notMerge={false}
+            notMerge={true}
             lazyUpdate={false}
           />
         )}
