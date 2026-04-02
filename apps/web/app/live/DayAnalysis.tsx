@@ -209,6 +209,7 @@ export function DayTrendChart({
           </div>
         ) : (
           <EChart
+            key={resolution}
             option={energyOption}
             style={{ height: '100%', width: '100%' }}
             notMerge={false}
