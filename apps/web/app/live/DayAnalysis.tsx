@@ -169,7 +169,7 @@ export function DayTrendChart({
         </div>
       )}
 
-      <div className="mt-4 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-4 grid grid-cols-2 gap-1.5 lg:grid-cols-5">
         {SERIES_ORDER.map((series) => {
           const active = activeSeries.includes(series);
           const isHovered = hoveredSeries === series;
