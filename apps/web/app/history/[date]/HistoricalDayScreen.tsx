@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   Calendar,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Clock,
-  TriangleAlert,
   WifiOff,
 } from 'lucide-react';
 import type { FinancialEstimate, LivePoint } from '@/src/live/loader';
@@ -216,61 +214,6 @@ const MIN_HISTORY_DATE = addDays(
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function TrustBadge({
-  screenState,
-  health,
-  onOpenDetails,
-}: {
-  screenState: ScreenState;
-  health: HistoricalDayScreenProps['health'];
-  onOpenDetails?: () => void;
-}) {
-  function label(): string {
-    switch (screenState) {
-      case 'healthy':
-        return `Data for ${health.refreshedAtLocalTime}`;
-      case 'stale':
-        return health.lastReadingLocalTime
-          ? `Last reading ${health.lastReadingLocalTime}`
-          : 'Partial data';
-      case 'warning':
-        return 'Data quality review needed';
-      case 'disconnected':
-        return 'No data for this day';
-    }
-  }
-
-  const config: Record<ScreenState, { icon: ReactNode; className: string }> = {
-    healthy: {
-      icon: <CheckCircle2 size={13} />,
-      className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-    },
-    stale: {
-      icon: <Clock size={13} />,
-      className: 'border-orange-500/30 bg-orange-500/10 text-orange-300',
-    },
-    warning: {
-      icon: <TriangleAlert size={13} />,
-      className: 'border-orange-500/30 bg-orange-500/10 text-orange-300',
-    },
-    disconnected: {
-      icon: <WifiOff size={13} />,
-      className: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
-    },
-  };
-
-  const item = config[screenState];
-  return (
-    <button
-      type="button"
-      onClick={screenState === 'warning' ? onOpenDetails : undefined}
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${item.className}`}
-    >
-      {item.icon}
-      {label()}
-    </button>
-  );
-}
 
 function WarningBanner({
   screenState,
@@ -1066,15 +1009,7 @@ export function HistoricalDayScreen(props: HistoricalDayScreenProps) {
 
       {/* Control bar */}
       <div className="border-b border-slate-800 bg-[#0c1422]/80">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
-          <TrustBadge
-            screenState={displayScreenState}
-            health={displayHealth}
-            onOpenDetails={() => {
-              setSelectedIncidentId(primaryActiveIncident?.id ?? health.primaryIncident?.id ?? null);
-              setWarningDetailsOpen(true);
-            }}
-          />
+        <div className="mx-auto flex max-w-7xl items-center justify-end gap-2 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2 text-xs text-slate-400">
             {/* Prev day button */}
             <button
