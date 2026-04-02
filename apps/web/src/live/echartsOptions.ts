@@ -134,8 +134,8 @@ export function buildEnergyTrendOption(
     },
     tooltip: {
       ...TOOLTIP_BASE,
-      formatter: (params: { seriesName: string; value: number }[]) => {
-        const time = params[0] ? (data[params[0] as unknown as number]?.time ?? '') : '';
+      formatter: (params: { seriesName: string; value: number; axisValue: string }[]) => {
+        const time = params[0]?.axisValue ?? '';
         const rows = params
           .map(
             (p) =>
@@ -197,8 +197,8 @@ export function buildCostOption(data: CostPoint[], viewMode: ViewMode): object {
     },
     tooltip: {
       ...TOOLTIP_BASE,
-      formatter: (params: { seriesName: string; value: number }[]) => {
-        const time = params[0] ? (data[params[0] as unknown as number]?.time ?? '') : '';
+      formatter: (params: { seriesName: string; value: number; axisValue: string }[]) => {
+        const time = params[0]?.axisValue ?? '';
         const rows = params
           .map(
             (p) =>
