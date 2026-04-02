@@ -140,7 +140,7 @@ export function DayTrendChart({
             {eyebrow}
           </p>
           <h3 className="mt-1 text-xl font-semibold text-slate-50">{title}</h3>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="hidden sm:block mt-1 text-sm text-slate-400">
             Switch between raw and cumulative views, and strip back series when the story gets
             noisy.
           </p>
