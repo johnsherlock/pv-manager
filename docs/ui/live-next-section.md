@@ -57,7 +57,7 @@ Subtext: *Your resolved address will be used for daylight and forecast context.*
 **Option B — Approximate area**
 > Use an approximate area instead
 
-Subtext: *Only your town or region will be used. No street-level detail is stored or shown.*
+Subtext: *Only your town or region will appear in the product. Your entry is kept to support future location updates, but no address detail is ever displayed.*
 
 **Default:** Exact location is pre-selected. The user can switch to approximate
 before submitting.
@@ -104,8 +104,8 @@ Shown as helper text after the precision mode selection when exact is active:
 Shown as helper text after the precision mode selection when approximate is
 active:
 
-> We'll use your town or region only. No street-level detail is stored or
-> shown in the product.
+> We'll show only your town or region in the product. Your entry is kept to
+> support future location updates, but no address detail is ever displayed.
 
 ### What users see if location is never set
 
