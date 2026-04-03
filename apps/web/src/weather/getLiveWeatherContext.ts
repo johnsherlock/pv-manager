@@ -41,7 +41,10 @@ function isCacheValid(entry: WeatherCacheEntry, now: Date, lat: number, lon: num
   }
 
   const hourlyOk = now.getTime() - entry.hourlyFetchedAt.getTime() < HOURLY_TTL_MS;
-  const dailyOk  = now.getTime() - entry.dailyFetchedAt.getTime()  < DAILY_TTL_MS;
+  // Also invalidate daily cache when the local day has rolled over since it was fetched.
+  const dailyOk  =
+    now.getTime() - entry.dailyFetchedAt.getTime() < DAILY_TTL_MS &&
+    entry.sunEvents.localDate === getTodayLocalDate(entry.timezone);
 
   return { hourlyOk, dailyOk, locationMatch };
 }
@@ -121,6 +124,7 @@ export async function getLiveWeatherContext(
   if (hourlyForecast && dailyForecast && sunEvents) {
     cache.set(installationId, {
       installationId,
+      timezone,
       cachedLatitude: latitude,
       cachedLongitude: longitude,
       hourlyForecast,

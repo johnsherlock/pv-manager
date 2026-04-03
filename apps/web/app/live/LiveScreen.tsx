@@ -1084,7 +1084,7 @@ function ForecastPanel({
   return (
     <div className="space-y-4">
       {/* 12-hour scrollable rail */}
-      <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-5">
+      <div className="overflow-hidden rounded-[28px] border border-slate-800 bg-[#111b2b] p-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
           Near term
         </p>
@@ -1254,7 +1254,7 @@ export function LiveScreen({
   todayTotals,
   financialEstimate,
 }: LiveScreenProps) {
-  const hasCoordinates = weatherResult.status === 'ok';
+  const hasCoordinates = weatherResult.status !== 'no-location';
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const pathname = usePathname();
@@ -1711,8 +1711,10 @@ export function LiveScreen({
               />
 
               <div className="grid gap-4 xl:grid-cols-[1.15fr_1fr]">
-                <SolarContextPanel weatherResult={weatherResult} timezone={timezone} />
-                <div className="space-y-4">
+                <div className="xl:sticky xl:top-20 xl:self-start">
+                  <SolarContextPanel weatherResult={weatherResult} timezone={timezone} />
+                </div>
+                <div className="min-w-0 space-y-4">
                   <ForecastPanel weatherResult={weatherResult} timezone={timezone} />
                   <NotesPanel
                     screenState={screenState}

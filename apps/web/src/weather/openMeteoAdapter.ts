@@ -162,8 +162,8 @@ export function normalizeDailyForecast(
       temperatureMinCelsius: Math.round(d.temperature_2m_min[i] * 10) / 10,
       precipitationSumMm: Math.round(d.precipitation_sum[i] * 10) / 10,
       weatherCode: d.weather_code[i],
-      sunriseUtc: new Date(d.sunrise[todayIdx]).toISOString(),
-      sunsetUtc: new Date(d.sunset[todayIdx]).toISOString(),
+      sunriseUtc: new Date(d.sunrise[i]).toISOString(),
+      sunsetUtc: new Date(d.sunset[i]).toISOString(),
     });
   }
 

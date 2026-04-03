@@ -104,6 +104,7 @@ export type LiveWeatherResult =
 
 export type WeatherCacheEntry = {
   installationId: string;
+  timezone: string;
   cachedLatitude: number;
   cachedLongitude: number;
   hourlyForecast: HourlyForecast;
