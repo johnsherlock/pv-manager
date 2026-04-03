@@ -167,13 +167,17 @@ type SunEvents = {
   sunsetUtc: string;            // ISO 8601 UTC
   solarNoonUtc: string;         // ISO 8601 UTC
   daylightSeconds: number;      // total daylight duration for the day
-  daylightRemainingSeconds: number; // seconds of daylight remaining from now
 };
 ```
 
 `solarNoonUtc` is not a direct Open-Meteo field. It should be derived as the
 midpoint between `sunrise` and `sunset` unless a future provider supplies it
 directly. Implementation stories should document this derivation explicitly.
+
+`daylightRemainingSeconds` is intentionally excluded from this type. It is a
+"from now" value that changes continuously and must not be cached with the
+static sun-event data. It belongs in `SunPosition` below, which is computed
+fresh on every request.
 
 ### Sun position context
 
@@ -188,6 +192,7 @@ type SunPosition = {
   elevationDegrees: number;     // solar elevation above horizon (-90 to 90)
   azimuthDegrees: number;       // solar azimuth clockwise from north (0–360)
   isAboveHorizon: boolean;      // elevation > 0
+  daylightRemainingSeconds: number; // seconds until sunset; 0 if sun is below horizon
 };
 ```
 
@@ -203,8 +208,8 @@ shading from this data. Sun position is sky-relative context only.
 | Geocoding result | Persistent (stored on installation) | Only re-geocode if user changes location |
 | 12-hour hourly forecast | 30 minutes | Balance freshness against Open-Meteo rate limits |
 | 5-day daily forecast | 1 hour | Daily cards change slowly; 1-hour TTL is sufficient |
-| Sun events | 24 hours (per local date) | Sunrise/sunset times do not change within a day |
-| Sun position | None (computed on demand) | Cheap formula; no caching needed |
+| Sun events | 24 hours (per local date) | Static fields only: sunrise, sunset, solar noon, daylight duration — these do not change within a day |
+| Sun position | None (computed on demand) | Includes `daylightRemainingSeconds`; must be computed fresh on every request — never cached |
 
 Caching should be implemented server-side. The browser must not call provider
 APIs directly (consistent with Decision 0001).
