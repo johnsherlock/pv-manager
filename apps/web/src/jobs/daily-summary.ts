@@ -278,10 +278,24 @@ export async function runDailySummaryJob(
     }
 
     const runId = await startJobRun(inst.installationId, targetDate);
-    const outcome = await summariseInstallation(inst, targetDate);
-    await finishJobRun(runId, outcome);
+    let outcome: InstallationJobOutcome;
+    try {
+      outcome = await summariseInstallation(inst, targetDate);
+    } catch (err) {
+      const errorSummary = err instanceof Error ? err.message : String(err);
+      outcome = {
+        installationId: inst.installationId,
+        timezone: inst.timezone,
+        targetDate,
+        status: 'failed',
+        errorCode: 'unexpected-error',
+        errorSummary,
+      };
+    } finally {
+      await finishJobRun(runId, outcome!);
+    }
 
-    outcomes.push(outcome);
+    outcomes.push(outcome!);
   }
 
   return {
@@ -313,8 +327,10 @@ export type RunCatchUpOptions = {
  * Summarise all missing days from fromDate up to and including yesterday for
  * every active installation. Existing rows are left untouched (skipped).
  *
- * This is the local dev and backfill path. It calls runDailySummaryJob() for
- * each missing date so the same job function is exercised.
+ * This is the local dev and backfill path. It calls summariseInstallation()
+ * directly per (installation, date) pair so each combination is processed
+ * exactly once, rather than routing through runDailySummaryJob() which would
+ * re-query all installations on every call.
  */
 export async function runCatchUp(options: RunCatchUpOptions = {}): Promise<void> {
   const now = options.now ?? new Date();
@@ -385,21 +401,32 @@ export async function runCatchUp(options: RunCatchUpOptions = {}): Promise<void>
       }
 
       console.log(`[catch-up] Summarising ${inst.installationId} for ${date}…`);
-      const result = await runDailySummaryJob({
-        targetDate: date,
-        skipEligibilityCheck: true,
-        now,
-      });
+      const runId = await startJobRun(inst.installationId, date);
+      let outcome: InstallationJobOutcome;
+      try {
+        outcome = await summariseInstallation(inst, date);
+      } catch (err) {
+        const errorSummary = err instanceof Error ? err.message : String(err);
+        outcome = {
+          installationId: inst.installationId,
+          timezone: inst.timezone,
+          targetDate: date,
+          status: 'failed',
+          errorCode: 'unexpected-error',
+          errorSummary,
+        };
+      } finally {
+        await finishJobRun(runId, outcome!);
+      }
 
-      const outcome = result.outcomes[0];
-      if (outcome?.status === 'success') {
+      if (outcome!.status === 'success') {
         totalSuccess++;
         console.log(
-          `[catch-up]   ✓ ${date} — ${outcome.readingsCount} readings${outcome.isPartial ? ' (partial)' : ''}`,
+          `[catch-up]   ✓ ${date} — ${outcome!.readingsCount} readings${outcome!.isPartial ? ' (partial)' : ''}`,
         );
-      } else if (outcome?.status === 'failed') {
+      } else if (outcome!.status === 'failed') {
         totalFailed++;
-        console.log(`[catch-up]   ✗ ${date} — ${outcome.errorSummary}`);
+        console.log(`[catch-up]   ✗ ${date} — ${outcome!.errorSummary}`);
       }
     }
   }
