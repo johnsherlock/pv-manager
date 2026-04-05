@@ -20,7 +20,10 @@
  *   Loads .env automatically via dotenv/config (imported by db/client).
  */
 
-import 'dotenv/config';
+import { config } from 'dotenv';
+// Load .env then .env.local (later file wins), matching Next.js local-dev behaviour.
+config();
+config({ path: '.env.local', override: true });
 import { runDailySummaryJob, runCatchUp } from '../jobs/daily-summary';
 
 // ---------------------------------------------------------------------------
