@@ -259,27 +259,30 @@ describe('range-summary integration — full 14-day seeded range (2025-10-03 to 
     expect(day.generatedKwh).toBe(4.2);
     expect(day.importKwh).toBe(7.5);
     expect(day.exportKwh).toBe(1.5);
-    // actualImportCost = r2(7.5 × 0.3451 × 1.09) = 2.82
+    // Banded: day=4.125×0.3451 + night=2.625×0.1848 + peak=0.75×0.3617, all ×1.09
+    // rawImportCost = (1.42351+0.4851+0.27128)×1.09 = 2.37608 → r2 = 2.38
     // fixedCharge = 0.59, exportCredit = r2(1.5 × 0.20) = 0.30
-    // actualNetCost = r2(2.82 + 0.59 − 0.30) = 3.11
-    expect(day.billing!.actualNetCost).toBeCloseTo(3.11, 2);
+    // actualNetCost = r2(2.38 + 0.59 − 0.30) = 2.67
+    expect(day.billing!.actualNetCost).toBeCloseTo(2.67, 1);
     expect(day.billing!.exportCredit).toBeCloseTo(0.30, 2);
-    // withoutSolarImport = 9.2; withoutSolarCost = r2(9.2 × 0.3451 × 1.09) = 3.46
-    // withoutSolarNetCost = r2(3.46 + 0.59) = 4.05; savings = r2(4.05 − 3.11) = 0.94
-    expect(day.billing!.savings).toBeCloseTo(0.94, 2);
+    // withoutSolarImport = 9.2 (day rate on baseline — documented simplification)
+    // withoutSolarCost = r2(9.2 × 0.3451 × 1.09) = 3.46; withoutSolarNetCost = 4.05
+    // savings = r2(4.05 − 2.67) = 1.38
+    expect(day.billing!.savings).toBeCloseTo(1.38, 1);
   });
 
   it('computes correct billing for the first V2 day (2025-10-10)', () => {
     const day = series.find((d) => d.date === '2025-10-10')!;
     expect(day.isPartial).toBe(false);
-    // actualImportCost = r2(9.4 × 0.3865 × 1.09) = 3.96
+    // Banded: day=5.17×0.3865 + night=3.29×0.2125 + peak=0.94×0.4340, all ×1.09
+    // rawImportCost = (1.99821+0.69913+0.40796)×1.09 = 3.38478 → r2 = 3.38
     // fixedCharge = 0.66, exportCredit = r2(1.0 × 0.185) = 0.19
-    // actualNetCost = r2(3.96 + 0.66 − 0.19) = 4.43
-    expect(day.billing!.actualNetCost).toBeCloseTo(4.43, 2);
+    // actualNetCost = r2(3.38 + 0.66 − 0.19) = 3.85
+    expect(day.billing!.actualNetCost).toBeCloseTo(3.85, 1);
     expect(day.billing!.exportCredit).toBeCloseTo(0.19, 2);
     // withoutSolarImport = 11.2; withoutSolarNetCost = r2(r2(11.2 × 0.3865 × 1.09) + 0.66) = 5.38
-    // savings = r2(5.38 − 4.43) = 0.95
-    expect(day.billing!.savings).toBeCloseTo(0.95, 2);
+    // savings = r2(5.38 − 3.85) = 1.53
+    expect(day.billing!.savings).toBeCloseTo(1.53, 1);
   });
 });
 

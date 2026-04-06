@@ -10,7 +10,7 @@
  * one daily_summaries row per installation + local date.
  */
 
-import { and, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
 import { db } from '../db/client';
 import {
   installations,
@@ -122,6 +122,7 @@ async function loadTariffWindowsForDate(
         ),
       ),
     )
+    .orderBy(desc(tariffPlanVersions.validFromLocalDate))
     .limit(1);
 
   if (versionRows.length === 0) return null;

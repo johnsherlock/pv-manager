@@ -65,7 +65,16 @@ function computeDayBilling(
       ? 1 - tariff.discountValue
       : 1;
 
-    const actualImportCost = r2(row.importKwh * tariff.dayRate * discount * vat);
+    let rawImportCost: number;
+    if (row.dayImportKwh != null && row.nightImportKwh != null && row.peakImportKwh != null) {
+      const dayBand   = row.dayImportKwh  * tariff.dayRate;
+      const nightBand = row.nightImportKwh * (tariff.nightRate ?? tariff.dayRate);
+      const peakBand  = row.peakImportKwh  * (tariff.peakRate  ?? tariff.dayRate);
+      rawImportCost = (dayBand + nightBand + peakBand) * discount * vat;
+    } else {
+      rawImportCost = row.importKwh * tariff.dayRate * discount * vat;
+    }
+    const actualImportCost = r2(rawImportCost);
     const exportCredit = r2(row.exportKwh * (tariff.exportRate ?? 0));
     const fixedCharges = fixedChargeContributionForDate(row.localDate, tariff.id, fixedChargeVersions);
     const actualNetCost = r2(actualImportCost + fixedCharges - exportCredit);
