@@ -181,6 +181,9 @@ export function computeRangeSummary(
         immersionDivertedKwh: null,
         isPartial: false,
         billing: null,
+        dayImportKwh: null,
+        nightImportKwh: null,
+        peakImportKwh: null,
       };
     }
 
@@ -196,6 +199,9 @@ export function computeRangeSummary(
         tariffVersions.length > 0
           ? computeDayBilling(row, tariffVersions, fixedCharges)
           : null,
+      dayImportKwh: row.dayImportKwh,
+      nightImportKwh: row.nightImportKwh,
+      peakImportKwh: row.peakImportKwh,
     };
   });
 
@@ -218,7 +224,16 @@ export function computeRangeSummary(
       generatedKwh: r.generatedKwh,
       consumedKwh: r.consumedKwh ?? 0,
       immersionDivertedKwh: r.immersionDivertedKwh ?? 0,
+      dayImportKwh: r.dayImportKwh,
+      nightImportKwh: r.nightImportKwh,
+      peakImportKwh: r.peakImportKwh,
     }));
+
+  const allBillingDaysHaveBandData =
+    summariesForBilling.length > 0 &&
+    summariesForBilling.every(
+      (s) => s.dayImportKwh != null && s.nightImportKwh != null && s.peakImportKwh != null,
+    );
 
   const billing =
     tariffVersions.length > 0 && summariesForBilling.length > 0
@@ -250,7 +265,7 @@ export function computeRangeSummary(
       consumedKwh: r2(totalConsumedKwh),
       immersionDivertedKwh: r2(totalImmersionDivertedKwh),
     },
-    note: 'simplified-daily-rate',
+    note: allBillingDaysHaveBandData ? 'banded-daily-rate' : 'simplified-daily-rate',
   };
 
   const health = deriveHealth(allDates, summaryMap, tariffVersions);

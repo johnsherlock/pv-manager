@@ -42,6 +42,9 @@ export type DailySummaryForBilling = {
   generatedKwh: number;
   consumedKwh: number;
   immersionDivertedKwh: number;
+  dayImportKwh?: number | null;
+  nightImportKwh?: number | null;
+  peakImportKwh?: number | null;
 };
 
 export type BillingPeriodResult = {
@@ -73,7 +76,7 @@ const timePart = (localDateTime: string) => localDateTime.slice(11, 16);
 
 const inDateRange = (date: string, from: string, to?: string | null) => date >= from && (!to || date <= to);
 
-const inWindow = (time: string, start?: string | null, end?: string | null) => {
+export const inWindow = (time: string, start?: string | null, end?: string | null) => {
   if (!start || !end) return false;
   if (start < end) {
     return time >= start && time < end;
@@ -240,7 +243,19 @@ export const calculateBillingFromDailySummaries = (
       ? 1 - tariff.discountValue
       : 1;
 
-    actualImportCost += round(day.importKwh * tariff.dayRate * discount * vat);
+    const hasBandData =
+      day.dayImportKwh != null &&
+      day.nightImportKwh != null &&
+      day.peakImportKwh != null;
+
+    if (hasBandData) {
+      const dayBand  = (day.dayImportKwh  ?? 0) * tariff.dayRate;
+      const nightBand = (day.nightImportKwh ?? 0) * (tariff.nightRate ?? tariff.dayRate);
+      const peakBand  = (day.peakImportKwh  ?? 0) * (tariff.peakRate  ?? tariff.dayRate);
+      actualImportCost += round((dayBand + nightBand + peakBand) * discount * vat);
+    } else {
+      actualImportCost += round(day.importKwh * tariff.dayRate * discount * vat);
+    }
     exportCredit += round(day.exportKwh * (tariff.exportRate ?? 0));
     fixedCharges += fixedChargeContributionForDate(day.localDate, tariff.id, fixedChargeVersions);
 
