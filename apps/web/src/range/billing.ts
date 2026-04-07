@@ -83,6 +83,9 @@ function computeDayBilling(
       0,
       row.importKwh + row.generatedKwh - row.exportKwh - (row.immersionDivertedKwh ?? 0),
     );
+    // No-solar baseline always uses day rate: we cannot know how a higher
+    // counterfactual load would have split across night/peak bands, so the
+    // day rate is used as a documented, accepted simplification.
     const withoutSolarCost = r2(withoutSolarImport * tariff.dayRate * discount * vat);
     const withoutSolarNetCost = r2(withoutSolarCost + fixedCharges);
     const savings = r2(withoutSolarNetCost - actualNetCost);

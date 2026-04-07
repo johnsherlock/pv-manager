@@ -199,6 +199,13 @@ export function deriveDailySummaryFields(
 
   const hasBands = tariffWindows != null;
 
+  // Compute night and peak independently, then derive day as the remainder so
+  // that dayImportKwh + nightImportKwh + peakImportKwh === importKwh exactly
+  // (avoids up to 3 µkWh of floating-point drift from independent rounding).
+  const roundedNight = hasBands ? r6(nightImportKwh) : null;
+  const roundedPeak  = hasBands ? r6(peakImportKwh)  : null;
+  const roundedDay   = hasBands ? importKwh - (roundedNight ?? 0) - (roundedPeak ?? 0) : null;
+
   return {
     importKwh,
     exportKwh,
@@ -209,9 +216,9 @@ export function deriveDailySummaryFields(
     selfConsumptionRatio,
     gridDependenceRatio,
     isPartial,
-    dayImportKwh: hasBands ? r6(dayImportKwh) : null,
-    nightImportKwh: hasBands ? r6(nightImportKwh) : null,
-    peakImportKwh: hasBands ? r6(peakImportKwh) : null,
+    dayImportKwh: roundedDay,
+    nightImportKwh: roundedNight,
+    peakImportKwh: roundedPeak,
     freeImportKwh: null,
   };
 }

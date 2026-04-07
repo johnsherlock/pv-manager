@@ -218,10 +218,16 @@ export const calculateBillingPeriod = (
 /**
  * Calculate billing totals from persisted daily summary rows.
  *
- * Because daily summaries contain only daily totals (not per-interval
- * timestamped readings), time-of-use splitting (night / peak windows) is not
- * possible. The day rate is applied to all import for every day. This matches
- * the simplified-daily-rate approach used elsewhere in the app.
+ * When a row carries band breakdown fields (dayImportKwh / nightImportKwh /
+ * peakImportKwh), banded rates are applied: each band is multiplied by its
+ * respective rate before discount and VAT. When band data is absent (older
+ * rows or installations without tariff windows configured), the full import is
+ * costed at the day rate — the simplified-daily-rate fallback.
+ *
+ * The no-solar counterfactual (withoutSolarImportCost) always uses the day
+ * rate for the full hypothetical import, regardless of band data, because
+ * we cannot know how a higher counterfactual load would have split across
+ * bands. This is a documented, accepted simplification.
  */
 export const calculateBillingFromDailySummaries = (
   summaries: DailySummaryForBilling[],
