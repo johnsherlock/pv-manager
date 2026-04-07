@@ -23,17 +23,33 @@ the current context.
 
 ## Period Selector
 
+### Data loading strategy
+
+The page makes **one fetch on load**: the full 365-day window ending today. All
+period changes are handled client-side by adjusting the ECharts `dataZoom` range
+— no additional API calls are made when the user switches presets or sets a
+custom range.
+
+This is appropriate because the maximum dataset is 366 daily summary rows — a
+trivially small payload. The single-fetch model means period changes feel
+instantaneous and no loading state is needed after the initial page load.
+
+> **KPI row re-aggregation:** because period changes do not trigger a re-fetch,
+> the KPI row values must be recomputed client-side from the already-loaded daily
+> summaries whenever the zoom window changes. Implementers must not cache or
+> hard-code KPI totals from the server response.
+
 ### Named presets
 
 The default interaction is choosing a named preset. Presets are first-class
 controls — not a dropdown hidden behind a "filter" affordance.
 
-| Preset label | Date range resolved at runtime |
+| Preset label | Zoom window applied to loaded data |
 |---|---|
 | Last 7 days | Today − 6 days → today |
 | Last 30 days | Today − 29 days → today |
 | Last 3 months | Today − 89 days → today |
-| Last 12 months | Today − 364 days → today |
+| Last 12 months | Today − 364 days → today (full dataset) |
 | This month | First of current calendar month → today |
 | This year | 1 Jan of current year → today |
 
@@ -50,13 +66,33 @@ Custom date range is a **secondary path**, not the default:
 
 Custom range replaces the active preset label with a formatted date string
 (e.g. `12 Mar – 6 Apr 2025`). The preset pills deselect when a custom range is
-active.
+active. Custom ranges are clamped to the loaded 365-day window — dates outside
+this range are not selectable.
 
-### Preserve-on-load rule
+### Sticky selector
 
-The active preset or custom range is **preserved while data loads** — never reset
-when the API response arrives. This prevents the page jumping back to a default
-after the user has made a selection.
+The period selector (§1) is **pinned to the top of the viewport** and remains
+visible as the user scrolls through the charts below. This means the user can
+always change the period without scrolling back to the top.
+
+On desktop the sticky bar contains the preset pills, the "Custom range" control,
+and the trust / last-updated strip. On mobile it contains the scrollable pill row
+and trust strip. The sticky bar has a solid background and a subtle bottom border
+or shadow to separate it from the scrolling content beneath.
+
+Height must be reserved for the sticky bar so the first non-sticky module (§2
+KPI row) is not obscured when the page loads.
+
+### Chart zoom synchronization
+
+All time-series charts (§4, §5, §6, §8, §9) share a **single synchronized zoom
+state**. When the period changes — whether by preset or custom range — all charts
+update their visible window simultaneously. No chart is left showing a different
+date range from the others.
+
+ECharts `dataZoom` instances across charts should be linked. The period selector
+drives the shared zoom state; individual chart-level drag-to-zoom is disabled to
+prevent charts falling out of sync.
 
 ---
 
@@ -72,7 +108,7 @@ above the fold on typical 1280 px+ viewports.
 
 | § | Module | Notes |
 |---|---|---|
-| 1 | Period selector + trust / last-updated strip | Period selector is the page header; trust strip is a subdued line beneath it |
+| 1 | Period selector + trust / last-updated strip | Sticky — pinned to top of viewport while scrolling; contains preset pills, custom range control, and trust strip |
 | 2 | KPI row | Savings €, Actual cost €, No-solar cost €, Export credit €, Avg solar coverage % |
 | 3 | Tariff-change callout | Shown only when `health.hasTariffChange` is true; sits between the KPI row and the first chart — never buried below charts |
 | 4 | Energy trend line chart | Import vs generation, toggleable series |
@@ -215,10 +251,14 @@ When tariff data is missing, replace the donut with a prompt card.
 
 ### Loading
 
+Loading applies only to the **initial page fetch** (the full 365-day dataset).
+Subsequent period changes are zoom-only and have no loading state.
+
 - Each module shows a skeleton placeholder that reserves the module's approximate
-  height
-- The period selector remains fully interactive — the selected preset or custom
-  range stays visible and is not reset
+  height during the initial fetch
+- The sticky period selector (§1) remains visible and interactive during loading;
+  preset changes made before data arrives are applied immediately when the data
+  lands
 - The page does not reflow when data arrives (reserved heights prevent layout
   shift)
 
