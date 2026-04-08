@@ -35,11 +35,8 @@ export function aggregateKpisFromSeries(
   series: RangeSeriesDay[],
   from: string,
   to: string,
-  allDatesInWindow: string[],
 ): RangeKpis {
   const inWindow = series.filter((d) => d.date >= from && d.date <= to);
-  const windowDaySet = new Set(inWindow.map((d) => d.date));
-  const missingDays = allDatesInWindow.filter((d) => !windowDaySet.has(d)).length;
 
   let savings = 0;
   let actualNetCost = 0;
@@ -50,8 +47,15 @@ export function aggregateKpisFromSeries(
   let hasTariff = false;
   let tariffGapDays = 0;
   let partialDays = 0;
+  let coveredDays = 0;
+  let missingDays = 0;
 
   for (const day of inWindow) {
+    if (!day.hasSummary) {
+      missingDays++;
+      continue;
+    }
+    coveredDays++;
     if (day.isPartial) partialDays++;
     if (day.billing) {
       hasTariff = true;
@@ -82,7 +86,7 @@ export function aggregateKpisFromSeries(
     avgSelfConsumptionRatio,
     hasTariff,
     tariffGapDays,
-    coveredDays: inWindow.length,
+    coveredDays,
     missingDays,
     partialDays,
   };

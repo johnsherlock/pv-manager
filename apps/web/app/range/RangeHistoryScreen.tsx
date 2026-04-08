@@ -27,7 +27,6 @@ import {
 } from '@/src/range/presets';
 import {
   aggregateKpisFromSeries,
-  allDatesInWindow,
   formatCurrency,
   formatPercent,
 } from '@/src/range/kpi';
@@ -63,18 +62,13 @@ export function RangeHistoryScreen({ payload, today, financeMode, error }: Range
     return computePresetWindow(activePreset as RangePreset, today);
   }, [activePreset, customFrom, customTo, today]);
 
-  const windowDates = useMemo(
-    () => allDatesInWindow(activeWindow.from, activeWindow.to),
-    [activeWindow],
-  );
-
   const kpis = useMemo(() => {
     if (!payload) return null;
     const filtered = payload.series.filter(
       (d) => d.date >= activeWindow.from && d.date <= activeWindow.to,
     );
-    return aggregateKpisFromSeries(filtered, activeWindow.from, activeWindow.to, windowDates);
-  }, [payload, activeWindow, windowDates]);
+    return aggregateKpisFromSeries(filtered, activeWindow.from, activeWindow.to);
+  }, [payload, activeWindow]);
 
   const isFinanced = financeMode === 'finance';
 
@@ -97,7 +91,7 @@ export function RangeHistoryScreen({ payload, today, financeMode, error }: Range
   const showCompletenessBanner = hasMissing || hasPartial;
 
   const lastCoveredDate = payload
-    ? [...payload.series].reverse().find(() => true)?.date ?? null
+    ? [...payload.series].reverse().find((d) => d.hasSummary)?.date ?? null
     : null;
 
   const customWindowLabel =
@@ -236,7 +230,6 @@ export function RangeHistoryScreen({ payload, today, financeMode, error }: Range
                   kpis={kpis}
                   currency={payload?.meta.currency ?? 'EUR'}
                   note={payload?.summary.note}
-                  windowDates={windowDates}
                 />
 
                 {/* §3 — Tariff-change callout */}
@@ -279,10 +272,9 @@ type KpiRowProps = {
   kpis: ReturnType<typeof aggregateKpisFromSeries>;
   currency: string;
   note?: 'banded-daily-rate' | 'simplified-daily-rate';
-  windowDates: string[];
 };
 
-function KpiRow({ kpis, currency, note, windowDates }: KpiRowProps) {
+function KpiRow({ kpis, currency, note }: KpiRowProps) {
   if (!kpis.hasTariff) {
     return (
       <div className="rounded-[28px] border border-dashed border-slate-700 bg-[#111b2b] p-6 text-center">
