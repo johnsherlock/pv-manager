@@ -81,7 +81,8 @@ export default async function RangePage() {
         error={false}
       />
     );
-  } catch {
+  } catch (err) {
+    console.error('[RangePage] Failed to load range data:', err);
     return (
       <RangeHistoryScreen
         payload={null}
