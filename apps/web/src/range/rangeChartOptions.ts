@@ -191,7 +191,12 @@ export function buildPerDayBarOption(series: RangeSeriesDay[], hasBandData: bool
           name: 'Import (day)',
           type: 'bar',
           stack: 'import',
-          data: series.map((d) => safeVal(d, 'dayImportKwh')),
+          // For days without band data, fall back to total importKwh so the
+          // bar isn't silently zeroed out in a mixed-coverage period.
+          data: series.map((d) => {
+            if (!d.hasSummary) return 0;
+            return d.dayImportKwh != null ? round2(d.dayImportKwh) : round2(d.importKwh);
+          }),
           itemStyle: { color: DAY_BAND_COLOR },
           barMaxWidth: 20,
         },
@@ -199,7 +204,10 @@ export function buildPerDayBarOption(series: RangeSeriesDay[], hasBandData: bool
           name: 'Import (night)',
           type: 'bar',
           stack: 'import',
-          data: series.map((d) => safeVal(d, 'nightImportKwh')),
+          data: series.map((d) => {
+            if (!d.hasSummary) return 0;
+            return d.nightImportKwh != null ? round2(d.nightImportKwh) : 0;
+          }),
           itemStyle: { color: NIGHT_BAND_COLOR },
           barMaxWidth: 20,
         },
@@ -207,7 +215,10 @@ export function buildPerDayBarOption(series: RangeSeriesDay[], hasBandData: bool
           name: 'Import (peak)',
           type: 'bar',
           stack: 'import',
-          data: series.map((d) => safeVal(d, 'peakImportKwh')),
+          data: series.map((d) => {
+            if (!d.hasSummary) return 0;
+            return d.peakImportKwh != null ? round2(d.peakImportKwh) : 0;
+          }),
           itemStyle: { color: PEAK_BAND_COLOR },
           barMaxWidth: 20,
         },
