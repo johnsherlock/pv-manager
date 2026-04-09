@@ -618,8 +618,9 @@ export function RangePickerPopover({
         <div className="border-t border-slate-800 px-3 py-2.5">
           <div className="flex flex-wrap gap-1.5">
             {[
-              'Today', '7 days', '30 days', '90 days', '12 months', 'All',
+              'Today', '7 days', '30 days', '90 days',
               'This week', 'This month', 'This year',
+              '12 months', 'All',
             ].map((label) => (
               <button
                 key={label}
