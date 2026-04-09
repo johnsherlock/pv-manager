@@ -188,11 +188,12 @@ describe('stepRangeForward', () => {
   });
 
   it('shifts weeks by 7 days', () => {
-    const r: ActiveRange = { mode: 'weeks', from: '2026-03-30', to: '2026-04-05' };
+    // Sun 2026-03-29 – Sat 2026-04-04 (valid Sun–Sat week)
+    const r: ActiveRange = { mode: 'weeks', from: '2026-03-29', to: '2026-04-04' };
     const next = stepRangeForward(r, today);
     expect(next.mode).toBe('weeks');
-    expect(next.from).toBe('2026-04-06');
-    expect(next.to).toBe('2026-04-09'); // clamped to today
+    expect(next.from).toBe('2026-04-05');
+    expect(next.to).toBe('2026-04-09'); // clamped to today (2026-04-11 → today)
   });
 
   it('advances months by one calendar month', () => {
@@ -231,10 +232,11 @@ describe('stepRangeBackward', () => {
   });
 
   it('shifts weeks backward by 7 days', () => {
-    const r: ActiveRange = { mode: 'weeks', from: '2026-04-06', to: '2026-04-12' };
+    // Sun 2026-04-05 – Sat 2026-04-11 (valid Sun–Sat week)
+    const r: ActiveRange = { mode: 'weeks', from: '2026-04-05', to: '2026-04-11' };
     const prev = stepRangeBackward(r, earliest);
-    expect(prev.from).toBe('2026-03-30');
-    expect(prev.to).toBe('2026-04-05');
+    expect(prev.from).toBe('2026-03-29');
+    expect(prev.to).toBe('2026-04-04');
   });
 
   it('goes back one calendar month', () => {

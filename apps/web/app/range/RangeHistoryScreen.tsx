@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -67,10 +67,6 @@ export function RangeHistoryScreen({ payload, today, financeMode, initialMode, e
   });
   const [pickerOpen, setPickerOpen] = useState(false);
   const [tariffCalloutDismissed, setTariffCalloutDismissed] = useState(false);
-
-  // The picker button is positioned relative to this container so the popover
-  // can be anchored below the period bar.
-  const periodBarRef = useRef<HTMLDivElement>(null);
 
   // ---------------------------------------------------------------------------
   // Effective range clamped to what's loaded server-side
@@ -179,10 +175,7 @@ export function RangeHistoryScreen({ payload, today, financeMode, initialMode, e
       <div className="sticky top-14 z-30 border-b border-slate-800 bg-[#0c1422]/90 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
           {/* Period bar: [<] [label] [>] */}
-          <div
-            ref={periodBarRef}
-            className="relative flex items-center justify-center gap-3"
-          >
+          <div className="relative flex items-center justify-center gap-3">
             {/* Back chevron */}
             <button
               onClick={handleStepBackward}
