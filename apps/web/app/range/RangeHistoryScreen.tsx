@@ -44,6 +44,7 @@ export type RangeHistoryScreenProps = {
   payload: RangeSummaryPayload | null;
   today: string;
   financeMode: string | null;
+  initialMode: string | null;
   error: boolean;
 };
 
@@ -51,13 +52,19 @@ export type RangeHistoryScreenProps = {
 // Root screen
 // ---------------------------------------------------------------------------
 
-export function RangeHistoryScreen({ payload, today, financeMode, error }: RangeHistoryScreenProps) {
+export function RangeHistoryScreen({ payload, today, financeMode, initialMode, error }: RangeHistoryScreenProps) {
   const router = useRouter();
 
   const earliestDate = payload?.meta.earliestDate ?? null;
   const loadedFrom = payload?.meta.from ?? loadedWindowStart(today);
 
-  const [activeRange, setActiveRange] = useState<ActiveRange>(() => defaultActiveRange(today));
+  const [activeRange, setActiveRange] = useState<ActiveRange>(() => {
+    if (initialMode === 'all') {
+      const from = earliestDate ?? loadedWindowStart(today);
+      return { mode: 'all', from, to: today };
+    }
+    return defaultActiveRange(today);
+  });
   const [pickerOpen, setPickerOpen] = useState(false);
   const [tariffCalloutDismissed, setTariffCalloutDismissed] = useState(false);
 
@@ -118,7 +125,13 @@ export function RangeHistoryScreen({ payload, today, financeMode, error }: Range
   }
 
   function handleStepBackward() {
-    if (!bwdDisabled) setActiveRange((r) => stepRangeBackward(r, earliestDate));
+    if (bwdDisabled) return;
+    const next = stepRangeBackward(activeRange, earliestDate);
+    if (next.from < loadedFrom && earliestDate && earliestDate < loadedFrom) {
+      router.push('/range?mode=all');
+      return;
+    }
+    setActiveRange(next);
   }
 
   const health = payload?.health;
