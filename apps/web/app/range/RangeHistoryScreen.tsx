@@ -91,7 +91,10 @@ export function RangeHistoryScreen({ payload, today, financeMode, error }: Range
   }
 
   const health = payload?.health;
-  const hasTariffChange = health?.hasTariffChange && !tariffCalloutDismissed;
+  const hasTariffChange = useMemo(() => {
+    const ids = new Set(filteredSeries.map((d) => d.tariffVersionId).filter(Boolean));
+    return ids.size > 1 && !tariffCalloutDismissed;
+  }, [filteredSeries, tariffCalloutDismissed]);
   const hasMissing = (kpis?.missingDays ?? 0) > 0;
   const hasPartial = (kpis?.partialDays ?? 0) > 0;
   const showCompletenessBanner = hasMissing || hasPartial;
@@ -241,7 +244,7 @@ export function RangeHistoryScreen({ payload, today, financeMode, error }: Range
                 {/* §3 — Tariff-change callout */}
                 {hasTariffChange && (
                   <TariffChangeCallout
-                    health={health!}
+                    series={filteredSeries}
                     onDismiss={() => setTariffCalloutDismissed(true)}
                   />
                 )}
@@ -363,19 +366,20 @@ function KpiCard({
 // ---------------------------------------------------------------------------
 
 function TariffChangeCallout({
-  health,
+  series,
   onDismiss,
 }: {
-  health: RangeSummaryPayload['health'];
+  series: RangeSeriesDay[];
   onDismiss: () => void;
 }) {
+  const versionCount = new Set(series.map((d) => d.tariffVersionId).filter(Boolean)).size;
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/8 px-4 py-3">
       <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-400" />
       <p className="flex-1 text-sm text-amber-300/90">
         <span className="font-semibold text-amber-200">Tariff changed during this period</span>
         {' — '}
-        {health.tariffVersionIds.length} tariff version{health.tariffVersionIds.length !== 1 ? 's' : ''} applied.
+        {versionCount} tariff version{versionCount !== 1 ? 's' : ''} applied.
         Financial totals reflect each day's applicable rate.
       </p>
       <button onClick={onDismiss} className="shrink-0 text-amber-500/50 hover:text-amber-400">
