@@ -10,7 +10,8 @@ type Props = {
 };
 
 export function PerDayBarChart({ series }: Props) {
-  const hasBandData = series.some((d) => d.hasSummary && d.dayImportKwh != null);
+  const summaryDays = series.filter((d) => d.hasSummary);
+  const hasBandData = summaryDays.length > 0 && summaryDays.every((d) => d.dayImportKwh != null);
   const option = useMemo(
     () => buildPerDayBarOption(series, hasBandData),
     [series, hasBandData],

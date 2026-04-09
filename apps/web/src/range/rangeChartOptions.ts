@@ -191,11 +191,9 @@ export function buildPerDayBarOption(series: RangeSeriesDay[], hasBandData: bool
           name: 'Import (day)',
           type: 'bar',
           stack: 'import',
-          // For days without band data, fall back to total importKwh so the
-          // bar isn't silently zeroed out in a mixed-coverage period.
           data: series.map((d) => {
             if (!d.hasSummary) return 0;
-            return d.dayImportKwh != null ? round2(d.dayImportKwh) : round2(d.importKwh);
+            return round2(d.dayImportKwh ?? 0);
           }),
           itemStyle: { color: DAY_BAND_COLOR },
           barMaxWidth: 20,
