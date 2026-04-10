@@ -36,7 +36,8 @@ import { EnergyTrendChart } from './EnergyTrendChart';
 import { PerDayBarChart } from './PerDayBarChart';
 import { CostHistogramChart } from './CostHistogramChart';
 import { PeriodCostDonutChart } from './PeriodCostDonutChart';
-import { RangePickerPopover } from './RangePickerPopover';
+import { RangePickerPopover } from '@/src/components/RangePickerPopover';
+import type { NavigationTarget } from '@/src/components/RangePickerPopover';
 import { SolarCoverageChart } from './SolarCoverageChart';
 import { ExportRatioChart } from './ExportRatioChart';
 
@@ -51,6 +52,8 @@ export type RangeHistoryScreenProps = {
   monthlyFinancePaymentAmount: number | null;
   financeTermMonths: number | null;
   initialMode: string | null;
+  initialFrom: string | null;
+  initialTo: string | null;
   error: boolean;
 };
 
@@ -58,7 +61,7 @@ export type RangeHistoryScreenProps = {
 // Root screen
 // ---------------------------------------------------------------------------
 
-export function RangeHistoryScreen({ payload, today, financeMode, monthlyFinancePaymentAmount, financeTermMonths, initialMode, error }: RangeHistoryScreenProps) {
+export function RangeHistoryScreen({ payload, today, financeMode, monthlyFinancePaymentAmount, financeTermMonths, initialMode, initialFrom, initialTo, error }: RangeHistoryScreenProps) {
   const router = useRouter();
 
   const earliestDate = payload?.meta.earliestDate ?? null;
@@ -68,6 +71,10 @@ export function RangeHistoryScreen({ payload, today, financeMode, monthlyFinance
     if (initialMode === 'all') {
       const from = earliestDate ?? loadedWindowStart(today);
       return { mode: 'all', from, to: today };
+    }
+    if (initialFrom && initialTo) {
+      const mode = (initialMode as ActiveRange['mode']) ?? 'custom';
+      return { mode: mode === 'all' ? 'custom' : mode, from: initialFrom, to: initialTo };
     }
     return defaultActiveRange(today);
   });
@@ -105,15 +112,22 @@ export function RangeHistoryScreen({ payload, today, financeMode, monthlyFinance
   const isFinanced = financeMode === 'finance';
 
   // ---------------------------------------------------------------------------
-  // Range change handler — triggers navigation for "All" when needed
+  // Navigation handler — handles picker selections from this screen
   // ---------------------------------------------------------------------------
-  function handleRangeChange(range: ActiveRange) {
-    if (range.mode === 'all' && earliestDate && earliestDate < loadedFrom) {
-      // Full history needed; reload page with ?mode=all
-      router.push('/range?mode=all');
-      return;
+  function handleNavigate(target: NavigationTarget) {
+    if (target.type === 'range') {
+      const range = target.range;
+      if (range.mode === 'all' && earliestDate && earliestDate < loadedFrom) {
+        router.push('/range?mode=all');
+        return;
+      }
+      setActiveRange(range);
+      setPickerOpen(false);
+    } else if (target.type === 'live') {
+      router.push('/live');
+    } else {
+      router.push(`/history/${target.date}`);
     }
-    setActiveRange(range);
   }
 
   // ---------------------------------------------------------------------------
@@ -226,7 +240,7 @@ export function RangeHistoryScreen({ payload, today, financeMode, monthlyFinance
                 today={today}
                 earliestDate={earliestDate}
                 activeRange={activeRange}
-                onRangeChange={handleRangeChange}
+                onNavigate={handleNavigate}
                 onClose={() => setPickerOpen(false)}
               />
             )}
