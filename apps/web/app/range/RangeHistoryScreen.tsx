@@ -560,27 +560,27 @@ function ChartPlaceholders({
           <ChartCard title="Daily cost vs without solar" icon={<BarChart3 size={14} />} onReset={resetCharts}>
             <CostHistogramChart key={resetKey} series={series} currency={currency} />
           </ChartCard>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <ChartCard title="Period cost breakdown" icon={<Zap size={14} />}>
-              <PeriodCostDonutChart
-                totals={periodCostTotals}
-                simplified={note === 'simplified-daily-rate'}
-                currency={currency}
-              />
-            </ChartCard>
-            {hasGeneration && (
-              <ChartCard title="Export ratio" icon={<TrendingUp size={14} />} onReset={resetCharts}>
-                <ExportRatioChart key={resetKey} series={series} />
-              </ChartCard>
-            )}
-          </div>
+          <ChartCard title="Period cost breakdown" icon={<Zap size={14} />}>
+            <PeriodCostDonutChart
+              totals={periodCostTotals}
+              simplified={note === 'simplified-daily-rate'}
+              currency={currency}
+            />
+          </ChartCard>
         </>
       ) : (
         <NoTariffCard />
       )}
-      <ChartCard title="Solar coverage" icon={<Zap size={14} />} onReset={resetCharts}>
-        <SolarCoverageChart key={resetKey} series={series} />
-      </ChartCard>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <ChartCard title="Solar coverage" icon={<Zap size={14} />} onReset={resetCharts}>
+          <SolarCoverageChart key={resetKey} series={series} />
+        </ChartCard>
+        {hasGeneration && (
+          <ChartCard title="Export ratio" icon={<TrendingUp size={14} />} onReset={resetCharts}>
+            <ExportRatioChart key={resetKey} series={series} />
+          </ChartCard>
+        )}
+      </div>
     </>
   );
 }
