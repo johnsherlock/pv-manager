@@ -122,7 +122,7 @@ export function RangeHistoryScreen({ payload, today, financeMode, monthlyFinance
         return;
       }
       setActiveRange(range);
-      setPickerOpen(false);
+      // Leave picker open — user can refine further; closes on outside click / Esc
     } else if (target.type === 'live') {
       router.push('/live');
     } else {

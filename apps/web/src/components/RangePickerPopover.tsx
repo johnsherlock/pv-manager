@@ -43,13 +43,13 @@ type Tab = 'date' | 'custom' | 'weeks' | 'months' | 'years';
 
 const TAB_LABELS: Record<Tab, string> = {
   date: 'Date',
-  custom: 'Custom range',
+  custom: 'Custom',
   weeks: 'Weeks',
   months: 'Months',
   years: 'Years',
 };
 
-const TABS: Tab[] = ['date', 'custom', 'weeks', 'months', 'years'];
+const TABS: Tab[] = ['date', 'weeks', 'months', 'years', 'custom'];
 
 // Day-of-week headers (Sunday-start)
 const DOW_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -244,6 +244,7 @@ export function RangePickerPopover({
     if (!customAnchor) {
       setCustomAnchor(iso);
     } else {
+      if (iso === customAnchor) return; // require at least 2 distinct days
       const from = iso < customAnchor ? iso : customAnchor;
       const to = iso < customAnchor ? customAnchor : iso;
       onNavigate({ type: 'range', range: { mode: 'custom', from, to } });
@@ -299,8 +300,9 @@ export function RangePickerPopover({
     const d = isoToDate(today);
     switch (label) {
       case 'Today':
-        onNavigate({ type: 'range', range: { mode: 'custom', from: today, to: today } });
-        break;
+        onNavigate({ type: 'live' });
+        onClose();
+        return;
       case '7 days': {
         const from = new Date(d); from.setDate(d.getDate() - 6);
         onNavigate({ type: 'range', range: { mode: 'custom', from: dateToIso(from), to: today } });
@@ -362,7 +364,7 @@ export function RangePickerPopover({
   return (
     <div
       ref={ref}
-      className="absolute left-0 right-0 top-full z-50 mx-auto mt-1 w-full max-w-sm rounded-2xl border border-slate-700 bg-[#0f1a2b] shadow-2xl sm:left-auto sm:right-auto sm:w-80"
+      className="absolute left-0 right-0 top-full z-50 mx-auto mt-1 w-full max-w-sm rounded-2xl border border-slate-700 bg-[#0f1a2b] shadow-2xl sm:left-auto sm:right-auto sm:w-[22rem]"
       role="dialog"
       aria-label="Date range picker"
     >
@@ -471,9 +473,9 @@ export function RangePickerPopover({
                 return (
                   <button
                     key={cell.iso}
-                    disabled={isFuture && activeTab !== 'date'}
+                    disabled={isFuture}
                     onClick={() => {
-                      if (isFuture && activeTab !== 'date') return;
+                      if (isFuture) return;
                       if (activeTab === 'date') handleDateClick(cell.iso);
                       else if (activeTab === 'custom') handleCustomDayClick(cell.iso);
                       else if (activeTab === 'weeks') handleWeekClick(cell.iso);
@@ -486,7 +488,7 @@ export function RangePickerPopover({
                     }}
                     className={[
                       'relative flex h-7 w-full items-center justify-center text-[11px] transition-colors',
-                      isFuture && activeTab !== 'date' ? 'cursor-default opacity-25' : 'cursor-pointer',
+                      isFuture ? 'cursor-default opacity-25' : 'cursor-pointer',
                       isEndpoint
                         ? 'rounded-full bg-emerald-700 font-semibold text-white'
                         : isInRange
