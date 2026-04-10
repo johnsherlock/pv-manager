@@ -3,13 +3,13 @@
 /**
  * Shared range/date picker popover used by Live, History, and Range History screens.
  *
- * Tabs: Date | Custom range | Weeks | Months | Years
+ * Tabs: Date | Weeks | Months | Years | Custom
  *
  * Selection triggers onNavigate with a typed target so each screen can handle
  * routing or local state updates as appropriate.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   type ActiveRange,
@@ -50,6 +50,12 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 const TABS: Tab[] = ['date', 'weeks', 'months', 'years', 'custom'];
+
+const PRESET_LABELS = [
+  'Today', '7 days', '30 days', '90 days',
+  'This week', 'This month', 'This year',
+  '12 months', 'All',
+] as const;
 
 // Day-of-week headers (Sunday-start)
 const DOW_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -354,9 +360,10 @@ export function RangePickerPopover({
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
-  const calCells = buildCalendarCells(calYear, calMonth);
-  const calMonthName = new Intl.DateTimeFormat('en-IE', { month: 'long', year: 'numeric' }).format(
-    new Date(calYear, calMonth, 1),
+  const calCells = useMemo(() => buildCalendarCells(calYear, calMonth), [calYear, calMonth]);
+  const calMonthName = useMemo(
+    () => new Intl.DateTimeFormat('en-IE', { month: 'long', year: 'numeric' }).format(new Date(calYear, calMonth, 1)),
+    [calYear, calMonth],
   );
 
   const highlightedDate = activeDate ?? today;
@@ -612,11 +619,7 @@ export function RangePickerPopover({
       {activeTab === 'custom' && (
         <div className="border-t border-slate-800 px-3 py-2.5">
           <div className="flex flex-wrap gap-1.5">
-            {[
-              'Today', '7 days', '30 days', '90 days',
-              'This week', 'This month', 'This year',
-              '12 months', 'All',
-            ].map((label) => (
+            {PRESET_LABELS.map((label) => (
               <button
                 key={label}
                 onClick={() => applyPreset(label)}

@@ -37,6 +37,7 @@ import {
 import * as dayCache from '@/src/live/dayCache';
 import { extractHistoricalDate, resolveClientNavigation } from '@/src/live/clientNavigation';
 import type { HistoricalDayPayload } from '@/app/api/history/[date]/route';
+import { buildRangeUrl } from '@/src/range/presets';
 import { RangePickerPopover } from '@/src/components/RangePickerPopover';
 import type { NavigationTarget } from '@/src/components/RangePickerPopover';
 
@@ -656,10 +657,7 @@ export function HistoricalDayScreen(props: HistoricalDayScreenProps) {
     } else if (target.type === 'history') {
       void navigateToDate(target.date);
     } else {
-      const { range } = target;
-      startTransition(() =>
-        router.push(`/range?from=${range.from}&to=${range.to}&mode=${range.mode}`),
-      );
+      startTransition(() => router.push(buildRangeUrl(target.range)));
     }
   }
 

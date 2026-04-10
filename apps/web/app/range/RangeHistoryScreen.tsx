@@ -19,6 +19,7 @@ import {
 import type { RangeSummaryPayload, RangeSeriesDay } from '@/src/range/types';
 import {
   type ActiveRange,
+  type RangeMode,
   formatRangeLabel,
   stepRangeForward,
   stepRangeBackward,
@@ -73,8 +74,11 @@ export function RangeHistoryScreen({ payload, today, financeMode, monthlyFinance
       return { mode: 'all', from, to: today };
     }
     if (initialFrom && initialTo) {
-      const mode = (initialMode as ActiveRange['mode']) ?? 'custom';
-      return { mode: mode === 'all' ? 'custom' : mode, from: initialFrom, to: initialTo };
+      const VALID_MODES: RangeMode[] = ['custom', 'weeks', 'months', 'years'];
+      const mode: RangeMode = VALID_MODES.includes(initialMode as RangeMode)
+        ? (initialMode as RangeMode)
+        : 'custom';
+      return { mode, from: initialFrom, to: initialTo };
     }
     return defaultActiveRange(today);
   });

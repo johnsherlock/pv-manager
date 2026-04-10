@@ -63,6 +63,7 @@ import {
   shouldIgnoreSwipeTarget,
 } from '@/src/live/swipeNavigation';
 import type { CostPoint } from '@/src/live/loader';
+import { buildRangeUrl } from '@/src/range/presets';
 import { RangePickerPopover } from '@/src/components/RangePickerPopover';
 import type { NavigationTarget } from '@/src/components/RangePickerPopover';
 
@@ -1308,10 +1309,7 @@ export function LiveScreen({
     if (target.type === 'history') {
       startTransition(() => router.push(`/history/${target.date}`));
     } else {
-      const { range } = target;
-      startTransition(() =>
-        router.push(`/range?from=${range.from}&to=${range.to}&mode=${range.mode}`),
-      );
+      startTransition(() => router.push(buildRangeUrl(target.range)));
     }
   }
 
