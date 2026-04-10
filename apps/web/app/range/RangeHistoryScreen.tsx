@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import * as echarts from 'echarts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -519,13 +518,6 @@ function ChartPlaceholders({
     [series],
   );
 
-  // Re-connect group after all chart children have set their instance.group.
-  // Parent useEffect runs after all children's useEffects, so by the time
-  // this fires every visible chart instance has its group assigned.
-  useEffect(() => {
-    const id = setTimeout(() => echarts.connect('range-history'), 0);
-    return () => clearTimeout(id);
-  }, [resetKey, hasTariff, hasGeneration]);
 
   const periodCostTotals = useMemo(() => {
     let importCost = 0;

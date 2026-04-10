@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import * as echarts from 'echarts';
 import type EChartsReact from 'echarts-for-react';
 import { EChart } from '@/src/live/EChartsWrapper';
 import { buildExportRatioOption } from '@/src/range/rangeChartOptions';
@@ -22,7 +21,6 @@ export function ExportRatioChart({ series }: Props) {
     const instance = chartRef.current?.getEchartsInstance();
     if (!instance) return;
     instance.group = CHART_GROUP;
-    echarts.connect(CHART_GROUP);
     const unregister = registerChart(CHART_GROUP, instance);
 
     const handleDataZoom = (params: any) => {
