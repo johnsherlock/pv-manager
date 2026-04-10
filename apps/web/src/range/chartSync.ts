@@ -20,6 +20,11 @@ export function registerChart(group: string, instance: EChartsInstance): () => v
   return () => registry.get(group)?.delete(instance);
 }
 
+// Guard against re-entrant broadcasts: when we dispatch to chart B, ECharts
+// fires a dataZoom event on B which would call broadcastDataZoom again,
+// cascading back to A and creating an infinite loop of conflicting dispatches.
+let _broadcasting = false;
+
 /**
  * Dispatch a dataZoom action to every registered instance in the group except
  * the source that triggered the event.
@@ -30,8 +35,14 @@ export function broadcastDataZoom(
   start: number,
   end: number,
 ): void {
-  registry.get(group)?.forEach((inst) => {
-    if (inst === source) return;
-    inst.dispatchAction({ type: 'dataZoom', start, end });
-  });
+  if (_broadcasting) return;
+  _broadcasting = true;
+  try {
+    registry.get(group)?.forEach((inst) => {
+      if (inst === source) return;
+      inst.dispatchAction({ type: 'dataZoom', start, end });
+    });
+  } finally {
+    _broadcasting = false;
+  }
 }
