@@ -160,7 +160,7 @@ export function buildEnergyTrendOption(series: RangeSeriesDay[]) {
       itemHeight: 8,
       itemGap: 14,
       textStyle: { color: '#94a3b8', fontSize: 11 },
-      selected: { Import: true, Generation: true, Export: false },
+      selected: { Import: true, Generation: true, Export: true },
     },
     xAxis: {
       type: 'category' as const,
@@ -209,7 +209,7 @@ export function buildEnergyTrendOption(series: RangeSeriesDay[]) {
         smooth: true,
         connectNulls: false,
         data: series.map((d) => val(d, 'exportKwh')),
-        lineStyle: { color: EXPORT_COLOR, width: lineWidth, type: 'dashed' },
+        lineStyle: { color: EXPORT_COLOR, width: lineWidth },
         itemStyle: { color: EXPORT_COLOR },
         showSymbol,
         symbolSize,
@@ -498,7 +498,7 @@ export function buildCostHistogramOption(series: RangeSeriesDay[], currency = 'E
 // Chart 5 — Solar coverage area chart
 // ---------------------------------------------------------------------------
 
-const SOLAR_COVERAGE_COLOR = '#4ade80'; // green-400
+const SOLAR_COVERAGE_COLOR = '#facc15'; // yellow-400
 
 /**
  * Build an ECharts option for the solar coverage area chart.
@@ -567,8 +567,8 @@ export function buildSolarCoverageOption(series: RangeSeriesDay[]) {
             type: 'linear',
             x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(74,222,128,0.28)' },
-              { offset: 1, color: 'rgba(74,222,128,0.02)' },
+              { offset: 0, color: 'rgba(250,204,21,0.22)' },
+              { offset: 1, color: 'rgba(250,204,21,0.02)' },
             ],
           },
         },
