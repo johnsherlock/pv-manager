@@ -613,7 +613,7 @@ function ChartCard({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-5">
+    <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-3 sm:p-5">
       <div className="mb-4 flex items-center gap-2">
         <span className="text-slate-600">{icon}</span>
         <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">{title}</span>
@@ -665,7 +665,7 @@ function PaybackTracker({
     : 0;
 
   return (
-    <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-5">
+    <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-3 sm:p-5">
       <div className="mb-4 flex items-center gap-2">
         <TrendingUp size={14} className="text-slate-600" />
         <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Payback progress</span>

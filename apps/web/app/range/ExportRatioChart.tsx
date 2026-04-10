@@ -5,6 +5,7 @@ import * as echarts from 'echarts';
 import type EChartsReact from 'echarts-for-react';
 import { EChart } from '@/src/live/EChartsWrapper';
 import { buildExportRatioOption } from '@/src/range/rangeChartOptions';
+import { registerChart, broadcastDataZoom } from '@/src/range/chartSync';
 import type { RangeSeriesDay } from '@/src/range/types';
 
 const CHART_GROUP = 'range-history';
@@ -22,6 +23,20 @@ export function ExportRatioChart({ series }: Props) {
     if (!instance) return;
     instance.group = CHART_GROUP;
     echarts.connect(CHART_GROUP);
+    const unregister = registerChart(CHART_GROUP, instance);
+
+    const handleDataZoom = (params: any) => {
+      const batch = params.batch?.[0];
+      const start = params.start ?? batch?.start;
+      const end = params.end ?? batch?.end;
+      if (start != null && end != null) broadcastDataZoom(CHART_GROUP, instance, start, end);
+    };
+    instance.on('dataZoom', handleDataZoom);
+
+    return () => {
+      unregister();
+      instance.off('dataZoom', handleDataZoom);
+    };
   }, []);
 
   return (

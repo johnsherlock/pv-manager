@@ -24,7 +24,9 @@ const TOOLTIP_BASE = {
   extraCssText: 'border-radius:16px;padding:10px 14px;',
 };
 
-const GRID = { top: 38, right: 12, bottom: 56, left: 44 };
+// containLabel: true lets ECharts fit axis labels within the padding rather
+// than allocating a hardcoded 44px left margin regardless of screen width.
+const GRID = { top: 38, right: 4, bottom: 56, left: 4, containLabel: true };
 
 const DATA_ZOOM = [
   {

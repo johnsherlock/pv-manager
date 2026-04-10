@@ -5,6 +5,7 @@ import * as echarts from 'echarts';
 import type EChartsReact from 'echarts-for-react';
 import { EChart } from '@/src/live/EChartsWrapper';
 import { buildPerDayBarOption } from '@/src/range/rangeChartOptions';
+import { registerChart, broadcastDataZoom } from '@/src/range/chartSync';
 import type { RangeSeriesDay } from '@/src/range/types';
 
 const CHART_GROUP = 'range-history';
@@ -27,6 +28,16 @@ export function PerDayBarChart({ series }: Props) {
     if (!instance) return;
     instance.group = CHART_GROUP;
     echarts.connect(CHART_GROUP);
+    const unregister = registerChart(CHART_GROUP, instance);
+
+    const handleDataZoom = (params: any) => {
+      const batch = params.batch?.[0];
+      const start = params.start ?? batch?.start;
+      const end = params.end ?? batch?.end;
+      if (start != null && end != null) broadcastDataZoom(CHART_GROUP, instance, start, end);
+    };
+    instance.on('dataZoom', handleDataZoom);
+
     const id = setTimeout(() => {
       chartRef.current?.getEchartsInstance()?.dispatchAction({
         type: 'takeGlobalCursor',
@@ -34,7 +45,12 @@ export function PerDayBarChart({ series }: Props) {
         dataZoomSelectActive: true,
       });
     }, 50);
-    return () => clearTimeout(id);
+
+    return () => {
+      unregister();
+      instance.off('dataZoom', handleDataZoom);
+      clearTimeout(id);
+    };
   }, []);
 
   return (
