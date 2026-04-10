@@ -98,6 +98,20 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+/**
+ * Returns rendering hints for line/area charts based on series density.
+ * Above ~90 data points the chart is dense enough on mobile that symbols
+ * add visual noise and thicker lines become illegible.
+ */
+function lineDensityHints(seriesLength: number) {
+  const dense = seriesLength > 90;
+  return {
+    showSymbol: !dense,
+    symbolSize: dense ? 0 : 4,
+    lineWidth: dense ? 1 : 2,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Chart 1 — Energy trend line
 // ---------------------------------------------------------------------------
@@ -110,6 +124,7 @@ function round2(n: number): number {
  */
 export function buildEnergyTrendOption(series: RangeSeriesDay[]) {
   const dates = series.map((d) => shortDate(d.date));
+  const { showSymbol, symbolSize, lineWidth } = lineDensityHints(series.length);
 
   function val(d: RangeSeriesDay, key: 'importKwh' | 'generatedKwh' | 'exportKwh') {
     return d.hasSummary ? round2(d[key]) : null;
@@ -170,10 +185,10 @@ export function buildEnergyTrendOption(series: RangeSeriesDay[]) {
         smooth: true,
         connectNulls: false,
         data: series.map((d) => val(d, 'importKwh')),
-        lineStyle: { color: IMPORT_COLOR, width: 2 },
+        lineStyle: { color: IMPORT_COLOR, width: lineWidth },
         itemStyle: { color: IMPORT_COLOR },
-        symbol: 'circle',
-        symbolSize: 4,
+        showSymbol,
+        symbolSize,
       },
       {
         name: 'Generation',
@@ -181,10 +196,10 @@ export function buildEnergyTrendOption(series: RangeSeriesDay[]) {
         smooth: true,
         connectNulls: false,
         data: series.map((d) => val(d, 'generatedKwh')),
-        lineStyle: { color: GEN_COLOR, width: 2 },
+        lineStyle: { color: GEN_COLOR, width: lineWidth },
         itemStyle: { color: GEN_COLOR },
-        symbol: 'circle',
-        symbolSize: 4,
+        showSymbol,
+        symbolSize,
       },
       {
         name: 'Export',
@@ -192,10 +207,10 @@ export function buildEnergyTrendOption(series: RangeSeriesDay[]) {
         smooth: true,
         connectNulls: false,
         data: series.map((d) => val(d, 'exportKwh')),
-        lineStyle: { color: EXPORT_COLOR, width: 2, type: 'dashed' },
+        lineStyle: { color: EXPORT_COLOR, width: lineWidth, type: 'dashed' },
         itemStyle: { color: EXPORT_COLOR },
-        symbol: 'circle',
-        symbolSize: 4,
+        showSymbol,
+        symbolSize,
       },
     ],
   };
@@ -492,6 +507,7 @@ const SOLAR_COVERAGE_COLOR = '#4ade80'; // green-400
  */
 export function buildSolarCoverageOption(series: RangeSeriesDay[]) {
   const dates = series.map((d) => shortDate(d.date));
+  const { showSymbol, symbolSize, lineWidth } = lineDensityHints(series.length);
 
   const coverageData = series.map((d) => {
     if (!d.hasSummary || !d.consumedKwh || d.consumedKwh <= 0) return null;
@@ -540,10 +556,10 @@ export function buildSolarCoverageOption(series: RangeSeriesDay[]) {
         smooth: true,
         connectNulls: false,
         data: coverageData,
-        lineStyle: { color: SOLAR_COVERAGE_COLOR, width: 2 },
+        lineStyle: { color: SOLAR_COVERAGE_COLOR, width: lineWidth },
         itemStyle: { color: SOLAR_COVERAGE_COLOR },
-        symbol: 'circle',
-        symbolSize: 3,
+        showSymbol,
+        symbolSize,
         areaStyle: {
           color: {
             type: 'linear',
@@ -573,6 +589,7 @@ const EXPORT_RATIO_COLOR = '#34d399'; // emerald-400
  */
 export function buildExportRatioOption(series: RangeSeriesDay[]) {
   const dates = series.map((d) => shortDate(d.date));
+  const { showSymbol, symbolSize, lineWidth } = lineDensityHints(series.length);
 
   const ratioData = series.map((d) => {
     if (!d.hasSummary || d.generatedKwh <= 0) return null;
@@ -619,10 +636,10 @@ export function buildExportRatioOption(series: RangeSeriesDay[]) {
         smooth: true,
         connectNulls: false,
         data: ratioData,
-        lineStyle: { color: EXPORT_RATIO_COLOR, width: 2 },
+        lineStyle: { color: EXPORT_RATIO_COLOR, width: lineWidth },
         itemStyle: { color: EXPORT_RATIO_COLOR },
-        symbol: 'circle',
-        symbolSize: 3,
+        showSymbol,
+        symbolSize,
         areaStyle: {
           color: {
             type: 'linear',
