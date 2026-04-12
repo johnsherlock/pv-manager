@@ -139,7 +139,12 @@ async function seed() {
       termsAcceptedAt: new Date('2026-01-01T00:00:00Z'),
     }).onConflictDoUpdate({
       target: users.id,
-      set: { role: sql`excluded.role`, status: sql`excluded.status` },
+      set: {
+        role: sql`excluded.role`,
+        status: sql`excluded.status`,
+        approvedAt: sql`excluded.approved_at`,
+        termsAcceptedAt: sql`excluded.terms_accepted_at`,
+      },
     });
 
     // Admin seed — requires ADMIN_EMAIL in the environment.
@@ -157,7 +162,13 @@ async function seed() {
         termsAcceptedAt: new Date('2026-01-01T00:00:00Z'),
       }).onConflictDoUpdate({
         target: users.id,
-        set: { role: sql`excluded.role`, status: sql`excluded.status` },
+        set: {
+          email: sql`excluded.email`,
+          role: sql`excluded.role`,
+          status: sql`excluded.status`,
+          approvedAt: sql`excluded.approved_at`,
+          termsAcceptedAt: sql`excluded.terms_accepted_at`,
+        },
       });
       console.log(`  admin user: ok (${adminEmail})`);
     } else {
