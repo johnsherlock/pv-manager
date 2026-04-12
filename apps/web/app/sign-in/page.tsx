@@ -19,12 +19,24 @@ export default function SignInPage() {
             borderRadius: 12,
           }}
         >
-          <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--text)' }}>
+          <p style={{ margin: '0 0 10px', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--text)' }}>
             <strong>Before you sign in:</strong> this beta requires a{' '}
             <strong>MyEnergi hub</strong>, your hub&rsquo;s <strong>serial number</strong>, and
             your <strong>MyEnergi API key</strong>. You&rsquo;ll be asked to connect your account
             after approval.
           </p>
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: 18,
+              fontSize: '0.88rem',
+              lineHeight: 1.7,
+              color: 'var(--muted)',
+            }}
+          >
+            <li>Solar Tracker only ever <strong>reads</strong> data from your MyEnergi account — it never changes your settings or controls your devices.</li>
+            <li>You can delete your account and all associated data at any time from Settings.</li>
+          </ul>
         </div>
 
         {/* Sign-in CTA — placeholder until NextAuth / Google OAuth is wired (P-040) */}
