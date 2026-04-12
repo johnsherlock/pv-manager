@@ -18,14 +18,13 @@ export default function SuspendedPage() {
           Access paused
         </h1>
         <p className="mt-5 max-w-md text-base leading-relaxed text-slate-400">
-          Your access to Solar Tracker has been paused. Your data is safe and has not
-          been removed.
+          Your access to Solar Tracker has been paused. Get in touch if you have questions.
         </p>
 
         <div className="mt-10 w-full max-w-sm rounded-[28px] border border-slate-800 bg-[#111b2b] p-8 shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
-          <p className="text-sm font-semibold text-slate-300">Think this is a mistake?</p>
+          <p className="text-sm font-semibold text-slate-300">Contact us</p>
           <p className="mt-2 text-sm leading-relaxed text-slate-400">
-            Contact us and we&rsquo;ll look into it.
+            Email us and we&rsquo;ll get back to you.
           </p>
           <a
             href="mailto:support@solartracker.app"
