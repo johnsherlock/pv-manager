@@ -42,12 +42,11 @@ export default function SignInPage() {
             <ul className="space-y-2 text-sm text-slate-400">
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 shrink-0 text-slate-500">·</span>
-                Solar Tracker only ever <strong className="text-slate-300">reads</strong> from your
-                MyEnergi account — it never changes settings or controls devices.
+                <span>Solar Tracker only ever <strong className="text-slate-300">reads</strong> from your MyEnergi account — it never changes settings or controls devices.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 shrink-0 text-slate-500">·</span>
-                You can delete your account and all data at any time from Settings.
+                <span>You can delete your account and all data at any time from Settings.</span>
               </li>
             </ul>
           </div>
