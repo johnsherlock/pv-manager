@@ -7,65 +7,87 @@ export default function SignInPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 flex justify-center">
-        <div className="w-full max-w-lg rounded-[28px] border border-slate-800 bg-[#111b2b] p-8 shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-0 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-24">
 
+        {/* Left — brand and product context */}
+        <div className="flex flex-col justify-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
             Invite-only beta
           </p>
-          <h1 className="mt-2 text-2xl font-semibold text-slate-50">
-            Sign in to Solar Tracker
+          <h1 className="mt-3 text-4xl font-semibold leading-tight text-slate-50 sm:text-5xl">
+            Understand what your solar is actually worth
           </h1>
-          <p className="mt-3 text-sm leading-relaxed text-slate-300">
-            Solar Tracker shows you exactly how much your solar installation is cutting your
-            electricity bill — with tariff-aware savings, export value, and payback tracking.
+          <p className="mt-5 text-base leading-relaxed text-slate-400">
+            Solar Tracker shows you exactly how much your installation is cutting your electricity
+            bill — with tariff-aware savings, live monitoring, export value, and payback tracking.
           </p>
 
-          <div className="mt-5 rounded-2xl border border-slate-700/60 bg-slate-900/60 px-4 py-4 text-sm leading-relaxed text-slate-300">
-            <p className="font-semibold text-slate-200">Before you sign in</p>
-            <p className="mt-1.5">
-              This beta requires a <span className="font-medium text-slate-100">MyEnergi hub</span>,
-              your hub&rsquo;s <span className="font-medium text-slate-100">serial number</span>, and
-              your <span className="font-medium text-slate-100">MyEnergi API key</span>. You&rsquo;ll
-              be asked to connect your account after approval.
+          <ul className="mt-8 space-y-3">
+            {[
+              'Live generation, import, and export from your MyEnergi hub',
+              'Tariff-aware cost and savings for any day or date range',
+              'Payback progress and no-solar cost comparison',
+            ].map((point) => (
+              <li key={point} className="flex items-start gap-3 text-sm text-slate-300">
+                <span className="mt-0.5 shrink-0 text-emerald-400">✓</span>
+                {point}
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-10 rounded-2xl border border-slate-800 bg-slate-900/50 px-5 py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-2">
+              Privacy
             </p>
-            <ul className="mt-3 space-y-1.5 text-slate-400">
+            <ul className="space-y-2 text-sm text-slate-400">
               <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-emerald-400">✓</span>
-                Solar Tracker only ever <strong className="text-slate-300">reads</strong> data from
-                your MyEnergi account — it never changes your settings or controls your devices.
+                <span className="mt-0.5 shrink-0 text-slate-500">·</span>
+                Solar Tracker only ever <strong className="text-slate-300">reads</strong> from your
+                MyEnergi account — it never changes settings or controls devices.
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-emerald-400">✓</span>
-                You can delete your account and all associated data at any time from Settings.
+                <span className="mt-0.5 shrink-0 text-slate-500">·</span>
+                You can delete your account and all data at any time from Settings.
               </li>
             </ul>
           </div>
+        </div>
 
-          {/* Sign-in CTA — placeholder until NextAuth / Google OAuth is wired (P-040) */}
-          <button
-            type="button"
-            disabled
-            className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 opacity-40 cursor-not-allowed"
-          >
-            <GoogleIcon />
-            Sign in with Google
-          </button>
-          <p className="mt-2 text-center text-xs text-slate-600">
-            Sign-in will be enabled when beta access opens.
-          </p>
+        {/* Right — sign-in form */}
+        <div className="flex flex-col justify-center mt-12 lg:mt-0">
+          <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-8 shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
+            <h2 className="text-xl font-semibold text-slate-50">Sign in with Google</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-400">
+              Beta access is invite-only. You&rsquo;ll need a{' '}
+              <span className="text-slate-300">MyEnergi hub</span>, serial number, and API key to
+              connect after approval.
+            </p>
 
-          <p className="mt-6 text-center text-xs leading-relaxed text-slate-600">
-            By continuing, you agree to our{' '}
-            <a href="#" className="text-slate-400 underline underline-offset-2 hover:text-slate-200">
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a href="#" className="text-slate-400 underline underline-offset-2 hover:text-slate-200">
-              Privacy Policy
-            </a>
-            .
-          </p>
+            {/* Sign-in CTA — placeholder until NextAuth / Google OAuth is wired (P-040) */}
+            <button
+              type="button"
+              disabled
+              className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 opacity-40 cursor-not-allowed"
+            >
+              <GoogleIcon />
+              Sign in with Google
+            </button>
+            <p className="mt-2 text-center text-xs text-slate-600">
+              Sign-in will be enabled when beta access opens.
+            </p>
+
+            <p className="mt-6 text-center text-xs leading-relaxed text-slate-600">
+              By continuing, you agree to our{' '}
+              <a href="#" className="text-slate-400 underline underline-offset-2 hover:text-slate-200">
+                Terms of Service
+              </a>{' '}
+              and{' '}
+              <a href="#" className="text-slate-400 underline underline-offset-2 hover:text-slate-200">
+                Privacy Policy
+              </a>
+              .
+            </p>
+          </div>
         </div>
       </div>
     </div>

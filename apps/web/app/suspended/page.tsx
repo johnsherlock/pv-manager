@@ -1,5 +1,4 @@
 export default function SuspendedPage() {
-  // This screen is shown when a signed-in user has status='suspended'.
   // Auth middleware routes suspended users here instead of the app.
   // A suspension-management UI is explicitly deferred (decision 0006 §11).
 
@@ -11,29 +10,29 @@ export default function SuspendedPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 flex justify-center">
-        <div className="w-full max-w-lg rounded-[28px] border border-slate-800 bg-[#111b2b] p-8 shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
+      <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 flex flex-col items-center text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+          Account status
+        </p>
+        <h1 className="mt-3 text-4xl font-semibold text-slate-50 sm:text-5xl">
+          Access paused
+        </h1>
+        <p className="mt-5 max-w-md text-base leading-relaxed text-slate-400">
+          Your access to Solar Tracker has been paused. Your data is safe and has not
+          been removed.
+        </p>
 
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Account status
+        <div className="mt-10 w-full max-w-sm rounded-[28px] border border-slate-800 bg-[#111b2b] p-8 shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
+          <p className="text-sm font-semibold text-slate-300">Think this is a mistake?</p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-400">
+            Contact us and we&rsquo;ll look into it.
           </p>
-          <h1 className="mt-2 text-2xl font-semibold text-slate-50">
-            Access paused
-          </h1>
-          <p className="mt-3 text-sm leading-relaxed text-slate-300">
-            Your access to Solar Tracker has been paused. Your data is safe and has not been
-            removed.
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-slate-400">
-            If you have questions or believe this is a mistake, contact us at{' '}
-            <a
-              href="mailto:support@solartracker.app"
-              className="text-slate-300 underline underline-offset-2 hover:text-slate-100"
-            >
-              support@solartracker.app
-            </a>
-            .
-          </p>
+          <a
+            href="mailto:support@solartracker.app"
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/70 px-5 py-2.5 text-sm font-medium text-slate-200 hover:border-slate-600 hover:text-white"
+          >
+            support@solartracker.app
+          </a>
 
           <div className="mt-8 border-t border-slate-800 pt-6">
             {/* Sign-out — placeholder until NextAuth is wired (P-040) */}
