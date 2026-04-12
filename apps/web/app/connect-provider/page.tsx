@@ -8,99 +8,68 @@ export default function ConnectProviderPage() {
   // The actual credentials form and server-side validation are built in P-038 / U-048.
 
   return (
-    <main className="shell">
-      <div className="panel" style={{ maxWidth: 520 }}>
-        <p className="eyebrow">Solar Tracker — Setup</p>
-        <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.2rem)' }}>Connect your MyEnergi account</h1>
+    <main className="min-h-screen font-sans bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.06),_transparent_30%),linear-gradient(180deg,#050b14_0%,#0b1220_100%)] flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md rounded-[28px] border border-slate-800 bg-[#111b2b] p-8 shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
 
-        <p className="copy" style={{ marginTop: 16 }}>
-          Solar Tracker reads live and historical data directly from your MyEnergi hub. This is
-          the only required step before you can use the app.
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+          Solar Tracker — Setup
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold text-slate-50">
+          Connect your MyEnergi account
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-slate-300">
+          Solar Tracker reads live and historical data directly from your MyEnergi hub.
+          This is the only required step before you can use the app.
         </p>
 
-        <div
-          style={{
-            marginTop: 24,
-            padding: '16px 20px',
-            background: 'rgba(13, 107, 87, 0.07)',
-            border: '1px solid rgba(13, 107, 87, 0.2)',
-            borderRadius: 12,
-          }}
-        >
-          <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--text)' }}>
-            Your credentials are stored securely on our servers and are never shared or exposed
-            in the browser.
-          </p>
+        <div className="mt-4 rounded-2xl border border-slate-700/60 bg-slate-900/60 px-4 py-3 text-sm text-slate-400">
+          Your credentials are stored securely on our servers and are never shared or
+          exposed in the browser.
         </div>
 
         {/* Credentials form placeholder — built in P-038 / U-048 */}
-        <div
-          style={{
-            marginTop: 28,
-            padding: '20px',
-            border: '1px solid var(--border)',
-            borderRadius: 12,
-            background: 'rgba(255,255,255,0.4)',
-          }}
-        >
-          <label style={labelStyle}>
-            Serial number
+        <div className="mt-5 space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5">
+              Serial number
+            </label>
             <input
               type="text"
               placeholder="e.g. 12345678"
               disabled
-              style={inputStyle}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-500 placeholder-slate-700 cursor-not-allowed"
             />
-          </label>
+          </div>
 
-          <label style={{ ...labelStyle, marginTop: 16 }}>
-            API key
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5">
+              API key
+            </label>
             <input
               type="password"
               placeholder="Your MyEnergi API key"
               disabled
-              style={inputStyle}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-500 placeholder-slate-700 cursor-not-allowed"
             />
-          </label>
+          </div>
 
           <button
             type="button"
             disabled
-            style={{
-              marginTop: 20,
-              width: '100%',
-              padding: '13px 20px',
-              background: 'var(--accent)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 10,
-              fontFamily: 'system-ui, sans-serif',
-              fontSize: '1rem',
-              fontWeight: 600,
-              cursor: 'not-allowed',
-              opacity: 0.5,
-            }}
+            className="w-full rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 opacity-40 cursor-not-allowed"
           >
             Connect MyEnergi
           </button>
-          <p style={{ margin: '8px 0 0', fontSize: '0.78rem', color: 'var(--muted)', textAlign: 'center' }}>
+          <p className="text-center text-xs text-slate-600">
             Connection form will be enabled in the next release.
           </p>
         </div>
 
         <CredentialsHelp />
 
-        <div style={{ marginTop: 32, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
+        <div className="mt-8 border-t border-slate-800 pt-6">
           {/* Sign-out — placeholder until NextAuth is wired (P-040) */}
-          <a
-            href="#"
-            style={{
-              display: 'inline-block',
-              fontSize: '0.9rem',
-              color: 'var(--muted)',
-              textDecoration: 'underline',
-            }}
-          >
+          <a href="#" className="text-sm text-slate-500 underline underline-offset-2 hover:text-slate-300">
             Sign out
           </a>
         </div>
@@ -113,49 +82,27 @@ function CredentialsHelp() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div style={{ marginTop: 20 }}>
+    <div className="mt-5">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        style={{
-          background: 'none',
-          border: 'none',
-          padding: 0,
-          cursor: 'pointer',
-          fontSize: '0.88rem',
-          color: 'var(--accent)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          fontFamily: 'system-ui, sans-serif',
-        }}
+        className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-200"
       >
-        <span style={{ fontSize: '0.75rem' }}>{open ? '▾' : '▸'}</span>
+        <span className="text-[10px]">{open ? '▾' : '▸'}</span>
         How do I find my MyEnergi credentials?
       </button>
 
       {open && (
-        <div
-          style={{
-            marginTop: 12,
-            padding: '16px 18px',
-            background: 'rgba(255,255,255,0.5)',
-            border: '1px solid var(--border)',
-            borderRadius: 10,
-            fontSize: '0.88rem',
-            lineHeight: 1.7,
-            color: 'var(--text)',
-          }}
-        >
-          <p style={{ margin: '0 0 10px', fontWeight: 600 }}>Serial number</p>
-          <p style={{ margin: '0 0 14px' }}>
-            Your 8-digit serial number is printed on the sticker on the side of your MyEnergi hub
-            (Zappi, Harvi, or Eddi). It is also shown in the MyEnergi app under{' '}
+        <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-4 text-sm leading-relaxed text-slate-400">
+          <p className="font-semibold text-slate-300">Serial number</p>
+          <p className="mt-1 text-slate-400">
+            Your 8-digit serial number is printed on the sticker on the side of your MyEnergi
+            hub (Zappi, Harvi, or Eddi). It is also shown in the MyEnergi app under{' '}
             <em>Settings → Hub</em>.
           </p>
 
-          <p style={{ margin: '0 0 10px', fontWeight: 600 }}>API key</p>
-          <p style={{ margin: 0 }}>
+          <p className="mt-4 font-semibold text-slate-300">API key</p>
+          <p className="mt-1 text-slate-400">
             Open the MyEnergi app, go to <em>Settings → Advanced → API</em>, and tap{' '}
             <em>Generate API key</em>. Copy the key shown — it will not be displayed again.
             If you have already generated a key, you can regenerate it from the same screen.
@@ -165,24 +112,3 @@ function CredentialsHelp() {
     </div>
   );
 }
-
-const labelStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 6,
-  fontSize: '0.88rem',
-  fontWeight: 600,
-  color: 'var(--text)',
-  fontFamily: 'system-ui, sans-serif',
-};
-
-const inputStyle: React.CSSProperties = {
-  padding: '10px 12px',
-  border: '1px solid var(--border)',
-  borderRadius: 8,
-  fontSize: '0.95rem',
-  fontFamily: 'system-ui, sans-serif',
-  background: 'rgba(255,255,255,0.6)',
-  color: 'var(--text)',
-  opacity: 0.6,
-};

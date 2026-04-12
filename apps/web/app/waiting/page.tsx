@@ -1,49 +1,37 @@
 export default function WaitingPage() {
   // In production this screen is rendered server-side after the OAuth callback
   // creates the user record with status='awaiting_approval'. The signed-in user's
-  // email is passed as a prop or read from session. Placeholder shown here.
+  // email is read from session. Placeholder shown here.
   const userEmail = 'you@example.com';
 
   return (
-    <main className="shell">
-      <div className="panel" style={{ maxWidth: 480 }}>
-        <div style={{ fontSize: '2.4rem', marginBottom: 8 }}>⏳</div>
+    <main className="min-h-screen font-sans bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.06),_transparent_30%),linear-gradient(180deg,#050b14_0%,#0b1220_100%)] flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md rounded-[28px] border border-slate-800 bg-[#111b2b] p-8 shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
 
-        <p className="eyebrow">Solar Tracker</p>
-        <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.2rem)' }}>You&rsquo;re on the list</h1>
-
-        <p className="copy" style={{ marginTop: 16 }}>
-          Your request has been received. We&rsquo;ll review it and send an approval email to{' '}
-          <strong>{userEmail}</strong> when your access is ready.
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+          Solar Tracker
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold text-slate-50">
+          You&rsquo;re on the list
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-slate-300">
+          Your request has been received. We&rsquo;ll review it and send an approval email
+          to <span className="font-medium text-slate-100">{userEmail}</span> when your
+          access is ready.
         </p>
 
-        <div
-          style={{
-            marginTop: 24,
-            padding: '16px 20px',
-            background: 'rgba(13, 107, 87, 0.07)',
-            border: '1px solid rgba(13, 107, 87, 0.2)',
-            borderRadius: 12,
-          }}
-        >
-          <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--text)' }}>
-            <strong>Important:</strong> when you receive your approval email, sign back in with{' '}
-            <strong>the same Google account</strong> you used today. Using a different account
-            will start a new access request.
+        <div className="mt-5 rounded-2xl border border-slate-700/60 bg-slate-900/60 px-4 py-4 text-sm leading-relaxed text-slate-400">
+          <p className="flex items-start gap-2">
+            <span className="mt-0.5 text-amber-400">!</span>
+            When you receive your approval email, sign back in with{' '}
+            <strong className="text-slate-200">the same Google account</strong> you used today.
+            Using a different account will start a new access request.
           </p>
         </div>
 
-        <div style={{ marginTop: 32, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
+        <div className="mt-8 border-t border-slate-800 pt-6">
           {/* Sign-out — placeholder until NextAuth is wired (P-040) */}
-          <a
-            href="#"
-            style={{
-              display: 'inline-block',
-              fontSize: '0.9rem',
-              color: 'var(--muted)',
-              textDecoration: 'underline',
-            }}
-          >
+          <a href="#" className="text-sm text-slate-500 underline underline-offset-2 hover:text-slate-300">
             Sign out
           </a>
         </div>
