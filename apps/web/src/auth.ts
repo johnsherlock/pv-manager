@@ -2,7 +2,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import type { NextAuthOptions } from 'next-auth';
 import { db } from '@/src/db/client';
 import { users } from '@/src/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -22,10 +22,12 @@ export const authOptions: NextAuthOptions = {
       const email = profile.email;
       const displayName = profile.name ?? null;
 
+      // Look up by sub first, then fall back to email (handles seeded users
+      // whose authUserId is a placeholder rather than their real Google sub).
       const existing = await db
-        .select({ id: users.id, role: users.role, status: users.status })
+        .select({ id: users.id })
         .from(users)
-        .where(eq(users.authUserId, googleSub))
+        .where(or(eq(users.authUserId, googleSub), eq(users.email, email)))
         .limit(1);
 
       if (existing.length === 0) {
@@ -37,6 +39,12 @@ export const authOptions: NextAuthOptions = {
           status: 'awaiting_approval',
           termsAcceptedAt: new Date(),
         });
+      } else {
+        // Ensure the real Google sub is stored (fixes seeded placeholder subs)
+        await db
+          .update(users)
+          .set({ authUserId: googleSub, updatedAt: new Date() })
+          .where(eq(users.id, existing[0].id));
       }
 
       return true;
