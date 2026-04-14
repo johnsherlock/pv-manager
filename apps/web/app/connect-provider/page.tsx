@@ -179,15 +179,16 @@ function CredentialsHelp() {
         <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-4 text-sm leading-relaxed text-slate-400">
           <p className="font-semibold text-slate-300">Serial number</p>
           <p className="mt-1">
-            Your 8-digit serial number is printed on the sticker on the side of your MyEnergi
-            hub (Zappi, Harvi, or Eddi). It is also shown in the MyEnergi app under{' '}
-            <em>Settings → Hub</em>.
+            Sign in at{' '}
+            <span className="text-slate-300">myaccount.myenergi.com</span>, go to{' '}
+            <em>Location → myenergi Products</em>. Your serial number is shown on the product
+            card (labelled <em>SN</em>).
           </p>
           <p className="mt-4 font-semibold text-slate-300">API key</p>
           <p className="mt-1">
-            Open the MyEnergi app, go to <em>Settings → Advanced → API</em>, and tap{' '}
-            <em>Generate API key</em>. Copy the key — it will not be displayed again. If you
-            have already generated one, you can regenerate it from the same screen.
+            On the same product card, click <em>Advanced</em>, then{' '}
+            <em>Generate new API key</em> and confirm. Copy the key immediately — it is only
+            shown once. If you have generated one before, regenerating replaces the old key.
           </p>
         </div>
       )}

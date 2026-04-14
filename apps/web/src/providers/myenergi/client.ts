@@ -94,7 +94,8 @@ export type ValidateCredentialsResult =
 export async function validateMyEnergiCredentials(
   credentials: MyEnergiCredentials,
 ): Promise<ValidateCredentialsResult> {
-  const url = `${MYENERGI_ENDPOINT}/cgi-jstatus-Z${credentials.serialNumber}`;
+  // Use the wildcard status endpoint — works regardless of device type (MySolar, Zappi, Eddi, etc.)
+  const url = `${MYENERGI_ENDPOINT}/cgi-jstatus-*`;
 
   let response: Response;
   try {
