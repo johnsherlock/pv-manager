@@ -16,7 +16,7 @@ import {
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
-  authUserId: uuid('auth_user_id').notNull(),
+  authUserId: text('auth_user_id').notNull(),
   email: text('email').notNull(),
   displayName: text('display_name'),
   // role: 'user' | 'admin'
