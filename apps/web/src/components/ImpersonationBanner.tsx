@@ -8,7 +8,7 @@ export async function ImpersonationBanner() {
   if (!email) return null;
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-50 flex items-center justify-between gap-4 bg-amber-400 px-4 py-2 text-sm font-medium text-slate-900">
+    <div className="fixed bottom-0 inset-x-0 z-50 flex items-center justify-between gap-4 bg-amber-400 px-4 py-2 text-sm font-medium text-slate-900 font-sans">
       <span>
         Viewing as <strong>{email}</strong>
       </span>
