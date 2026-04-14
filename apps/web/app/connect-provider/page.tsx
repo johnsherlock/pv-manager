@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { SignOutButton } from '@/src/components/SignOutButton';
+import { connectProvider } from './actions';
 
 export default function ConnectProviderPage() {
   return (
@@ -52,45 +55,7 @@ export default function ConnectProviderPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
               MyEnergi credentials
             </p>
-
-            {/* Credentials form placeholder — built in P-038 / U-048 */}
-            <div className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5">
-                  Serial number
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 12345678"
-                  disabled
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-500 placeholder-slate-700 cursor-not-allowed"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5">
-                  API key
-                </label>
-                <input
-                  type="password"
-                  placeholder="Your MyEnergi API key"
-                  disabled
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-500 placeholder-slate-700 cursor-not-allowed"
-                />
-              </div>
-
-              <button
-                type="button"
-                disabled
-                className="w-full rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 opacity-40 cursor-not-allowed"
-              >
-                Connect MyEnergi
-              </button>
-              <p className="text-center text-xs text-slate-600">
-                Connection form will be enabled in the next release.
-              </p>
-            </div>
-
+            <ConnectForm />
             <div className="mt-8 border-t border-slate-800 pt-6">
               <SignOutButton />
             </div>
@@ -98,6 +63,101 @@ export default function ConnectProviderPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function ConnectForm() {
+  const router = useRouter();
+  const { update } = useSession();
+
+  const [serialNumber, setSerialNumber] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+
+    const formData = new FormData();
+    formData.set('serialNumber', serialNumber);
+    formData.set('password', password);
+
+    try {
+      const result = await connectProvider(formData);
+
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
+
+      // Refresh the session token so providerStatus updates before navigation.
+      await update();
+      router.push('/live');
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+      <div>
+        <label
+          htmlFor="serialNumber"
+          className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5"
+        >
+          Serial number
+        </label>
+        <input
+          id="serialNumber"
+          name="serialNumber"
+          type="text"
+          placeholder="e.g. 12345678"
+          value={serialNumber}
+          onChange={(e) => setSerialNumber(e.target.value)}
+          disabled={submitting}
+          required
+          className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-slate-500 focus:outline-none disabled:opacity-50"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="password"
+          className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5"
+        >
+          API key
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="Your MyEnergi API key"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={submitting}
+          required
+          className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-slate-500 focus:outline-none disabled:opacity-50"
+        />
+      </div>
+
+      {error && (
+        <p className="rounded-xl border border-red-900/60 bg-red-950/40 px-3 py-2.5 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={submitting || !serialNumber || !password}
+        className="w-full rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-amber-200 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+      >
+        {submitting ? 'Connecting…' : 'Connect MyEnergi'}
+      </button>
+    </form>
   );
 }
 
