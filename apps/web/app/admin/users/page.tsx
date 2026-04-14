@@ -1,14 +1,14 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/src/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/src/db/client';
 import { users } from '@/src/db/schema';
 import { desc } from 'drizzle-orm';
 import { approveUser, startImpersonation } from './actions';
+import { getSession } from '@/src/auth-helpers';
+import { UserRole, UserStatus } from '@/src/user-constants';
 
 export default async function AdminUsersPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.role !== 'admin') redirect('/live');
+  const session = await getSession();
+  if (!session || session.role !== UserRole.Admin) redirect('/live');
 
   const allUsers = await db
     .select({
@@ -84,7 +84,7 @@ export default async function AdminUsersPage() {
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
-                      {user.status === 'awaiting_approval' && (
+                      {user.status === UserStatus.AwaitingApproval && (
                         <form action={approveUser.bind(null, user.id)}>
                           <button
                             type="submit"
@@ -94,7 +94,7 @@ export default async function AdminUsersPage() {
                           </button>
                         </form>
                       )}
-                      {user.status === 'approved' && user.role !== 'admin' && (
+                      {user.status === UserStatus.Approved && user.role !== UserRole.Admin && (
                         <form action={startImpersonation.bind(null, user.id)}>
                           <button
                             type="submit"
@@ -125,14 +125,14 @@ export default async function AdminUsersPage() {
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    awaiting_approval: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
-    approved: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
-    suspended: 'bg-red-500/10 border-red-500/30 text-red-400',
+    [UserStatus.AwaitingApproval]: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+    [UserStatus.Approved]: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+    [UserStatus.Suspended]: 'bg-red-500/10 border-red-500/30 text-red-400',
   };
   const labels: Record<string, string> = {
-    awaiting_approval: 'Pending',
-    approved: 'Approved',
-    suspended: 'Suspended',
+    [UserStatus.AwaitingApproval]: 'Pending',
+    [UserStatus.Approved]: 'Approved',
+    [UserStatus.Suspended]: 'Suspended',
   };
   const cls = styles[status] ?? 'bg-slate-700/30 border-slate-700 text-slate-400';
   return (
@@ -145,7 +145,7 @@ function StatusBadge({ status }: { status: string }) {
 function RoleBadge({ role }: { role: string }) {
   return (
     <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-      role === 'admin'
+      role === UserRole.Admin
         ? 'bg-sky-500/10 border-sky-500/30 text-sky-400'
         : 'bg-slate-700/20 border-slate-700 text-slate-500'
     }`}>

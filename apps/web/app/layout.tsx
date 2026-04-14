@@ -1,8 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/src/auth';
+import { getSession } from '@/src/auth-helpers';
 import { SessionProvider } from '@/src/components/SessionProvider';
 import { ImpersonationBanner } from '@/src/components/ImpersonationBanner';
 
@@ -13,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
 
   return (
     <html lang="en">

@@ -1,6 +1,7 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequestWithAuth } from 'next-auth/middleware';
+import { UserRole, UserStatus } from '@/src/user-constants';
 
 export default withAuth(
   function middleware(req: NextRequestWithAuth) {
@@ -8,17 +9,17 @@ export default withAuth(
     const { pathname } = req.nextUrl;
 
     // Admin bypasses all status-based routing
-    if (token?.role === 'admin') {
+    if (token?.role === UserRole.Admin) {
       return NextResponse.next();
     }
 
     const status = token?.status;
 
-    if (status === 'awaiting_approval' && pathname !== '/waiting') {
+    if (status === UserStatus.AwaitingApproval && pathname !== '/waiting') {
       return NextResponse.redirect(new URL('/waiting', req.url));
     }
 
-    if (status === 'suspended' && pathname !== '/suspended') {
+    if (status === UserStatus.Suspended && pathname !== '/suspended') {
       return NextResponse.redirect(new URL('/suspended', req.url));
     }
 

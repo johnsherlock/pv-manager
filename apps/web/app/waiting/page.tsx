@@ -1,9 +1,8 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/src/auth';
+import { getSession } from '@/src/auth-helpers';
 import { SignOutButton } from '@/src/components/SignOutButton';
 
 export default async function WaitingPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const userEmail = session?.user?.email ?? '';
 
   return (
