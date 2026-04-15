@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { SignOutButton } from '@/src/components/SignOutButton';
@@ -11,7 +12,7 @@ export default function ConnectProviderPage() {
     <div className="min-h-screen font-sans text-slate-100 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.06),_transparent_30%),linear-gradient(180deg,#050b14_0%,#0b1220_100%)]">
       <header className="sticky top-0 z-40 border-b border-slate-800 bg-[#101826]">
         <div className="mx-auto flex h-14 max-w-7xl items-center px-4 sm:px-6">
-          <span className="text-sm font-semibold text-slate-100">Solar Tracker</span>
+          <Link href="/live" className="text-sm font-semibold text-slate-100 hover:text-slate-300 transition-colors">Solar Tracker</Link>
           <span className="mx-2 text-slate-700">/</span>
           <span className="text-sm text-slate-400">Setup</span>
         </div>
