@@ -204,9 +204,11 @@ function CredentialsHelp() {
               </a>
             </li>
             <li>
-              Your serial number is shown on the product card, labelled{' '}
-              <span className="text-slate-300">SN</span> — it is an 8-digit number starting with
-              the digit that identifies your hub type (e.g. <span className="text-slate-300">2xxxxxxx</span> for MySolar)
+              If you haven't yet registered your product, click the <span className="text-slate-300">Add another device</span> button and follow the instructions to add it to your account.
+            </li>
+            <li>
+              Copy your serial number which is shown on the product card, labelled{' '}
+              <span className="text-slate-300">SN</span> — it is an 8-digit number.
             </li>
           </ol>
 
