@@ -230,6 +230,16 @@ function ProgressBar({
 // Page
 // ---------------------------------------------------------------------------
 
+function resolveStatusLine(
+  section: (typeof SECTION_META)[number],
+  status: SectionStatus,
+  providerName: string | null,
+): string {
+  if (status === 'complete') return section.completeStatusLine(providerName);
+  if (status === 'coming-soon') return 'Coming soon';
+  return 'Not set up';
+}
+
 export default async function SettingsHomePage() {
   const completion = await loadSettingsCompletionState(SEED_INSTALLATION_ID);
 
@@ -247,7 +257,7 @@ export default async function SettingsHomePage() {
               label={section.label}
               href={section.href}
               status={status}
-              statusLine={section.completeStatusLine(completion.providerName)}
+              statusLine={resolveStatusLine(section, status, completion.providerName)}
               valueLine={section.valueLine}
               cta={section.actionableCta}
             />
@@ -265,7 +275,7 @@ export default async function SettingsHomePage() {
               label={section.label}
               href={section.href}
               status={status}
-              statusLine={section.completeStatusLine(completion.providerName)}
+              statusLine={resolveStatusLine(section, status, completion.providerName)}
             />
           );
         })}

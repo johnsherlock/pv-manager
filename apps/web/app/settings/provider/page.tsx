@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Plug, CheckCircle2, AlertTriangle, ArrowRight, Clock } from 'lucide-react';
 import { loadSettingsCompletionState } from '@/src/settings/loader';
 
+export const dynamic = 'force-dynamic';
+
 const SEED_INSTALLATION_ID = '00000000-0000-0000-0000-000000000002';
 
 function formatProviderName(type: string): string {

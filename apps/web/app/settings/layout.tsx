@@ -3,6 +3,8 @@ import { ChevronLeft, Settings, CheckCircle2, Circle, Lock } from 'lucide-react'
 import type { ReactNode } from 'react';
 import { loadSettingsCompletionState } from '@/src/settings/loader';
 
+export const dynamic = 'force-dynamic';
+
 const SEED_INSTALLATION_ID = '00000000-0000-0000-0000-000000000002';
 
 const SECTIONS = [
