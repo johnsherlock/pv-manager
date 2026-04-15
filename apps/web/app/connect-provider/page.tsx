@@ -182,10 +182,25 @@ function CredentialsHelp() {
           <ol className="mt-2 space-y-1.5 list-decimal list-inside">
             <li>
               Sign in at{' '}
-              <span className="text-slate-300 font-medium">myaccount.myenergi.com</span>
+              <a
+                href="https://myaccount.myenergi.com/login"
+                target="myenergi-account"
+                rel="noopener noreferrer"
+                className="text-slate-300 font-medium underline underline-offset-2 hover:text-slate-100"
+              >
+                myaccount.myenergi.com
+              </a>
             </li>
             <li>
-              Go to <span className="text-slate-300">Location → myenergi Products</span>
+              Go to{' '}
+              <a
+                href="https://myaccount.myenergi.com/location#products"
+                target="myenergi-account"
+                rel="noopener noreferrer"
+                className="text-slate-300 underline underline-offset-2 hover:text-slate-100"
+              >
+                Location → myenergi Products
+              </a>
             </li>
             <li>
               Your serial number is shown on the product card, labelled{' '}
