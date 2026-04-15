@@ -177,18 +177,44 @@ function CredentialsHelp() {
 
       {open && (
         <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-4 text-sm leading-relaxed text-slate-400">
-          <p className="font-semibold text-slate-300">Serial number</p>
-          <p className="mt-1">
-            Sign in at{' '}
-            <span className="text-slate-300">myaccount.myenergi.com</span>, go to{' '}
-            <em>Location → myenergi Products</em>. Your serial number is shown on the product
-            card (labelled <em>SN</em>).
-          </p>
-          <p className="mt-4 font-semibold text-slate-300">API key</p>
-          <p className="mt-1">
-            On the same product card, click <em>Advanced</em>, then{' '}
-            <em>Generate new API key</em> and confirm. Copy the key immediately — it is only
-            shown once. If you have generated one before, regenerating replaces the old key.
+
+          <p className="font-semibold text-slate-300">Step 1 — Find your serial number</p>
+          <ol className="mt-2 space-y-1.5 list-decimal list-inside">
+            <li>
+              Sign in at{' '}
+              <span className="text-slate-300 font-medium">myaccount.myenergi.com</span>
+            </li>
+            <li>
+              Go to <span className="text-slate-300">Location → myenergi Products</span>
+            </li>
+            <li>
+              Your serial number is shown on the product card, labelled{' '}
+              <span className="text-slate-300">SN</span> — it is an 8-digit number starting with
+              the digit that identifies your hub type (e.g. <span className="text-slate-300">2xxxxxxx</span> for MySolar)
+            </li>
+          </ol>
+
+          <p className="mt-5 font-semibold text-slate-300">Step 2 — Generate an API key</p>
+          <ol className="mt-2 space-y-1.5 list-decimal list-inside">
+            <li>
+              On the product card, click the{' '}
+              <span className="text-slate-300">Advanced…</span> button
+            </li>
+            <li>
+              Click <span className="text-slate-300">Generate new API key</span>
+            </li>
+            <li>
+              Confirm when prompted
+            </li>
+            <li>
+              Copy the key immediately —{' '}
+              <span className="text-slate-300">it is only shown once</span>
+            </li>
+          </ol>
+
+          <p className="mt-4 rounded-xl border border-amber-900/40 bg-amber-950/30 px-3 py-2 text-xs text-amber-300/80">
+            Generating a new key replaces any previously generated key. If you have already
+            connected Solar Tracker and regenerate your key, you will need to reconnect here.
           </p>
         </div>
       )}
