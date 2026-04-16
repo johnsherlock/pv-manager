@@ -23,31 +23,13 @@
 
 import { inWindow, type TariffPricePeriod, type TariffVersion, type WeeklySchedule } from './billing';
 
-/**
- * Derive a deterministic UUID-v5-like hex string from a tariff version ID and
- * a period label. The result is valid UUID format so it can be safely used as a
- * primary key if the caller chooses to persist the synthesised periods.
- *
- * The implementation is a simple but collision-resistant hash — not a true
- * RFC 4122 UUID. For in-memory billing use this is sufficient; for actual DB
- * insertion callers should verify uniqueness or replace with real UUIDs.
- */
-function deterministicId(versionId: string, label: string): string {
-  // XOR-fold a djb2-style hash to fill a 32-hex UUID-shaped string
-  const src = `${versionId}:${label}`;
-  let h1 = 0x9e3779b9;
-  let h2 = 0x6c62272e;
-  for (let i = 0; i < src.length; i++) {
-    const c = src.charCodeAt(i);
-    h1 = Math.imul(h1 ^ c, 0x5bd1e995);
-    h2 = Math.imul(h2 ^ c, 0x9e3779b1);
-  }
-  h1 ^= h2 >>> 13; h2 ^= h1 >>> 11;
-  const p = (n: number) => (n >>> 0).toString(16).padStart(8, '0');
-  // Shape: 8-4-4-4-12 hex chars
-  const a = p(h1), b = p(h2 >>> 0);
-  return `${a.slice(0,8)}-${b.slice(0,4)}-4${b.slice(5,8)}-${(0x80 | (h1 >>> 24) & 0x3f).toString(16).padStart(2,'0')}${a.slice(2,6)}-${b}${a.slice(0,4)}`;
-}
+// Stable synthetic period IDs used in the returned periods/schedule.
+// These are intentionally NOT UUIDs — this function is for in-memory billing
+// computation only and must never be used to write rows to tariff_price_periods.
+// If you need to persist a synthesised schedule, generate real UUIDs at that point.
+const COMPAT_DAY_ID   = 'compat:day';
+const COMPAT_NIGHT_ID = 'compat:night';
+const COMPAT_PEAK_ID  = 'compat:peak';
 
 /**
  * Synthesise TariffPricePeriod records and a WeeklySchedule from the simple
@@ -64,11 +46,9 @@ export function migrateWindowsToSchedule(tariff: TariffVersion): {
   periods: TariffPricePeriod[];
   schedule: WeeklySchedule;
 } {
-  // Deterministic IDs keyed on the version ID so they are stable across calls
-  // and unique per version. UUID-format so they are safe to persist if needed.
-  const dayId   = deterministicId(tariff.id, 'Day');
-  const nightId = deterministicId(tariff.id, 'Night');
-  const peakId  = deterministicId(tariff.id, 'Peak');
+  const dayId   = COMPAT_DAY_ID;
+  const nightId = COMPAT_NIGHT_ID;
+  const peakId  = COMPAT_PEAK_ID;
 
   const base: Omit<TariffPricePeriod, 'id' | 'periodLabel' | 'ratePerKwh' | 'isFreeImport' | 'sortOrder'> = {
     tariffPlanVersionId: tariff.id,

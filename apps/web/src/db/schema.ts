@@ -117,6 +117,9 @@ export const tariffPricePeriods = pgTable('tariff_price_periods', {
   isFreeImport: boolean('is_free_import').notNull().default(false),
   // Display order in the UI (0-based). Does not affect billing resolution.
   sortOrder: smallint('sort_order').notNull().default(0),
+  // Hex colour used to render this period in the weekly schedule grid (e.g. '#3b82f6').
+  // Null until set by the user in the tariff editor.
+  colourHex: text('colour_hex'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({

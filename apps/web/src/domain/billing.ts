@@ -14,6 +14,8 @@ export type TariffPricePeriod = {
   /** When true the period is free — rate is treated as 0 for billing purposes. */
   isFreeImport: boolean;
   sortOrder: number;
+  /** Hex colour for rendering in the weekly schedule grid (e.g. '#3b82f6'). Null until set by the user. */
+  colourHex?: string | null;
 };
 
 /**
