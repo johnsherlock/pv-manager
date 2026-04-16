@@ -159,11 +159,20 @@ export const calculateBillingFromDailySummariesScheduled = (
       : 1;
 
     if (day.bandBreakdown && scheduledTariff.pricePeriods.length > 0) {
-      // Schedule-based: sum each period's kWh × rate
+      // Schedule-based: walk the persisted breakdown entries and look each up in
+      // the loaded periods list. Iterating the breakdown (not the periods list)
+      // ensures no persisted kWh is silently dropped if a period ID is missing
+      // from the loaded list — for example because a period was deleted after
+      // summaries were generated. Unknown period IDs fall back to the day rate so
+      // the full import is always billed.
+      const periodMap = new Map(scheduledTariff.pricePeriods.map((p) => [p.id, p]));
       let rawCost = 0;
-      for (const period of scheduledTariff.pricePeriods) {
-        const kwh = day.bandBreakdown[period.id] ?? 0;
-        rawCost += kwh * (period.isFreeImport ? 0 : period.ratePerKwh);
+      for (const [periodId, kwh] of Object.entries(day.bandBreakdown)) {
+        const period = periodMap.get(periodId);
+        const rate = period
+          ? (period.isFreeImport ? 0 : period.ratePerKwh)
+          : tariff.dayRate; // unknown period → day-rate fallback
+        rawCost += kwh * rate;
       }
       actualImportCost += round(rawCost * discount * vat);
     } else if (day.dayImportKwh != null && day.nightImportKwh != null && day.peakImportKwh != null) {

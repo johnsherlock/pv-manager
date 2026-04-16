@@ -454,4 +454,27 @@ describe('calculateBillingFromDailySummariesScheduled', () => {
     // Day-rate only: 4 × 0.30 × 1.09 = 1.308
     expect(result.actual.importCost).toBeCloseTo(1.308, 4);
   });
+
+  it('bills unknown breakdown period IDs at the day rate rather than dropping their kWh', () => {
+    // A breakdown referencing a period ID not in pricePeriods (e.g. period was deleted)
+    const breakdown: BandBreakdown = { 'p-day': 2, 'stale-period-id': 1 };
+    const summary: DailySummaryForBillingScheduled = {
+      localDate: '2025-05-05',
+      importKwh: 3,
+      exportKwh: 0,
+      generatedKwh: 0,
+      consumedKwh: 3,
+      immersionDivertedKwh: 0,
+      bandBreakdown: breakdown,
+    };
+
+    const result = calculateBillingFromDailySummariesScheduled(
+      [summary],
+      [scheduledTariff],
+      [],
+    );
+
+    // 2 kWh × 0.30 (day) + 1 kWh × 0.30 (unknown → day fallback) = 3 × 0.30 × 1.09 = 0.981
+    expect(result.actual.importCost).toBeCloseTo(0.981, 4);
+  });
 });
