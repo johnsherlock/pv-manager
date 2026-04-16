@@ -6,7 +6,9 @@ import {
   providerConnections,
   tariffPlans,
   tariffPlanVersions,
+  tariffPricePeriods,
   tariffFixedChargeVersions,
+  installationContracts,
   dailySummaries,
 } from './schema';
 
@@ -23,6 +25,35 @@ const TARIFF_VERSION_1_ID    = '00000000-0000-0000-0000-000000000005';
 const TARIFF_VERSION_2_ID    = '00000000-0000-0000-0000-000000000006';
 const FIXED_CHARGE_V1_ID     = '00000000-0000-0000-0000-000000000007';
 const FIXED_CHARGE_V2_ID     = '00000000-0000-0000-0000-000000000008';
+const PRICE_PERIOD_DAY_ID    = '00000000-0000-0000-0000-000000000010';
+const PRICE_PERIOD_NIGHT_ID  = '00000000-0000-0000-0000-000000000011';
+const PRICE_PERIOD_PEAK_ID   = '00000000-0000-0000-0000-000000000012';
+const INSTALLATION_CONTRACT_ID = '00000000-0000-0000-0000-000000000013';
+
+// ---------------------------------------------------------------------------
+// Weekly schedule JSON for tariff version 2
+// 336 elements (7 days × 48 half-hours, Mon=0, slot 0 = 00:00–00:30)
+// Night: 23:00–08:00 → slots 46–47 + 0–15  → PRICE_PERIOD_NIGHT_ID
+// Peak:  17:00–19:00 → slots 34–37           → PRICE_PERIOD_PEAK_ID
+// Day:   everything else                     → PRICE_PERIOD_DAY_ID
+// ---------------------------------------------------------------------------
+function buildWeeklySchedule(): string[] {
+  const schedule: string[] = [];
+  for (let day = 0; day < 7; day++) {
+    for (let slot = 0; slot < 48; slot++) {
+      const isNight = slot <= 15 || slot >= 46;
+      const isPeak  = slot >= 34 && slot <= 37;
+      if (isNight) {
+        schedule.push(PRICE_PERIOD_NIGHT_ID);
+      } else if (isPeak) {
+        schedule.push(PRICE_PERIOD_PEAK_ID);
+      } else {
+        schedule.push(PRICE_PERIOD_DAY_ID);
+      }
+    }
+  }
+  return schedule;
+}
 
 // Daily summary IDs: one per seeded date
 const SUMMARY_IDS: Record<string, string> = {
@@ -282,6 +313,7 @@ async function seed() {
         peakStartLocalTime: '17:00',
         peakEndLocalTime: '19:00',
         isActiveDefault: true,
+        weeklyScheduleJson: buildWeeklySchedule(),
       },
     ]).onConflictDoUpdate({
       target: tariffPlanVersions.id,
@@ -299,6 +331,7 @@ async function seed() {
         peakStartLocalTime: sql`excluded.peak_start_local_time`,
         peakEndLocalTime: sql`excluded.peak_end_local_time`,
         isActiveDefault: sql`excluded.is_active_default`,
+        weeklyScheduleJson: sql`excluded.weekly_schedule_json`,
       },
     });
     console.log('  tariff_plan_versions: ok');
@@ -336,6 +369,67 @@ async function seed() {
       },
     });
     console.log('  tariff_fixed_charge_versions: ok');
+
+    // Price periods for the current (V2) tariff version — used by the weekly schedule
+    await tx.insert(tariffPricePeriods).values([
+      {
+        id: PRICE_PERIOD_DAY_ID,
+        tariffPlanVersionId: TARIFF_VERSION_2_ID,
+        periodLabel: 'Day',
+        ratePerKwh: '0.3865',
+        isFreeImport: false,
+        sortOrder: 0,
+        colourHex: '#f59e0b',
+      },
+      {
+        id: PRICE_PERIOD_NIGHT_ID,
+        tariffPlanVersionId: TARIFF_VERSION_2_ID,
+        periodLabel: 'Night',
+        ratePerKwh: '0.2125',
+        isFreeImport: false,
+        sortOrder: 1,
+        colourHex: '#3b82f6',
+      },
+      {
+        id: PRICE_PERIOD_PEAK_ID,
+        tariffPlanVersionId: TARIFF_VERSION_2_ID,
+        periodLabel: 'Peak',
+        ratePerKwh: '0.4340',
+        isFreeImport: false,
+        sortOrder: 2,
+        colourHex: '#ef4444',
+      },
+    ]).onConflictDoUpdate({
+      target: tariffPricePeriods.id,
+      set: {
+        periodLabel: sql`excluded.period_label`,
+        ratePerKwh: sql`excluded.rate_per_kwh`,
+        colourHex: sql`excluded.colour_hex`,
+        sortOrder: sql`excluded.sort_order`,
+      },
+    });
+    console.log('  tariff_price_periods: ok');
+
+    // Contract with upcoming review and expiry — seeds reminder state for the UI prototype
+    await tx.insert(installationContracts).values({
+      id: INSTALLATION_CONTRACT_ID,
+      installationId: INSTALLATION_ID,
+      tariffPlanId: TARIFF_PLAN_ID,
+      contractStartDate: '2025-10-10',
+      contractEndDate: '2026-06-30',
+      expectedReviewDate: '2026-06-01',
+      postContractDefaultBehavior: 'roll',
+      notes: 'Annual contract with Energia. Rates reviewed each October.',
+    }).onConflictDoUpdate({
+      target: installationContracts.id,
+      set: {
+        contractStartDate: sql`excluded.contract_start_date`,
+        contractEndDate: sql`excluded.contract_end_date`,
+        expectedReviewDate: sql`excluded.expected_review_date`,
+        notes: sql`excluded.notes`,
+      },
+    });
+    console.log('  installation_contracts: ok');
 
     const summaryRows = [...v1Days, ...v2Days].map(buildSummaryRow);
     await tx.insert(dailySummaries).values(summaryRows).onConflictDoUpdate({
