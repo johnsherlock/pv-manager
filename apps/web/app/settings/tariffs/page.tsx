@@ -135,71 +135,78 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
         })}
       </div>
 
-      {/* Period rows */}
-      <div className="flex flex-col gap-3">
-        {scheme.periods.map((period) => (
-          <div key={period.id}>
-            {/* Label: stacks above bar on mobile, sits left of bar on desktop */}
-            <div className="flex items-center gap-2 mb-1.5 md:hidden">
-              <span
-                className="h-2.5 w-2.5 rounded-sm shrink-0"
-                style={{ backgroundColor: period.colourHex ?? '#64748b' }}
-              />
-              <span className="text-xs font-medium text-slate-300">
-                {period.periodLabel}
-              </span>
-              <span className="text-xs text-slate-500 tabular-nums">
-                {formatRate(period.ratePerKwh, period.isFreeImport)}
-              </span>
-            </div>
+      {/* Scrollable bars region — minimum width keeps slots at ~11px on mobile */}
+      <div className="overflow-x-auto -mx-4 px-4">
+        <div style={{ minWidth: 540 }}>
 
-            <div className="flex items-center gap-3">
-              {/* Desktop-only left label */}
-              <div className="hidden md:flex w-36 shrink-0 items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 rounded-sm shrink-0"
-                  style={{ backgroundColor: period.colourHex ?? '#64748b' }}
-                />
-                <span className="text-xs font-medium text-slate-300 truncate">
-                  {period.periodLabel}
-                </span>
-                <span className="text-xs text-slate-500 tabular-nums shrink-0">
-                  {formatRate(period.ratePerKwh, period.isFreeImport)}
-                </span>
-              </div>
+          {/* Period rows */}
+          <div className="flex flex-col gap-3">
+            {scheme.periods.map((period) => (
+              <div key={period.id}>
+                {/* Mobile label — above the bar */}
+                <div className="flex items-center gap-2 mb-1.5 md:hidden">
+                  <span
+                    className="h-2.5 w-2.5 rounded-sm shrink-0"
+                    style={{ backgroundColor: period.colourHex ?? '#64748b' }}
+                  />
+                  <span className="text-xs font-medium text-slate-300">
+                    {period.periodLabel}
+                  </span>
+                  <span className="text-xs text-slate-500 tabular-nums">
+                    {formatRate(period.ratePerKwh, period.isFreeImport)}
+                  </span>
+                </div>
 
-              {/* Activity bar — full width on mobile, flex-1 on desktop */}
-              <div className="flex flex-1 gap-[1.5px]">
-                {scheme.slots.map((slotPeriodId, slot) => {
-                  const isActive = slotPeriodId === period.id;
-                  return (
-                    <div
-                      key={slot}
-                      className="flex-1 rounded-[1.5px] md:rounded-[2px]"
-                      style={{
-                        height: 18,
-                        backgroundColor: isActive
-                          ? (period.colourHex ?? '#64748b')
-                          : '#1e293b',
-                        opacity: isActive ? 0.88 : 1,
-                      }}
-                      title={`${slotToTime(slot)}–${slotToTime(slot + 1)}`}
+                <div className="flex items-center gap-3">
+                  {/* Desktop-only left label */}
+                  <div className="hidden md:flex w-36 shrink-0 items-center gap-2">
+                    <span
+                      className="h-2.5 w-2.5 rounded-sm shrink-0"
+                      style={{ backgroundColor: period.colourHex ?? '#64748b' }}
                     />
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+                    <span className="text-xs font-medium text-slate-300 truncate">
+                      {period.periodLabel}
+                    </span>
+                    <span className="text-xs text-slate-500 tabular-nums shrink-0">
+                      {formatRate(period.ratePerKwh, period.isFreeImport)}
+                    </span>
+                  </div>
 
-      {/* Time axis — full width on mobile, offset by label column on desktop */}
-      <div className="flex mt-2 md:pl-[9.5rem]">
-        {TIME_AXIS.map((t) => (
-          <div key={t} className="flex-1 text-[9px] text-slate-600 tabular-nums">
-            {t}
+                  {/* Activity bar */}
+                  <div className="flex flex-1 gap-[1.5px]">
+                    {scheme.slots.map((slotPeriodId, slot) => {
+                      const isActive = slotPeriodId === period.id;
+                      return (
+                        <div
+                          key={slot}
+                          className="flex-1 rounded-[1.5px] md:rounded-[2px]"
+                          style={{
+                            height: 20,
+                            backgroundColor: isActive
+                              ? (period.colourHex ?? '#64748b')
+                              : '#1e293b',
+                            opacity: isActive ? 0.88 : 1,
+                          }}
+                          title={`${slotToTime(slot)}–${slotToTime(slot + 1)}`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+
+          {/* Time axis — offset by label column on desktop, flush on mobile */}
+          <div className="flex mt-2 md:pl-[9.5rem]">
+            {TIME_AXIS.map((t) => (
+              <div key={t} className="flex-1 text-[9px] text-slate-600 tabular-nums">
+                {t}
+              </div>
+            ))}
+          </div>
+
+        </div>
       </div>
     </div>
   );
