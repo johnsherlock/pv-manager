@@ -109,24 +109,36 @@ function deriveSchemes(schedule: string[], allPeriods: PricePeriod[]): TariffSch
 
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const TIME_AXIS   = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+const SLOT_COUNT = 48;
+const MOBILE_SLOT_WIDTH = 12;
+const SLOT_GAP = 2;
+const SLOT_HEIGHT_MOBILE = 18;
+const DAY_PILL_SIZE = 42;
+
+function gridWidth(slotWidth: number): number {
+  return SLOT_COUNT * slotWidth + (SLOT_COUNT - 1) * SLOT_GAP;
+}
 
 function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
   const daySet = new Set(scheme.days);
+  const mobileWidth = gridWidth(MOBILE_SLOT_WIDTH);
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-4">
-      {/* Day pills — inline styles guarantee exact 40 × 40 px circles on every device */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+      {/* Day pills */}
+      <div
+        className="mb-4 grid grid-cols-7 gap-2"
+        style={{ width: DAY_PILL_SIZE * 7 + 8 * 6, maxWidth: '100%' }}
+      >
         {DAY_LETTERS.map((letter, i) => {
           const active = daySet.has(i);
           return (
             <div
               key={i}
               style={{
-                width: 40,
-                height: 40,
+                width: DAY_PILL_SIZE,
+                height: DAY_PILL_SIZE,
                 borderRadius: '50%',
-                flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -135,9 +147,9 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
                 lineHeight: 1,
                 userSelect: 'none',
                 backgroundColor: active ? '#475569' : '#1e293b',
-                color: active ? '#f1f5f9' : '#64748b',
-                // Inactive pills keep a faint ring so all circles read the same visual weight
-                boxShadow: active ? 'none' : 'inset 0 0 0 1.5px #334155',
+                color: active ? '#f1f5f9' : '#94a3b8',
+                border: active ? '1.5px solid #64748b' : '1.5px solid #334155',
+                boxSizing: 'border-box',
               }}
             >
               {letter}
@@ -146,9 +158,9 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
         })}
       </div>
 
-      {/* Scrollable bars region — minimum width keeps slots at ~11px on mobile */}
+      {/* Scrollable bars region */}
       <div className="overflow-x-auto -mx-4 px-4">
-        <div style={{ minWidth: 540 }}>
+        <div style={{ minWidth: mobileWidth }}>
 
           {/* Period rows */}
           <div className="flex flex-col gap-3">
@@ -183,17 +195,24 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
                     </span>
                   </div>
 
-                  {/* Activity bar with 2-hour separator lines overlaid */}
+                  {/* Activity bar with deterministic slot geometry and 2-hour markers */}
                   <div className="relative flex-1">
-                    <div className="flex gap-[1.5px]">
+                    <div
+                      className="grid"
+                      style={{
+                        gridTemplateColumns: `repeat(${SLOT_COUNT}, ${MOBILE_SLOT_WIDTH}px)`,
+                        columnGap: `${SLOT_GAP}px`,
+                        width: mobileWidth,
+                      }}
+                    >
                       {scheme.slots.map((slotPeriodId, slot) => {
                         const isActive = slotPeriodId === period.id;
                         return (
                           <div
                             key={slot}
-                            className="flex-1 rounded-[1.5px] md:rounded-[2px]"
+                            className="rounded-[2px] md:rounded-[3px]"
                             style={{
-                              height: 20,
+                              height: SLOT_HEIGHT_MOBILE,
                               backgroundColor: isActive
                                 ? (period.colourHex ?? '#64748b')
                                 : '#1e293b',
@@ -204,19 +223,17 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
                         );
                       })}
                     </div>
-                    {/* Subtle vertical lines every 4 slots (every 2 hours) */}
-                    <div
-                      className="absolute inset-0 pointer-events-none"
-                      style={{
-                        backgroundImage: `repeating-linear-gradient(
-                          to right,
-                          transparent 0%,
-                          transparent calc(${(100 / 12).toFixed(4)}% - 1px),
-                          rgba(255,255,255,0.10) calc(${(100 / 12).toFixed(4)}% - 1px),
-                          rgba(255,255,255,0.10) ${(100 / 12).toFixed(4)}%
-                        )`,
-                      }}
-                    />
+                    {Array.from({ length: 11 }).map((_, idx) => {
+                      const slotIndex = (idx + 1) * 4;
+                      const mobileLeft = slotIndex * MOBILE_SLOT_WIDTH + slotIndex * SLOT_GAP - SLOT_GAP / 2;
+                      return (
+                        <div
+                          key={idx}
+                          className="pointer-events-none absolute inset-y-0 w-px bg-white/14"
+                          style={{ left: mobileLeft }}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -224,9 +241,15 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
           </div>
 
           {/* Time axis — offset by label column on desktop, flush on mobile */}
-          <div className="flex mt-2 md:pl-[9.5rem]">
+          <div
+            className="mt-2 grid text-[10px] text-slate-500 tabular-nums md:pl-[9.5rem]"
+            style={{
+              gridTemplateColumns: `repeat(8, ${mobileWidth / 8}px)`,
+              width: mobileWidth,
+            }}
+          >
             {TIME_AXIS.map((t) => (
-              <div key={t} className="flex-1 text-[9px] text-slate-600 tabular-nums">
+              <div key={t}>
                 {t}
               </div>
             ))}
