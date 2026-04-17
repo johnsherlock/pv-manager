@@ -116,17 +116,17 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-4">
       {/* Day pills */}
-      <div className="flex items-center gap-1.5 mb-4">
+      <div className="flex items-center gap-2 mb-4">
         {DAY_LETTERS.map((letter, i) => {
           const active = daySet.has(i);
           return (
             <span
               key={i}
               className={[
-                'inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
+                'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
                 active
                   ? 'bg-slate-600 text-slate-100'
-                  : 'bg-slate-800/50 text-slate-600',
+                  : 'bg-slate-800 text-slate-600',
               ].join(' ')}
             >
               {letter}
