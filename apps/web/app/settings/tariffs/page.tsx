@@ -2,7 +2,6 @@ import Link from 'next/link';
 import {
   Receipt,
   Plus,
-  CalendarClock,
   AlertTriangle,
   Info,
   ArrowRight,
@@ -10,7 +9,12 @@ import {
   History,
 } from 'lucide-react';
 import { loadTariffOverview } from '@/src/tariffs/loader';
-import type { TariffVersionDetail, TariffVersionSummary, ContractInfo, PricePeriod } from '@/src/tariffs/loader';
+import type {
+  TariffVersionDetail,
+  TariffVersionSummary,
+  ContractInfo,
+  PricePeriod,
+} from '@/src/tariffs/loader';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +32,8 @@ function formatDate(iso: string): string {
   }).format(new Date(iso + 'T00:00:00'));
 }
 
-function formatRate(rate: string | null): string {
+function formatRate(rate: string | null, isFree?: boolean): string {
+  if (isFree) return 'Free';
   if (!rate) return '—';
   const c = (parseFloat(rate) * 100).toFixed(2);
   return `${c}¢`;
@@ -41,7 +46,6 @@ function formatStandingCharge(amount: string, unit: string): string {
   return `€${val}`;
 }
 
-/** Days until a local date string (YYYY-MM-DD). Negative = already past. */
 function daysUntil(localDate: string): number {
   const target = new Date(localDate + 'T00:00:00');
   const now = new Date();
@@ -49,11 +53,222 @@ function daysUntil(localDate: string): number {
   return Math.ceil((target.getTime() - now.getTime()) / 86_400_000);
 }
 
-// Slot index → HH:MM label (every 3 hours for axis labels)
 function slotToTime(slot: number): string {
-  const h = Math.floor(slot / 2);
+  const h = Math.floor((slot % 48) / 2);
   const m = slot % 2 === 0 ? '00' : '30';
   return `${String(h).padStart(2, '0')}:${m}`;
+}
+
+// ---------------------------------------------------------------------------
+// Scheme derivation
+// Groups the 7 days (Mon=0 … Sun=6) by identical 48-slot pattern.
+// Returns one entry per unique pattern, sorted by first day index.
+// ---------------------------------------------------------------------------
+
+type TariffScheme = {
+  /** Day indices (0=Mon … 6=Sun) that share this pattern. */
+  days: number[];
+  /** The 48-slot pattern (period IDs). */
+  slots: string[];
+  /** Price periods that actually appear in this scheme's slots. */
+  periods: PricePeriod[];
+};
+
+function deriveSchemes(schedule: string[], allPeriods: PricePeriod[]): TariffScheme[] {
+  const periodMap = new Map(allPeriods.map((p) => [p.id, p]));
+  // Represent each day's pattern as a stable string key for grouping
+  const dayPatterns: string[] = Array.from({ length: 7 }, (_, d) =>
+    schedule.slice(d * 48, d * 48 + 48).join(','),
+  );
+
+  const seen = new Map<string, number>(); // pattern key → scheme index
+  const schemes: TariffScheme[] = [];
+
+  for (let d = 0; d < 7; d++) {
+    const key = dayPatterns[d];
+    if (seen.has(key)) {
+      schemes[seen.get(key)!].days.push(d);
+    } else {
+      const slots = schedule.slice(d * 48, d * 48 + 48);
+      const uniqueIds = [...new Set(slots)];
+      const periods = uniqueIds
+        .map((id) => periodMap.get(id))
+        .filter((p): p is PricePeriod => p !== undefined)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+      seen.set(key, schemes.length);
+      schemes.push({ days: [d], slots, periods });
+    }
+  }
+
+  return schemes;
+}
+
+// ---------------------------------------------------------------------------
+// Scheme block: day pills + one row per period with 48-slot activity bar
+// ---------------------------------------------------------------------------
+
+const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const TIME_AXIS   = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+
+function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
+  const daySet = new Set(scheme.days);
+
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-4">
+      {/* Day pills */}
+      <div className="flex items-center gap-1.5 mb-4">
+        {DAY_LETTERS.map((letter, i) => {
+          const active = daySet.has(i);
+          return (
+            <span
+              key={i}
+              className={[
+                'inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
+                active
+                  ? 'bg-slate-600 text-slate-100'
+                  : 'bg-slate-800/50 text-slate-600',
+              ].join(' ')}
+            >
+              {letter}
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Period rows */}
+      <div className="flex flex-col gap-2.5">
+        {scheme.periods.map((period) => (
+          <div key={period.id} className="flex items-center gap-3">
+            {/* Label */}
+            <div className="w-28 sm:w-36 shrink-0 flex items-center gap-2">
+              <span
+                className="h-2.5 w-2.5 rounded-sm shrink-0"
+                style={{ backgroundColor: period.colourHex ?? '#64748b' }}
+              />
+              <span className="text-xs font-medium text-slate-300 truncate">
+                {period.periodLabel}
+              </span>
+              <span className="text-xs text-slate-500 tabular-nums shrink-0">
+                {formatRate(period.ratePerKwh, period.isFreeImport)}
+              </span>
+            </div>
+
+            {/* Activity bar — 48 slots, coloured where this period is active */}
+            <div className="flex flex-1 gap-[1.5px]">
+              {scheme.slots.map((slotPeriodId, slot) => {
+                const isActive = slotPeriodId === period.id;
+                return (
+                  <div
+                    key={slot}
+                    className="flex-1 rounded-[1.5px] md:rounded-[2px]"
+                    style={{
+                      height: 18,
+                      backgroundColor: isActive
+                        ? (period.colourHex ?? '#64748b')
+                        : '#1e293b',
+                      opacity: isActive ? 0.88 : 1,
+                    }}
+                    title={`${slotToTime(slot)}–${slotToTime(slot + 1)}`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Time axis — 8 labels, each spanning 6 slots (3 hours) */}
+      <div className="flex mt-2 pl-[7.5rem] sm:pl-[9.5rem]">
+        {TIME_AXIS.map((t) => (
+          <div key={t} className="flex-1 text-[9px] text-slate-600 tabular-nums">
+            {t}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Schedule section: derives and renders all scheme blocks
+// ---------------------------------------------------------------------------
+
+function ScheduleSection({
+  version,
+}: {
+  version: TariffVersionDetail;
+}) {
+  const hasSchedule =
+    version.weeklyScheduleJson !== null && version.pricePeriods.length > 0;
+
+  if (!hasSchedule) {
+    // Legacy fallback — no schedule JSON, show rate window tiles
+    return <LegacyRateBands version={version} />;
+  }
+
+  const schemes = deriveSchemes(version.weeklyScheduleJson!, version.pricePeriods);
+
+  return (
+    <div>
+      <p className="text-xs font-medium text-slate-400 mb-3">Weekly schedule</p>
+      <div className="flex flex-col gap-3">
+        {schemes.map((scheme, i) => (
+          <TariffSchemeBlock key={i} scheme={scheme} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Legacy rate window fallback (no weeklyScheduleJson)
+// ---------------------------------------------------------------------------
+
+function LegacyRateBands({ version }: { version: TariffVersionDetail }) {
+  const bands = [
+    {
+      label: 'Night',
+      time: `${version.nightStartLocalTime ?? '23:00'}–${version.nightEndLocalTime ?? '08:00'}`,
+      rate: version.nightRate,
+      colour: '#3b82f6',
+    },
+    {
+      label: 'Day',
+      time: `${version.nightEndLocalTime ?? '08:00'}–${version.peakStartLocalTime ?? '17:00'}`,
+      rate: version.dayRate,
+      colour: '#f59e0b',
+    },
+    {
+      label: 'Peak',
+      time: `${version.peakStartLocalTime ?? '17:00'}–${version.peakEndLocalTime ?? '19:00'}`,
+      rate: version.peakRate,
+      colour: '#ef4444',
+    },
+  ].filter((b) => b.rate);
+
+  return (
+    <div>
+      <p className="text-xs font-medium text-slate-400 mb-2">Rate windows</p>
+      <div className="flex flex-wrap gap-2">
+        {bands.map((b, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
+          >
+            <span
+              className="inline-block h-2 w-2 rounded-sm shrink-0"
+              style={{ backgroundColor: b.colour }}
+            />
+            <div>
+              <p className="text-xs font-medium text-slate-200">{b.label}</p>
+              <p className="text-[10px] text-slate-500">{b.time}</p>
+              <p className="text-xs text-slate-300 tabular-nums">{formatRate(b.rate)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -62,11 +277,11 @@ function slotToTime(slot: number): string {
 
 function ContractBanner({ contract }: { contract: ContractInfo }) {
   const reviewDays = contract.expectedReviewDate ? daysUntil(contract.expectedReviewDate) : null;
-  const endDays = contract.contractEndDate ? daysUntil(contract.contractEndDate) : null;
+  const endDays    = contract.contractEndDate    ? daysUntil(contract.contractEndDate)    : null;
 
-  const isExpired = endDays !== null && endDays < 0;
-  const endingSoon = !isExpired && endDays !== null && endDays <= 90;
-  const reviewSoon = !isExpired && reviewDays !== null && reviewDays >= 0 && reviewDays <= 60;
+  const isExpired   = endDays !== null && endDays < 0;
+  const endingSoon  = !isExpired && endDays !== null && endDays <= 90;
+  const reviewSoon  = !isExpired && reviewDays !== null && reviewDays >= 0 && reviewDays <= 60;
 
   if (!isExpired && !endingSoon && !reviewSoon) return null;
 
@@ -76,9 +291,7 @@ function ContractBanner({ contract }: { contract: ContractInfo }) {
     <div
       className={[
         'flex items-start gap-3 rounded-2xl border px-4 py-3.5',
-        isUrgent
-          ? 'border-red-800/40 bg-red-950/30'
-          : 'border-amber-700/30 bg-amber-950/20',
+        isUrgent ? 'border-red-800/40 bg-red-950/30' : 'border-amber-700/30 bg-amber-950/20',
       ].join(' ')}
     >
       <AlertTriangle
@@ -117,176 +330,7 @@ function ContractBanner({ contract }: { contract: ContractInfo }) {
 }
 
 // ---------------------------------------------------------------------------
-// Price period legend
-// ---------------------------------------------------------------------------
-
-function PeriodLegend({ periods }: { periods: PricePeriod[] }) {
-  return (
-    <div className="flex flex-wrap gap-3">
-      {periods.map((p) => (
-        <div key={p.id} className="flex items-center gap-1.5">
-          <span
-            className="inline-block h-2.5 w-2.5 rounded-sm"
-            style={{ backgroundColor: p.colourHex ?? '#64748b' }}
-          />
-          <span className="text-xs text-slate-300">{p.periodLabel}</span>
-          <span className="text-xs text-slate-500">{formatRate(p.ratePerKwh)}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Weekly schedule preview (schedule-based)
-// 7 rows (Mon–Sun) × 48 columns (half-hours), each cell coloured by period
-// ---------------------------------------------------------------------------
-
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-// Show tick marks every 6 slots (3 hours): 00, 06, 12, 18, 24, 30, 36, 42
-const AXIS_TICKS = [0, 6, 12, 18, 24, 30, 36, 42, 48];
-
-function WeeklyScheduleGrid({
-  schedule,
-  periods,
-}: {
-  schedule: string[];
-  periods: PricePeriod[];
-}) {
-  const colourMap = new Map(periods.map((p) => [p.id, p.colourHex ?? '#64748b']));
-
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-medium text-slate-400">Weekly schedule</span>
-      </div>
-
-      {/* Grid */}
-      <div className="overflow-x-auto">
-        <div style={{ minWidth: 360 }}>
-          {/* Time axis */}
-          <div className="flex mb-1 pl-8">
-            {AXIS_TICKS.map((tick) => (
-              <div
-                key={tick}
-                className="text-[9px] text-slate-600 tabular-nums"
-                style={{ width: `${(100 / 48) * (tick === 48 ? 0 : 1)}%`, flexShrink: 0 }}
-              >
-                {tick < 48 ? slotToTime(tick) : ''}
-              </div>
-            ))}
-          </div>
-
-          {/* Day rows */}
-          {DAY_LABELS.map((day, dayIdx) => (
-            <div key={day} className="flex items-center gap-1 mb-0.5">
-              <span className="w-7 shrink-0 text-[10px] text-slate-500 text-right pr-1">{day}</span>
-              <div className="flex flex-1 gap-px">
-                {Array.from({ length: 48 }, (_, slot) => {
-                  const periodId = schedule[dayIdx * 48 + slot];
-                  const colour = colourMap.get(periodId) ?? '#1e293b';
-                  return (
-                    <div
-                      key={slot}
-                      className="flex-1 rounded-[1px]"
-                      style={{
-                        height: 12,
-                        backgroundColor: colour,
-                        opacity: 0.85,
-                      }}
-                      title={`${day} ${slotToTime(slot)}–${slotToTime(slot + 1)}`}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {/* Bottom axis labels at select positions */}
-          <div className="flex mt-1 pl-8">
-            {AXIS_TICKS.slice(0, -1).map((tick) => (
-              <div
-                key={tick}
-                className="text-[9px] text-slate-600 tabular-nums"
-                style={{ width: `${(100 / 48) * 6}%` }}
-              >
-                {slotToTime(tick)}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-3">
-        <PeriodLegend periods={periods} />
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Legacy rate window fallback (when no weeklyScheduleJson)
-// Shows horizontal bands: night / day / peak / day / night across 24h
-// ---------------------------------------------------------------------------
-
-function LegacyRateBands({ version }: { version: TariffVersionDetail }) {
-  const hasPeriods = version.pricePeriods.length > 0;
-  if (hasPeriods) return null; // shouldn't reach here, but guard
-
-  const bands = [
-    {
-      label: 'Night',
-      time: `${version.nightStartLocalTime ?? '23:00'}–${version.nightEndLocalTime ?? '08:00'}`,
-      rate: version.nightRate,
-      colour: '#3b82f6',
-    },
-    {
-      label: 'Day',
-      time: `${version.nightEndLocalTime ?? '08:00'}–${version.peakStartLocalTime ?? '17:00'}`,
-      rate: version.dayRate,
-      colour: '#f59e0b',
-    },
-    {
-      label: 'Peak',
-      time: `${version.peakStartLocalTime ?? '17:00'}–${version.peakEndLocalTime ?? '19:00'}`,
-      rate: version.peakRate,
-      colour: '#ef4444',
-    },
-    {
-      label: 'Day',
-      time: `${version.peakEndLocalTime ?? '19:00'}–${version.nightStartLocalTime ?? '23:00'}`,
-      rate: version.dayRate,
-      colour: '#f59e0b',
-    },
-  ].filter((b) => b.rate);
-
-  return (
-    <div>
-      <p className="text-xs font-medium text-slate-400 mb-2">Rate windows</p>
-      <div className="flex flex-wrap gap-2">
-        {bands.map((b, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
-          >
-            <span
-              className="inline-block h-2 w-2 rounded-sm"
-              style={{ backgroundColor: b.colour }}
-            />
-            <div>
-              <p className="text-xs font-medium text-slate-200">{b.label}</p>
-              <p className="text-[10px] text-slate-500">{b.time}</p>
-              <p className="text-xs text-slate-300 tabular-nums">{formatRate(b.rate)}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Current tariff card
+// Active tariff card
 // ---------------------------------------------------------------------------
 
 function CurrentTariffCard({
@@ -300,8 +344,8 @@ function CurrentTariffCard({
   planName: string;
   isExportEnabled: boolean;
 }) {
-  const hasSchedule = version.weeklyScheduleJson !== null && version.pricePeriods.length > 0;
-  const standingCharge = version.fixedCharges.find((c) => c.chargeType === 'standing_charge') ?? null;
+  const standingCharge =
+    version.fixedCharges.find((c) => c.chargeType === 'standing_charge') ?? null;
 
   return (
     <div className="rounded-[20px] border border-emerald-800/30 bg-[#0d1f18] p-5 shadow-[0_8px_30px_rgba(2,6,23,0.25)]">
@@ -328,7 +372,7 @@ function CurrentTariffCard({
         </Link>
       </div>
 
-      {/* Validity and meta */}
+      {/* Meta */}
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
         <span>
           From <span className="text-slate-300">{formatDate(version.validFromLocalDate)}</span>
@@ -342,7 +386,7 @@ function CurrentTariffCard({
         )}
         {isExportEnabled && version.exportRate && (
           <span>
-            Export <span className="text-slate-300">{formatRate(version.exportRate)}</span>
+            Export <span className="text-slate-300 tabular-nums">{formatRate(version.exportRate)}</span>
           </span>
         )}
         {standingCharge && (
@@ -358,28 +402,24 @@ function CurrentTariffCard({
         )}
         {version.vatRate && (
           <span>
-            VAT <span className="text-slate-300">{(parseFloat(version.vatRate) * 100).toFixed(0)}%</span>
+            VAT{' '}
+            <span className="text-slate-300">
+              {(parseFloat(version.vatRate) * 100).toFixed(0)}%
+            </span>
           </span>
         )}
       </div>
 
-      {/* Schedule preview or legacy bands */}
+      {/* Schedule */}
       <div className="mt-5 pt-4 border-t border-slate-800/60">
-        {hasSchedule ? (
-          <WeeklyScheduleGrid
-            schedule={version.weeklyScheduleJson!}
-            periods={version.pricePeriods}
-          />
-        ) : (
-          <LegacyRateBands version={version} />
-        )}
+        <ScheduleSection version={version} />
       </div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Version timeline
+// Version history timeline
 // ---------------------------------------------------------------------------
 
 function VersionTimeline({ versions }: { versions: TariffVersionSummary[] }) {
@@ -412,11 +452,9 @@ function VersionTimeline({ versions }: { versions: TariffVersionSummary[] }) {
                   : 'border-slate-800/60 bg-slate-900/40',
               ].join(' ')}
             >
-              {/* Timeline connector line */}
               {i < versions.length - 1 && (
                 <div className="absolute left-[1.65rem] top-full h-2 w-px bg-slate-800" />
               )}
-
               <div
                 className={[
                   'mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full border',
@@ -425,7 +463,6 @@ function VersionTimeline({ versions }: { versions: TariffVersionSummary[] }) {
                     : 'border-slate-600 bg-slate-700',
                 ].join(' ')}
               />
-
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div>
@@ -449,24 +486,21 @@ function VersionTimeline({ versions }: { versions: TariffVersionSummary[] }) {
                     </span>
                   )}
                 </div>
-
-                {/* Key rates */}
-                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500">
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500">
                   {v.dayRate && (
-                    <span>Day <span className="text-slate-300">{formatRate(v.dayRate)}</span></span>
+                    <span>Day <span className="text-slate-300 tabular-nums">{formatRate(v.dayRate)}</span></span>
                   )}
                   {v.nightRate && (
-                    <span>Night <span className="text-slate-300">{formatRate(v.nightRate)}</span></span>
+                    <span>Night <span className="text-slate-300 tabular-nums">{formatRate(v.nightRate)}</span></span>
                   )}
                   {v.peakRate && (
-                    <span>Peak <span className="text-slate-300">{formatRate(v.peakRate)}</span></span>
+                    <span>Peak <span className="text-slate-300 tabular-nums">{formatRate(v.peakRate)}</span></span>
                   )}
                   {v.exportRate && (
-                    <span>Export <span className="text-slate-300">{formatRate(v.exportRate)}</span></span>
+                    <span>Export <span className="text-slate-300 tabular-nums">{formatRate(v.exportRate)}</span></span>
                   )}
                 </div>
               </div>
-
               {!isCurrent && (
                 <Link
                   href="#"
@@ -513,12 +547,11 @@ function EmptyState() {
 
 export default async function TariffsPage() {
   const data = await loadTariffOverview(SEED_INSTALLATION_ID);
-
   const isEmpty = !data.plan || data.allVersions.length === 0;
 
   return (
-    <div className="max-w-2xl">
-      {/* Page header */}
+    <div>
+      {/* Header */}
       <div className="flex items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2">
           <Receipt size={18} className="text-slate-400" />
@@ -544,10 +577,8 @@ export default async function TariffsPage() {
         <EmptyState />
       ) : (
         <div className="flex flex-col gap-6">
-          {/* Contract reminder banner */}
           {data.contract && <ContractBanner contract={data.contract} />}
 
-          {/* Current tariff */}
           {data.activeVersion && (
             <CurrentTariffCard
               version={data.activeVersion}
@@ -557,17 +588,16 @@ export default async function TariffsPage() {
             />
           )}
 
-          {/* Version history */}
           {data.allVersions.length > 0 && (
             <VersionTimeline versions={data.allVersions} />
           )}
 
-          {/* Info note */}
           <div className="flex items-start gap-2.5 rounded-2xl border border-slate-800/60 bg-slate-900/30 px-4 py-3.5">
             <Info size={13} className="mt-0.5 shrink-0 text-slate-500" />
             <p className="text-xs text-slate-500 leading-relaxed">
-              Editing a tariff version will trigger a recalculation of all historical cost and savings
-              figures that fall within that version's date range. This may take a few moments.
+              Editing a tariff version will trigger a recalculation of all historical cost and
+              savings figures that fall within that version's date range. This may take a few
+              moments.
             </p>
           </div>
         </div>

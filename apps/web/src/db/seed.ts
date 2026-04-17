@@ -29,26 +29,38 @@ const PRICE_PERIOD_DAY_ID    = '00000000-0000-0000-0000-000000000010';
 const PRICE_PERIOD_NIGHT_ID  = '00000000-0000-0000-0000-000000000011';
 const PRICE_PERIOD_PEAK_ID   = '00000000-0000-0000-0000-000000000012';
 const INSTALLATION_CONTRACT_ID = '00000000-0000-0000-0000-000000000013';
+const PRICE_PERIOD_FREE_ID   = '00000000-0000-0000-0000-000000000014';
 
 // ---------------------------------------------------------------------------
 // Weekly schedule JSON for tariff version 2
 // 336 elements (7 days × 48 half-hours, Mon=0, slot 0 = 00:00–00:30)
-// Night: 23:00–08:00 → slots 46–47 + 0–15  → PRICE_PERIOD_NIGHT_ID
-// Peak:  17:00–19:00 → slots 34–37           → PRICE_PERIOD_PEAK_ID
-// Day:   everything else                     → PRICE_PERIOD_DAY_ID
+//
+// Mon–Fri + Sun (days 0–4, 6) — standard Night/Day/Peak pattern:
+//   Night: 00:00–08:00 (slots 0–15) and 23:00–00:00 (slots 46–47)
+//   Peak:  17:00–19:00 (slots 34–37)
+//   Day:   everything else
+//
+// Saturday (day 5) — free energy midday:
+//   Night: 00:00–08:00 (slots 0–15) and 23:00–00:00 (slots 46–47)
+//   Day:   08:00–10:00 (slots 16–19) and 16:00–23:00 (slots 32–45)
+//   Free:  10:00–16:00 (slots 20–31)  isFreeImport
 // ---------------------------------------------------------------------------
 function buildWeeklySchedule(): string[] {
   const schedule: string[] = [];
   for (let day = 0; day < 7; day++) {
+    const isSaturday = day === 5;
     for (let slot = 0; slot < 48; slot++) {
       const isNight = slot <= 15 || slot >= 46;
-      const isPeak  = slot >= 34 && slot <= 37;
       if (isNight) {
         schedule.push(PRICE_PERIOD_NIGHT_ID);
-      } else if (isPeak) {
-        schedule.push(PRICE_PERIOD_PEAK_ID);
+      } else if (isSaturday) {
+        // Saturday: free 10:00–16:00, day otherwise
+        const isFree = slot >= 20 && slot <= 31;
+        schedule.push(isFree ? PRICE_PERIOD_FREE_ID : PRICE_PERIOD_DAY_ID);
       } else {
-        schedule.push(PRICE_PERIOD_DAY_ID);
+        // Mon–Fri + Sun: peak 17:00–19:00, day otherwise
+        const isPeak = slot >= 34 && slot <= 37;
+        schedule.push(isPeak ? PRICE_PERIOD_PEAK_ID : PRICE_PERIOD_DAY_ID);
       }
     }
   }
@@ -398,6 +410,15 @@ async function seed() {
         isFreeImport: false,
         sortOrder: 2,
         colourHex: '#ef4444',
+      },
+      {
+        id: PRICE_PERIOD_FREE_ID,
+        tariffPlanVersionId: TARIFF_VERSION_2_ID,
+        periodLabel: 'Free',
+        ratePerKwh: '0.0000',
+        isFreeImport: true,
+        sortOrder: 3,
+        colourHex: '#22c55e',
       },
     ]).onConflictDoUpdate({
       target: tariffPricePeriods.id,
