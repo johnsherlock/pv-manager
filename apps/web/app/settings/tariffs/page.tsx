@@ -115,22 +115,33 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-4">
-      {/* Day pills */}
-      <div className="flex items-center gap-2 mb-4">
+      {/* Day pills — inline styles guarantee exact 40 × 40 px circles on every device */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         {DAY_LETTERS.map((letter, i) => {
           const active = daySet.has(i);
           return (
-            <span
+            <div
               key={i}
-              className={[
-                'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
-                active
-                  ? 'bg-slate-600 text-slate-100'
-                  : 'bg-slate-800 text-slate-600',
-              ].join(' ')}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 13,
+                fontWeight: 600,
+                lineHeight: 1,
+                userSelect: 'none',
+                backgroundColor: active ? '#475569' : '#1e293b',
+                color: active ? '#f1f5f9' : '#64748b',
+                // Inactive pills keep a faint ring so all circles read the same visual weight
+                boxShadow: active ? 'none' : 'inset 0 0 0 1.5px #334155',
+              }}
             >
               {letter}
-            </span>
+            </div>
           );
         })}
       </div>
@@ -172,25 +183,40 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
                     </span>
                   </div>
 
-                  {/* Activity bar */}
-                  <div className="flex flex-1 gap-[1.5px]">
-                    {scheme.slots.map((slotPeriodId, slot) => {
-                      const isActive = slotPeriodId === period.id;
-                      return (
-                        <div
-                          key={slot}
-                          className="flex-1 rounded-[1.5px] md:rounded-[2px]"
-                          style={{
-                            height: 20,
-                            backgroundColor: isActive
-                              ? (period.colourHex ?? '#64748b')
-                              : '#1e293b',
-                            opacity: isActive ? 0.88 : 1,
-                          }}
-                          title={`${slotToTime(slot)}–${slotToTime(slot + 1)}`}
-                        />
-                      );
-                    })}
+                  {/* Activity bar with 2-hour separator lines overlaid */}
+                  <div className="relative flex-1">
+                    <div className="flex gap-[1.5px]">
+                      {scheme.slots.map((slotPeriodId, slot) => {
+                        const isActive = slotPeriodId === period.id;
+                        return (
+                          <div
+                            key={slot}
+                            className="flex-1 rounded-[1.5px] md:rounded-[2px]"
+                            style={{
+                              height: 20,
+                              backgroundColor: isActive
+                                ? (period.colourHex ?? '#64748b')
+                                : '#1e293b',
+                              opacity: isActive ? 0.88 : 1,
+                            }}
+                            title={`${slotToTime(slot)}–${slotToTime(slot + 1)}`}
+                          />
+                        );
+                      })}
+                    </div>
+                    {/* Subtle vertical lines every 4 slots (every 2 hours) */}
+                    <div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        backgroundImage: `repeating-linear-gradient(
+                          to right,
+                          transparent 0%,
+                          transparent calc(${(100 / 12).toFixed(4)}% - 1px),
+                          rgba(255,255,255,0.10) calc(${(100 / 12).toFixed(4)}% - 1px),
+                          rgba(255,255,255,0.10) ${(100 / 12).toFixed(4)}%
+                        )`,
+                      }}
+                    />
                   </div>
                 </div>
               </div>
