@@ -136,49 +136,65 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
       </div>
 
       {/* Period rows */}
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-3">
         {scheme.periods.map((period) => (
-          <div key={period.id} className="flex items-center gap-3">
-            {/* Label */}
-            <div className="w-28 sm:w-36 shrink-0 flex items-center gap-2">
+          <div key={period.id}>
+            {/* Label: stacks above bar on mobile, sits left of bar on desktop */}
+            <div className="flex items-center gap-2 mb-1.5 md:hidden">
               <span
                 className="h-2.5 w-2.5 rounded-sm shrink-0"
                 style={{ backgroundColor: period.colourHex ?? '#64748b' }}
               />
-              <span className="text-xs font-medium text-slate-300 truncate">
+              <span className="text-xs font-medium text-slate-300">
                 {period.periodLabel}
               </span>
-              <span className="text-xs text-slate-500 tabular-nums shrink-0">
+              <span className="text-xs text-slate-500 tabular-nums">
                 {formatRate(period.ratePerKwh, period.isFreeImport)}
               </span>
             </div>
 
-            {/* Activity bar — 48 slots, coloured where this period is active */}
-            <div className="flex flex-1 gap-[1.5px]">
-              {scheme.slots.map((slotPeriodId, slot) => {
-                const isActive = slotPeriodId === period.id;
-                return (
-                  <div
-                    key={slot}
-                    className="flex-1 rounded-[1.5px] md:rounded-[2px]"
-                    style={{
-                      height: 18,
-                      backgroundColor: isActive
-                        ? (period.colourHex ?? '#64748b')
-                        : '#1e293b',
-                      opacity: isActive ? 0.88 : 1,
-                    }}
-                    title={`${slotToTime(slot)}–${slotToTime(slot + 1)}`}
-                  />
-                );
-              })}
+            <div className="flex items-center gap-3">
+              {/* Desktop-only left label */}
+              <div className="hidden md:flex w-36 shrink-0 items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 rounded-sm shrink-0"
+                  style={{ backgroundColor: period.colourHex ?? '#64748b' }}
+                />
+                <span className="text-xs font-medium text-slate-300 truncate">
+                  {period.periodLabel}
+                </span>
+                <span className="text-xs text-slate-500 tabular-nums shrink-0">
+                  {formatRate(period.ratePerKwh, period.isFreeImport)}
+                </span>
+              </div>
+
+              {/* Activity bar — full width on mobile, flex-1 on desktop */}
+              <div className="flex flex-1 gap-[1.5px]">
+                {scheme.slots.map((slotPeriodId, slot) => {
+                  const isActive = slotPeriodId === period.id;
+                  return (
+                    <div
+                      key={slot}
+                      className="flex-1 rounded-[1.5px] md:rounded-[2px]"
+                      style={{
+                        height: 18,
+                        backgroundColor: isActive
+                          ? (period.colourHex ?? '#64748b')
+                          : '#1e293b',
+                        opacity: isActive ? 0.88 : 1,
+                      }}
+                      title={`${slotToTime(slot)}–${slotToTime(slot + 1)}`}
+                    />
+                  );
+                })}
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Time axis — 8 labels, each spanning 6 slots (3 hours) */}
-      <div className="flex mt-2 pl-[7.5rem] sm:pl-[9.5rem]">
+      {/* Time axis — full width on mobile, offset by label column on desktop */}
+      <div className="flex mt-2 md:pl-[9.5rem]">
         {TIME_AXIS.map((t) => (
           <div key={t} className="flex-1 text-[9px] text-slate-600 tabular-nums">
             {t}
