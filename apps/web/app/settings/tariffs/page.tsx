@@ -112,7 +112,7 @@ const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const SLOT_COUNT = 48;
 const MOBILE_SLOT_WIDTH = 12;
 const SLOT_GAP = 2;
-const SLOT_HEIGHT_MOBILE = 18;
+const SLOT_HEIGHT_MOBILE = 24;
 const DAY_PILL_SIZE = 42;
 const DESKTOP_LABEL_WIDTH = 250;
 const TWO_HOUR_MARKERS = Array.from({ length: 13 }, (_, i) => i * 2); // 0..24
@@ -125,6 +125,10 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
   const daySet = new Set(scheme.days);
   const mobileWidth = gridWidth(MOBILE_SLOT_WIDTH);
   const railInnerWidth = mobileWidth - MOBILE_SLOT_WIDTH; // 24 sits on the far edge
+  const ACTIVE_SLOT_FILL = '#3f4f67';
+  const ACTIVE_SLOT_BORDER = 'rgba(235,248,255,0.35)';
+  const INACTIVE_SLOT_FILL = '#27324a';
+  const INACTIVE_SLOT_BORDER = 'rgba(255,255,255,0.06)';
 
   const renderPeriodControls = (period: PricePeriod) => (
     <>
@@ -219,13 +223,12 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
                         return (
                           <div
                             key={slot}
-                            className="rounded-[2px] md:rounded-[3px]"
+                            className="rounded-[1px]"
                             style={{
                               height: SLOT_HEIGHT_MOBILE,
-                              backgroundColor: isActive
-                                ? (period.colourHex ?? '#64748b')
-                                : '#1e293b',
-                              opacity: isActive ? 0.88 : 1,
+                              backgroundColor: isActive ? ACTIVE_SLOT_FILL : INACTIVE_SLOT_FILL,
+                              border: `1px solid ${isActive ? ACTIVE_SLOT_BORDER : INACTIVE_SLOT_BORDER}`,
+                              boxSizing: 'border-box',
                             }}
                             title={`${slotToTime(slot)}–${slotToTime(slot + 1)}`}
                           />
@@ -244,12 +247,12 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
                       return (
                         <div
                           key={hour}
-                          className="pointer-events-none absolute inset-y-[-3px] w-px -translate-x-1/2"
+                          className="pointer-events-none absolute inset-y-[-8px] w-px -translate-x-1/2"
                           style={{
                             left,
                             backgroundImage: `repeating-linear-gradient(
                               to bottom,
-                              ${isStrong ? 'rgba(255,255,255,0.78)' : 'rgba(255,255,255,0.42)'} 0 6px,
+                              ${isStrong ? 'rgba(74,222,128,0.95)' : 'rgba(74,222,128,0.58)'} 0 6px,
                               transparent 6px 10px
                             )`,
                           }}
@@ -288,8 +291,19 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
               })}
             </div>
           </div>
-
         </div>
+      </div>
+
+      <div className="mt-4">
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300"
+        >
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-emerald-400">
+            <Plus size={16} />
+          </span>
+          <span>Add price period</span>
+        </button>
       </div>
     </div>
   );
