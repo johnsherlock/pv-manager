@@ -676,7 +676,7 @@ export default async function TariffsPage() {
         )}
       </div>
 
-      <p className="text-sm text-slate-400 leading-relaxed max-w-prose mb-8">
+      <p className="text-sm text-slate-400 leading-relaxed mb-8">
         Manage your electricity tariff history — import rates, export rates, standing charges,
         and contract dates. Tariff data is required for all cost and savings calculations.
       </p>
