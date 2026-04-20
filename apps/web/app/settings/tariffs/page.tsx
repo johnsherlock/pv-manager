@@ -234,16 +234,25 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
                     </div>
                     {TWO_HOUR_MARKERS.map((hour) => {
                       const slotIndex = hour * 2;
-                      const left = Math.max(0, Math.min(mobileWidth, slotIndex * (MOBILE_SLOT_WIDTH + SLOT_GAP)));
+                      const left =
+                        hour === 0
+                          ? -SLOT_GAP / 2
+                          : hour === 24
+                            ? mobileWidth + SLOT_GAP / 2
+                            : slotIndex * (MOBILE_SLOT_WIDTH + SLOT_GAP) - SLOT_GAP / 2;
                       const isStrong = hour % 6 === 0;
                       return (
                         <div
                           key={hour}
-                          className={[
-                            'pointer-events-none absolute inset-y-[-3px] border-l-2 border-dashed',
-                            isStrong ? 'border-white/70' : 'border-white/35',
-                          ].join(' ')}
-                          style={{ left }}
+                          className="pointer-events-none absolute inset-y-[-3px] w-px -translate-x-1/2"
+                          style={{
+                            left,
+                            backgroundImage: `repeating-linear-gradient(
+                              to bottom,
+                              ${isStrong ? 'rgba(255,255,255,0.78)' : 'rgba(255,255,255,0.42)'} 0 6px,
+                              transparent 6px 10px
+                            )`,
+                          }}
                         />
                       );
                     })}
