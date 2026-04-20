@@ -7,6 +7,7 @@ import {
   ArrowRight,
   CheckCircle2,
   History,
+  X,
 } from 'lucide-react';
 import { loadTariffOverview } from '@/src/tariffs/loader';
 import type {
@@ -108,12 +109,13 @@ function deriveSchemes(schedule: string[], allPeriods: PricePeriod[]): TariffSch
 // ---------------------------------------------------------------------------
 
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const TIME_AXIS   = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
 const SLOT_COUNT = 48;
 const MOBILE_SLOT_WIDTH = 12;
 const SLOT_GAP = 2;
 const SLOT_HEIGHT_MOBILE = 18;
 const DAY_PILL_SIZE = 42;
+const DESKTOP_LABEL_WIDTH = 250;
+const TWO_HOUR_MARKERS = Array.from({ length: 13 }, (_, i) => i * 2); // 0..24
 
 function gridWidth(slotWidth: number): number {
   return SLOT_COUNT * slotWidth + (SLOT_COUNT - 1) * SLOT_GAP;
@@ -122,6 +124,31 @@ function gridWidth(slotWidth: number): number {
 function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
   const daySet = new Set(scheme.days);
   const mobileWidth = gridWidth(MOBILE_SLOT_WIDTH);
+  const railInnerWidth = mobileWidth - MOBILE_SLOT_WIDTH; // 24 sits on the far edge
+
+  const renderPeriodControls = (period: PricePeriod) => (
+    <>
+      <div className="relative">
+        <span
+          className="pointer-events-none absolute left-2.5 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-sm"
+          style={{ backgroundColor: period.colourHex ?? '#64748b' }}
+        />
+        <div className="flex h-9 min-w-[88px] items-center rounded-xl border border-slate-700 bg-slate-950/70 pl-6 pr-3 text-sm font-medium text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+          {period.periodLabel}
+        </div>
+      </div>
+      <div className="flex h-9 min-w-[82px] items-center justify-between rounded-xl border border-slate-700 bg-slate-950/70 px-3 text-sm font-medium text-slate-100 tabular-nums shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <span>{formatRate(period.ratePerKwh, period.isFreeImport)}</span>
+      </div>
+      <button
+        type="button"
+        aria-label={`Remove ${period.periodLabel}`}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-950/70 text-slate-400 transition-colors hover:border-slate-500 hover:text-slate-200"
+      >
+        <X size={14} />
+      </button>
+    </>
+  );
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-4">
@@ -166,33 +193,15 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
           <div className="flex flex-col gap-3">
             {scheme.periods.map((period) => (
               <div key={period.id}>
-                {/* Mobile label — above the bar */}
-                <div className="flex items-center gap-2 mb-1.5 md:hidden">
-                  <span
-                    className="h-2.5 w-2.5 rounded-sm shrink-0"
-                    style={{ backgroundColor: period.colourHex ?? '#64748b' }}
-                  />
-                  <span className="text-xs font-medium text-slate-300">
-                    {period.periodLabel}
-                  </span>
-                  <span className="text-xs text-slate-500 tabular-nums">
-                    {formatRate(period.ratePerKwh, period.isFreeImport)}
-                  </span>
+                {/* Mobile controls */}
+                <div className="mb-2 flex items-center gap-2 md:hidden">
+                  {renderPeriodControls(period)}
                 </div>
 
                 <div className="flex items-center gap-3">
                   {/* Desktop-only left label */}
-                  <div className="hidden md:flex w-36 shrink-0 items-center gap-2">
-                    <span
-                      className="h-2.5 w-2.5 rounded-sm shrink-0"
-                      style={{ backgroundColor: period.colourHex ?? '#64748b' }}
-                    />
-                    <span className="text-xs font-medium text-slate-300 truncate">
-                      {period.periodLabel}
-                    </span>
-                    <span className="text-xs text-slate-500 tabular-nums shrink-0">
-                      {formatRate(period.ratePerKwh, period.isFreeImport)}
-                    </span>
+                  <div className="hidden md:flex shrink-0 items-center gap-2" style={{ width: DESKTOP_LABEL_WIDTH }}>
+                    {renderPeriodControls(period)}
                   </div>
 
                   {/* Activity bar with deterministic slot geometry and 2-hour markers */}
@@ -223,14 +232,18 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
                         );
                       })}
                     </div>
-                    {Array.from({ length: 11 }).map((_, idx) => {
-                      const slotIndex = (idx + 1) * 4;
-                      const mobileLeft = slotIndex * MOBILE_SLOT_WIDTH + slotIndex * SLOT_GAP - SLOT_GAP / 2;
+                    {TWO_HOUR_MARKERS.map((hour) => {
+                      const slotIndex = hour * 2;
+                      const left = Math.max(0, Math.min(mobileWidth, slotIndex * (MOBILE_SLOT_WIDTH + SLOT_GAP)));
+                      const isStrong = hour % 6 === 0;
                       return (
                         <div
-                          key={idx}
-                          className="pointer-events-none absolute inset-y-0 w-px bg-white/14"
-                          style={{ left: mobileLeft }}
+                          key={hour}
+                          className={[
+                            'pointer-events-none absolute inset-y-[-3px] border-l-2 border-dashed',
+                            isStrong ? 'border-white/70' : 'border-white/35',
+                          ].join(' ')}
+                          style={{ left }}
                         />
                       );
                     })}
@@ -241,18 +254,30 @@ function TariffSchemeBlock({ scheme }: { scheme: TariffScheme }) {
           </div>
 
           {/* Time axis — offset by label column on desktop, flush on mobile */}
-          <div
-            className="mt-2 grid text-[10px] text-slate-500 tabular-nums md:pl-[9.5rem]"
-            style={{
-              gridTemplateColumns: `repeat(8, ${mobileWidth / 8}px)`,
-              width: mobileWidth,
-            }}
-          >
-            {TIME_AXIS.map((t) => (
-              <div key={t}>
-                {t}
-              </div>
-            ))}
+          <div className="mt-2 flex items-start gap-3">
+            <div className="hidden md:block shrink-0" style={{ width: DESKTOP_LABEL_WIDTH }} />
+            <div className="relative h-5" style={{ width: mobileWidth }}>
+              {TWO_HOUR_MARKERS.map((hour) => {
+                const left = Math.max(
+                  0,
+                  Math.min(mobileWidth, hour * 2 * (MOBILE_SLOT_WIDTH + SLOT_GAP)),
+                );
+                const isStrong = hour % 6 === 0 || hour === 24;
+                const positionClass =
+                  hour === 0 ? 'translate-x-0' : hour === 24 ? '-translate-x-full' : '-translate-x-1/2';
+                return (
+                  <div
+                    key={hour}
+                    className={`absolute top-0 text-[10px] tabular-nums ${positionClass}`}
+                    style={{ left }}
+                  >
+                    <span className={isStrong ? 'font-semibold text-slate-300' : 'text-slate-500'}>
+                      {hour}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
         </div>
