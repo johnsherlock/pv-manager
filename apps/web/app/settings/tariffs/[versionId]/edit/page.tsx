@@ -19,12 +19,12 @@ export default async function EditTariffVersionPage({
   const data = await loadVersionForEdit(versionId, installationId);
   if (!data) notFound();
 
-  const { plan, version, allVersions, contract } = data;
+  const { plan, version, allVersions } = data;
 
   const standingCharge =
     version.fixedCharges.find((c) => c.chargeType === 'standing_charge') ?? null;
 
-  // Normalise standing charge to per-day
+  // Normalise to per-day
   let standingChargePerDay = '';
   if (standingCharge) {
     const amount = parseFloat(standingCharge.amount);
@@ -36,10 +36,16 @@ export default async function EditTariffVersionPage({
     }
   }
 
+  // VAT rate stored as decimal (0.09); editor accepts percentage (9)
+  const vatRatePct = version.vatRate
+    ? (parseFloat(version.vatRate) * 100).toFixed(2).replace(/\.?0+$/, '')
+    : '';
+
   const periods: EditorPeriod[] = version.pricePeriods.map((p) => ({
     id: p.id,
     periodLabel: p.periodLabel,
-    ratePerKwh: p.ratePerKwh,
+    // isFreeImport periods may have null rate in DB — treat as 0
+    ratePerKwh: p.isFreeImport ? '0' : (p.ratePerKwh ?? ''),
     isFreeImport: p.isFreeImport,
     colourHex: p.colourHex ?? '#3b82f6',
   }));
@@ -53,13 +59,8 @@ export default async function EditTariffVersionPage({
     periods,
     schedule: (version.weeklyScheduleJson ?? new Array(336).fill('')) as string[],
     exportRate: version.exportRate ?? '',
-    vatRate: version.vatRate ?? '',
+    vatRate: vatRatePct,
     standingChargeAmount: standingChargePerDay,
-    standingChargeVatInclusive: standingCharge?.vatInclusive ?? false,
-    contractEndDate: contract?.contractEndDate ?? '',
-    showRateReviewField: !!(contract?.expectedReviewDate),
-    rateReviewDate: contract?.expectedReviewDate ?? '',
-    contractNotes: contract?.notes ?? '',
   };
 
   return (

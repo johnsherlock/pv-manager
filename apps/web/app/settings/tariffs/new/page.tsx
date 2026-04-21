@@ -22,11 +22,6 @@ export default async function NewTariffVersionPage() {
     exportRate: '',
     vatRate: '',
     standingChargeAmount: '',
-    standingChargeVatInclusive: false,
-    contractEndDate: overview.contract?.contractEndDate ?? '',
-    showRateReviewField: !!(overview.contract?.expectedReviewDate),
-    rateReviewDate: overview.contract?.expectedReviewDate ?? '',
-    contractNotes: overview.contract?.notes ?? '',
   };
 
   return (

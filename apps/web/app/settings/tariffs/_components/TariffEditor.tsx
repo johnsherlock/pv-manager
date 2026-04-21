@@ -7,6 +7,9 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
   CheckCircle2,
   AlertTriangle,
   Info,
@@ -30,6 +33,12 @@ const TWO_HOUR_MARKERS = Array.from({ length: 13 }, (_, i) => i * 2);
 const DAY_PILL_SIZE = 38;
 const LABEL_COL_WIDTH = 220;
 
+// Slot colours matching the overview TariffSchemeBlock
+const ACTIVE_SLOT_FILL = '#3f4f67';
+const ACTIVE_SLOT_BORDER = 'rgba(235,248,255,0.35)';
+const INACTIVE_SLOT_FILL = '#27324a';
+const INACTIVE_SLOT_BORDER = 'rgba(255,255,255,0.06)';
+
 const COLOUR_PALETTE = [
   '#3b82f6',
   '#f59e0b',
@@ -40,6 +49,12 @@ const COLOUR_PALETTE = [
   '#14b8a6',
   '#ec4899',
 ];
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+const DOW_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,7 +70,6 @@ export type EditorPeriod = {
 
 type EditorGroup = {
   id: string;
-  /** Day indices this group covers (0 = Mon … 6 = Sun). */
   days: number[];
   periods: EditorPeriod[];
   /** 48-element array: period ID for each half-hour slot, or '' if unassigned. */
@@ -68,19 +82,14 @@ export type TariffEditorInitialData = {
   planName: string;
   validFromLocalDate: string;
   validToLocalDate: string;
-  /** All price periods across the version (used to derive groups on load). */
   periods: EditorPeriod[];
   /** 336-element flat schedule (7 days × 48 slots, Mon = 0). Used to derive groups. */
   schedule: string[];
   exportRate: string;
+  /** VAT rate as a percentage string, e.g. "9" or "8.5". */
   vatRate: string;
-  /** Standing charge stored per day. */
+  /** Standing charge per day. */
   standingChargeAmount: string;
-  standingChargeVatInclusive: boolean;
-  contractEndDate: string;
-  showRateReviewField: boolean;
-  rateReviewDate: string;
-  contractNotes: string;
 };
 
 type Props = {
@@ -111,19 +120,14 @@ function nextColour(periods: EditorPeriod[]): string {
   );
 }
 
-/** Derive editor groups from a flat 336-slot schedule + period list. */
 function deriveGroups(periods: EditorPeriod[], schedule: string[]): EditorGroup[] {
   if (periods.length === 0 || schedule.length < 336 || schedule.every((s) => s === '')) return [];
-
   const periodMap = new Map(periods.map((p) => [p.id, p]));
-
   const dayPatterns = Array.from({ length: 7 }, (_, d) =>
     schedule.slice(d * SLOT_COUNT, d * SLOT_COUNT + SLOT_COUNT).join(','),
   );
-
   const seen = new Map<string, number>();
   const groups: EditorGroup[] = [];
-
   for (let d = 0; d < 7; d++) {
     const key = dayPatterns[d];
     if (seen.has(key)) {
@@ -138,11 +142,9 @@ function deriveGroups(periods: EditorPeriod[], schedule: string[]): EditorGroup[
       groups.push({ id: newId(), days: [d], periods: groupPeriods, slots });
     }
   }
-
   return groups;
 }
 
-/** Add months to an ISO date string (YYYY-MM-DD). */
 function addMonths(dateStr: string, months: number): string {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
@@ -178,8 +180,42 @@ function annualToDaily(annual: string): string {
   return (v / 365).toFixed(4);
 }
 
+function buildCalCells(year: number, month: number) {
+  const startDow = (new Date(year, month, 1).getDay() + 6) % 7; // Mon = 0
+  const cells: { iso: string; day: number; inMonth: boolean }[] = [];
+  for (let i = startDow - 1; i >= 0; i--) {
+    const d = new Date(year, month, -i);
+    cells.push({ iso: d.toISOString().slice(0, 10), day: d.getDate(), inMonth: false });
+  }
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({
+      iso: new Date(year, month, d).toISOString().slice(0, 10),
+      day: d,
+      inMonth: true,
+    });
+  }
+  let next = 1;
+  while (cells.length < 42) {
+    cells.push({
+      iso: new Date(year, month + 1, next++).toISOString().slice(0, 10),
+      day: next - 1,
+      inMonth: false,
+    });
+  }
+  return cells;
+}
+
+function formatDisplayDate(iso: string): string {
+  return new Intl.DateTimeFormat('en-IE', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(iso + 'T00:00:00'));
+}
+
 // ---------------------------------------------------------------------------
-// Shared input styling
+// Shared styling
 // ---------------------------------------------------------------------------
 
 const INPUT_CLS =
@@ -187,6 +223,136 @@ const INPUT_CLS =
 const LABEL_CLS =
   'block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5';
 const ERR_CLS = 'mt-1 text-xs text-red-400';
+
+// ---------------------------------------------------------------------------
+// DateField — custom date picker matching the app's calendar style
+// ---------------------------------------------------------------------------
+
+function DateField({
+  value,
+  onChange,
+  placeholder = 'Select date',
+  error,
+}: {
+  value: string;
+  onChange: (iso: string) => void;
+  placeholder?: string;
+  error?: boolean;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const seed = value || today;
+  const [open, setOpen] = useState(false);
+  const [viewYear, setViewYear] = useState(() => parseInt(seed.slice(0, 4)));
+  const [viewMonth, setViewMonth] = useState(() => parseInt(seed.slice(5, 7)) - 1);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (value) {
+      setViewYear(parseInt(value.slice(0, 4)));
+      setViewMonth(parseInt(value.slice(5, 7)) - 1);
+    }
+  }, [value]);
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
+    else setViewMonth((m) => m - 1);
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
+    else setViewMonth((m) => m + 1);
+  }
+
+  const cells = buildCalCells(viewYear, viewMonth);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={[
+          'flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition-colors bg-slate-900/60 hover:border-slate-600 focus:outline-none',
+          error ? 'border-red-700' : open ? 'border-slate-500' : 'border-slate-700',
+        ].join(' ')}
+      >
+        <span className={value ? 'text-slate-100' : 'text-slate-600'}>
+          {value ? formatDisplayDate(value) : placeholder}
+        </span>
+        <Calendar size={13} className="shrink-0 text-slate-500" />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-2xl border border-slate-700 bg-[#0f1a2b] shadow-2xl">
+          {/* Month navigator */}
+          <div className="flex items-center justify-between border-b border-slate-800 px-3 py-2.5">
+            <button
+              type="button"
+              onClick={prevMonth}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            >
+              <ChevronLeft size={13} />
+            </button>
+            <span className="text-xs font-semibold text-slate-200">
+              {MONTH_NAMES[viewMonth]} {viewYear}
+            </span>
+            <button
+              type="button"
+              onClick={nextMonth}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            >
+              <ChevronRight size={13} />
+            </button>
+          </div>
+
+          <div className="px-3 py-3">
+            {/* Day of week headers */}
+            <div className="mb-1 grid grid-cols-7 text-center">
+              {DOW_LABELS.map((d) => (
+                <span key={d} className="text-[10px] font-semibold text-slate-600">
+                  {d}
+                </span>
+              ))}
+            </div>
+            {/* Calendar cells */}
+            <div className="grid grid-cols-7">
+              {cells.map((cell) => {
+                const isSelected = cell.iso === value;
+                const isToday = cell.iso === today;
+                return (
+                  <button
+                    key={cell.iso}
+                    type="button"
+                    onClick={() => { onChange(cell.iso); setOpen(false); }}
+                    className={[
+                      'flex h-7 w-full items-center justify-center rounded-full text-[11px] transition-colors',
+                      isSelected
+                        ? 'bg-emerald-600 font-semibold text-white'
+                        : isToday
+                          ? 'font-medium text-emerald-400 ring-1 ring-emerald-600/60 hover:bg-slate-800'
+                          : cell.inMonth
+                            ? 'text-slate-300 hover:bg-slate-800'
+                            : 'text-slate-600 hover:bg-slate-800',
+                    ].join(' ')}
+                  >
+                    {cell.day}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // SectionCard
@@ -232,7 +398,7 @@ function SectionCard({
 }
 
 // ---------------------------------------------------------------------------
-// PeriodInputs — label + rate fields rendered inline in a period row
+// PeriodInputs — name + rate fields rendered inline in a period row
 // ---------------------------------------------------------------------------
 
 function PeriodInputs({
@@ -250,13 +416,6 @@ function PeriodInputs({
 }) {
   return (
     <div className="flex items-center gap-2 min-w-0 flex-1">
-      {/* Colour swatch */}
-      <span
-        className="shrink-0 h-2.5 w-2.5 rounded-sm"
-        style={{ backgroundColor: period.colourHex }}
-      />
-
-      {/* Name */}
       <input
         type="text"
         value={period.periodLabel}
@@ -264,46 +423,15 @@ function PeriodInputs({
         placeholder={`Period ${index + 1}`}
         className="min-w-0 w-24 rounded-lg border border-slate-700 bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:border-slate-500 focus:outline-none"
       />
-
-      {/* Rate */}
-      {period.isFreeImport ? (
-        <span className="text-xs text-emerald-400 font-medium tabular-nums w-20 text-center">
-          Free
-        </span>
-      ) : (
-        <input
-          type="number"
-          step="0.000001"
-          min="0"
-          value={period.ratePerKwh}
-          onChange={(e) => onChange({ ...period, ratePerKwh: e.target.value })}
-          placeholder="€/kWh"
-          className="w-20 rounded-lg border border-slate-700 bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:border-slate-500 focus:outline-none tabular-nums"
-        />
-      )}
-
-      {/* Free-import toggle */}
-      <button
-        type="button"
-        onClick={() =>
-          onChange({
-            ...period,
-            isFreeImport: !period.isFreeImport,
-            ratePerKwh: !period.isFreeImport ? '0' : '',
-          })
-        }
-        className={[
-          'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors',
-          period.isFreeImport
-            ? 'border-emerald-600/40 bg-emerald-950/40 text-emerald-400'
-            : 'border-slate-700 text-slate-500 hover:text-slate-300',
-        ].join(' ')}
-        title="Toggle free import"
-      >
-        Free
-      </button>
-
-      {/* Delete */}
+      <input
+        type="number"
+        step="0.000001"
+        min="0"
+        value={period.ratePerKwh}
+        onChange={(e) => onChange({ ...period, ratePerKwh: e.target.value })}
+        placeholder="€/kWh"
+        className="w-20 rounded-lg border border-slate-700 bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:border-slate-500 focus:outline-none tabular-nums"
+      />
       {canDelete && (
         <button
           type="button"
@@ -325,13 +453,11 @@ function PeriodInputs({
 function ActivityBar({
   groupSlots,
   periodId,
-  periodColour,
   onMouseDown,
   onMouseEnter,
 }: {
   groupSlots: string[];
   periodId: string;
-  periodColour: string;
   onMouseDown: (slotIdx: number) => void;
   onMouseEnter: (slotIdx: number) => void;
 }) {
@@ -353,11 +479,10 @@ function ActivityBar({
               data-slot={slotIdx}
               style={{
                 height: SLOT_HEIGHT,
-                backgroundColor: isActive ? periodColour : '#1a2233',
-                border: `1px solid ${isActive ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.05)'}`,
+                backgroundColor: isActive ? ACTIVE_SLOT_FILL : INACTIVE_SLOT_FILL,
+                border: `1px solid ${isActive ? ACTIVE_SLOT_BORDER : INACTIVE_SLOT_BORDER}`,
                 borderRadius: 1,
                 boxSizing: 'border-box',
-                opacity: isActive ? 1 : 0.35,
                 cursor: 'crosshair',
               }}
               title={`${slotToTime(slotIdx)}–${slotToTime(slotIdx + 1)}`}
@@ -394,7 +519,6 @@ function ActivityBar({
   );
 }
 
-// Time axis rendered below the bars
 function TimeAxis() {
   return (
     <div className="relative h-5" style={{ width: GRID_WIDTH }}>
@@ -427,6 +551,7 @@ type GroupCardProps = {
   group: EditorGroup;
   allGroups: EditorGroup[];
   canDelete: boolean;
+  submitted: boolean;
   onUpdate: (updated: EditorGroup) => void;
   onDelete: () => void;
   onClaimDay: (dayIdx: number) => void;
@@ -437,6 +562,7 @@ function ScheduleGroupCard({
   group,
   allGroups,
   canDelete,
+  submitted,
   onUpdate,
   onDelete,
   onClaimDay,
@@ -447,14 +573,11 @@ function ScheduleGroupCard({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const stop = () => {
-      isPaintingRef.current = false;
-    };
+    const stop = () => { isPaintingRef.current = false; };
     window.addEventListener('mouseup', stop);
     return () => window.removeEventListener('mouseup', stop);
   }, []);
 
-  // Touch drag — must be non-passive to allow preventDefault
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -468,15 +591,12 @@ function ScheduleGroupCard({
     };
     el.addEventListener('touchmove', onTouchMove, { passive: false });
     return () => el.removeEventListener('touchmove', onTouchMove);
-    // onPaintSlot identity is stable (wrapped in useCallback at parent)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleSlotMouseDown(periodId: string, slotIdx: number) {
     isPaintingRef.current = true;
-    const current = group.slots[slotIdx];
-    // Click filled slot of this period → erase; otherwise → assign
-    paintValueRef.current = current === periodId ? '' : periodId;
+    paintValueRef.current = group.slots[slotIdx] === periodId ? '' : periodId;
     onPaintSlot(slotIdx, paintValueRef.current);
   }
 
@@ -517,9 +637,7 @@ function ScheduleGroupCard({
   }
 
   const daySet = new Set(group.days);
-  const otherDays = new Set(
-    allGroups.filter((g) => g.id !== group.id).flatMap((g) => g.days),
-  );
+  const otherDays = new Set(allGroups.filter((g) => g.id !== group.id).flatMap((g) => g.days));
   const unassigned = group.slots.filter((s) => s === '').length;
 
   return (
@@ -538,14 +656,13 @@ function ScheduleGroupCard({
                   type="button"
                   onClick={() => !taken && toggleDay(i)}
                   disabled={taken}
-                  title={taken ? `${DAY_LABELS[i]} is assigned to another group` : DAY_LABELS[i]}
+                  title={taken ? `${DAY_LABELS[i]} is in another group` : DAY_LABELS[i]}
                   style={{
                     width: DAY_PILL_SIZE,
                     height: DAY_PILL_SIZE,
                     borderRadius: '50%',
                     fontSize: 12,
                     fontWeight: 600,
-                    lineHeight: 1,
                     userSelect: 'none',
                     boxSizing: 'border-box',
                     display: 'flex',
@@ -555,7 +672,7 @@ function ScheduleGroupCard({
                     color: active ? '#f1f5f9' : taken ? '#2d3a4e' : '#64748b',
                     border: `1.5px solid ${active ? '#64748b' : taken ? '#232d3e' : '#2d3a4e'}`,
                     cursor: taken ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.1s',
+                    transition: 'background-color 0.1s, color 0.1s',
                   }}
                 >
                   {letter}
@@ -569,7 +686,7 @@ function ScheduleGroupCard({
             type="button"
             onClick={onDelete}
             className="mt-1 shrink-0 rounded-lg p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-950/30 transition-colors"
-            title="Remove this schedule group"
+            title="Remove group"
           >
             <X size={13} />
           </button>
@@ -589,7 +706,6 @@ function ScheduleGroupCard({
             <div className="flex flex-col gap-3">
               {group.periods.map((period, pIdx) => (
                 <div key={period.id}>
-                  {/* Mobile: inputs above bar */}
                   <div className="mb-1.5 md:hidden">
                     <PeriodInputs
                       period={period}
@@ -599,13 +715,8 @@ function ScheduleGroupCard({
                       onDelete={() => removePeriod(pIdx)}
                     />
                   </div>
-
                   <div className="flex items-center gap-3">
-                    {/* Desktop: inputs left */}
-                    <div
-                      className="hidden md:flex shrink-0"
-                      style={{ width: LABEL_COL_WIDTH }}
-                    >
+                    <div className="hidden md:flex shrink-0" style={{ width: LABEL_COL_WIDTH }}>
                       <PeriodInputs
                         period={period}
                         index={pIdx}
@@ -614,11 +725,9 @@ function ScheduleGroupCard({
                         onDelete={() => removePeriod(pIdx)}
                       />
                     </div>
-
                     <ActivityBar
                       groupSlots={group.slots}
                       periodId={period.id}
-                      periodColour={period.colourHex}
                       onMouseDown={(s) => handleSlotMouseDown(period.id, s)}
                       onMouseEnter={handleSlotMouseEnter}
                     />
@@ -626,8 +735,6 @@ function ScheduleGroupCard({
                 </div>
               ))}
             </div>
-
-            {/* Time axis */}
             <div className="flex items-start gap-3 mt-2">
               <div className="hidden md:block shrink-0" style={{ width: LABEL_COL_WIDTH }} />
               <TimeAxis />
@@ -636,8 +743,8 @@ function ScheduleGroupCard({
         </div>
       )}
 
-      {/* Unassigned warning */}
-      {unassigned > 0 && group.periods.length > 0 && (
+      {/* Unassigned warning — only shown after a save attempt */}
+      {submitted && unassigned > 0 && group.periods.length > 0 && (
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-700/30 bg-amber-950/20 px-3 py-2.5">
           <AlertTriangle size={12} className="mt-0.5 shrink-0 text-amber-400" />
           <p className="text-xs text-amber-300">
@@ -661,7 +768,7 @@ function ScheduleGroupCard({
 }
 
 // ---------------------------------------------------------------------------
-// Main editor component
+// Main editor
 // ---------------------------------------------------------------------------
 
 export default function TariffEditor({ mode, initial, existingVersions }: Props) {
@@ -678,20 +785,11 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
   const [standingChargeAnnual, setStandingChargeAnnual] = useState(
     () => dailyToAnnual(initial.standingChargeAmount),
   );
-  const [standingVatInclusive, setStandingVatInclusive] = useState(
-    initial.standingChargeVatInclusive,
-  );
 
   // ---- Schedule groups ----
   const [groups, setGroups] = useState<EditorGroup[]>(() =>
     deriveGroups(initial.periods, initial.schedule),
   );
-
-  // ---- Contract ----
-  const [contractEndDate, setContractEndDate] = useState(initial.contractEndDate);
-  const [showRateReview, setShowRateReview] = useState(initial.showRateReviewField);
-  const [rateReviewDate, setRateReviewDate] = useState(initial.rateReviewDate);
-  const [contractNotes, setContractNotes] = useState(initial.contractNotes);
 
   // ---- UI ----
   const [submitted, setSubmitted] = useState(false);
@@ -702,38 +800,30 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
     setStandingChargeDaily(val);
     setStandingChargeAnnual(dailyToAnnual(val));
   }
-
   function handleAnnualChange(val: string) {
     setStandingChargeAnnual(val);
     setStandingChargeDaily(annualToDaily(val));
   }
 
-  // ---- Valid-to default ----
+  // ---- Valid-to default in create mode ----
   function handleValidFromChange(val: string) {
     setValidFrom(val);
-    // In create mode, default validTo to 12 months after the start date if not yet set
-    if (mode === 'create' && !validTo && val) {
-      setValidTo(addMonths(val, 12));
-    }
+    if (mode === 'create' && !validTo && val) setValidTo(addMonths(val, 12));
   }
 
   // ---- Group management ----
   function updateGroup(groupId: string, updated: EditorGroup) {
     setGroups((prev) => prev.map((g) => (g.id === groupId ? updated : g)));
   }
-
   function removeGroup(groupId: string) {
     setGroups((prev) => prev.filter((g) => g.id !== groupId));
   }
-
   function addGroup() {
     setGroups((prev) => [
       ...prev,
       { id: newId(), days: [], periods: [], slots: new Array(SLOT_COUNT).fill('') },
     ]);
   }
-
-  /** Move a day to the target group, removing it from any other group. */
   function claimDayForGroup(groupId: string, dayIdx: number) {
     setGroups((prev) =>
       prev.map((g) => {
@@ -742,8 +832,6 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
       }),
     );
   }
-
-  /** Functional slot paint — always reads latest group state. */
   function paintGroupSlot(groupId: string, slotIdx: number, value: string) {
     setGroups((prev) =>
       prev.map((g) => {
@@ -758,46 +846,32 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
 
   // ---- Derived ----
   const overlapWarning = checkOverlap(validFrom, validTo, existingVersions, initial.versionId);
-
   const coveredDays = new Set(groups.flatMap((g) => g.days));
-  const uncoveredDays = Array.from({ length: 7 }, (_, i) => i).filter(
-    (d) => !coveredDays.has(d),
-  );
+  const uncoveredDays = Array.from({ length: 7 }, (_, i) => i).filter((d) => !coveredDays.has(d));
 
   // ---- Validation ----
   function validate(): Record<string, string> {
     const e: Record<string, string> = {};
-
     if (!supplierName.trim()) e.supplierName = 'Supplier name is required';
-    if (!validFrom) e.validFrom = 'Valid from date is required';
-    if (!validTo) e.validTo = 'Valid to date is required';
-    if (validFrom && validTo && validTo < validFrom)
-      e.validTo = 'Valid to must be after valid from';
-
+    if (!validFrom) e.validFrom = 'Start date is required';
+    if (!validTo) e.validTo = 'End date is required';
+    if (validFrom && validTo && validTo < validFrom) e.validTo = 'End date must be after start date';
     if (exportRate === '') e.exportRate = 'Export rate is required (enter 0 if none)';
     if (vatRate === '') e.vatRate = 'VAT rate is required (enter 0 if none)';
-    if (standingChargeDaily === '')
-      e.standingChargeDaily = 'Standing charge is required (enter 0 if none)';
-
+    if (standingChargeDaily === '') e.standingChargeDaily = 'Standing charge is required (enter 0 if none)';
     if (groups.length === 0) e.groups = 'At least one schedule group is required';
     if (uncoveredDays.length > 0)
       e.coverage = `${uncoveredDays.map((d) => DAY_LABELS[d]).join(', ')} not assigned to any group`;
-
     groups.forEach((g, gi) => {
-      if (g.days.length === 0) e[`group_${gi}_days`] = `Group ${gi + 1}: no days selected`;
-      if (g.periods.length === 0)
-        e[`group_${gi}_periods`] = `Group ${gi + 1}: add at least one price period`;
+      if (g.days.length === 0) e[`g${gi}_days`] = `Group ${gi + 1}: select at least one day`;
+      if (g.periods.length === 0) e[`g${gi}_periods`] = `Group ${gi + 1}: add at least one price period`;
       g.periods.forEach((p, pi) => {
-        if (!p.periodLabel.trim())
-          e[`group_${gi}_period_${pi}_label`] = `Group ${gi + 1}, period ${pi + 1}: name required`;
-        if (!p.isFreeImport && !p.ratePerKwh)
-          e[`group_${gi}_period_${pi}_rate`] = `Group ${gi + 1}, period ${pi + 1}: rate required`;
+        if (!p.periodLabel.trim()) e[`g${gi}p${pi}_label`] = `Group ${gi + 1}, period ${pi + 1}: name required`;
+        if (!p.ratePerKwh) e[`g${gi}p${pi}_rate`] = `Group ${gi + 1}, period ${pi + 1}: rate required`;
       });
       const unassigned = g.slots.filter((s) => s === '').length;
-      if (unassigned > 0)
-        e[`group_${gi}_slots`] = `Group ${gi + 1}: ${unassigned} slot${unassigned !== 1 ? 's' : ''} unassigned`;
+      if (unassigned > 0) e[`g${gi}_slots`] = `Group ${gi + 1}: ${unassigned} slot${unassigned !== 1 ? 's' : ''} unassigned`;
     });
-
     return e;
   }
 
@@ -824,10 +898,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
           Historical cost and savings calculations from{' '}
           <span className="text-slate-200">{validFrom}</span>
           {validTo ? (
-            <>
-              {' '}
-              to <span className="text-slate-200">{validTo}</span>
-            </>
+            <> to <span className="text-slate-200">{validTo}</span></>
           ) : (
             ' onwards'
           )}{' '}
@@ -889,33 +960,6 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
               readOnly={mode === 'edit'}
             />
           </div>
-          <div>
-            <label className={LABEL_CLS}>Valid from</label>
-            <input
-              type="date"
-              value={validFrom}
-              onChange={(e) => handleValidFromChange(e.target.value)}
-              className={[INPUT_CLS, errors.validFrom ? 'border-red-700' : ''].join(' ')}
-            />
-            {errors.validFrom && <p className={ERR_CLS}>{errors.validFrom}</p>}
-          </div>
-          <div>
-            <label className={LABEL_CLS}>
-              Rates valid to
-              {mode === 'create' && (
-                <span className="ml-1 normal-case font-normal text-slate-600">
-                  (required)
-                </span>
-              )}
-            </label>
-            <input
-              type="date"
-              value={validTo}
-              onChange={(e) => setValidTo(e.target.value)}
-              className={[INPUT_CLS, errors.validTo ? 'border-red-700' : ''].join(' ')}
-            />
-            {errors.validTo && <p className={ERR_CLS}>{errors.validTo}</p>}
-          </div>
         </div>
 
         {mode === 'edit' && (
@@ -923,6 +967,30 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
             Supplier and plan name apply to all versions and cannot be changed here.
           </p>
         )}
+
+        {/* Dates — two columns on all screen sizes */}
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL_CLS}>Start date</label>
+            <DateField
+              value={validFrom}
+              onChange={handleValidFromChange}
+              placeholder="Pick a date"
+              error={!!errors.validFrom}
+            />
+            {errors.validFrom && <p className={ERR_CLS}>{errors.validFrom}</p>}
+          </div>
+          <div>
+            <label className={LABEL_CLS}>End date</label>
+            <DateField
+              value={validTo}
+              onChange={setValidTo}
+              placeholder="Pick a date"
+              error={!!errors.validTo}
+            />
+            {errors.validTo && <p className={ERR_CLS}>{errors.validTo}</p>}
+          </div>
+        </div>
 
         {overlapWarning && (
           <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-700/30 bg-amber-950/20 px-3.5 py-3">
@@ -961,15 +1029,15 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
             )}
           </div>
           <div>
-            <label className={LABEL_CLS}>VAT rate</label>
+            <label className={LABEL_CLS}>VAT rate %</label>
             <input
               type="number"
-              step="0.01"
+              step="0.1"
               min="0"
-              max="1"
+              max="100"
               value={vatRate}
               onChange={(e) => setVatRate(e.target.value)}
-              placeholder="0.09 for 9%"
+              placeholder="e.g. 9 or 8.5"
               className={[INPUT_CLS, errors.vatRate ? 'border-red-700' : ''].join(' ')}
             />
             {errors.vatRate ? (
@@ -981,9 +1049,9 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
             )}
           </div>
 
-          {/* Standing charge — dual entry */}
+          {/* Standing charge — dual entry, both columns */}
           <div className="sm:col-span-2">
-            <p className={LABEL_CLS}>Standing charge</p>
+            <label className={LABEL_CLS}>Standing charge (VAT-exclusive)</label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-slate-500 mb-1">Annual (€/year)</label>
@@ -994,10 +1062,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
                   value={standingChargeAnnual}
                   onChange={(e) => handleAnnualChange(e.target.value)}
                   placeholder="200.75"
-                  className={[
-                    INPUT_CLS,
-                    errors.standingChargeDaily ? 'border-red-700' : '',
-                  ].join(' ')}
+                  className={[INPUT_CLS, errors.standingChargeDaily ? 'border-red-700' : ''].join(' ')}
                 />
               </div>
               <div>
@@ -1009,10 +1074,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
                   value={standingChargeDaily}
                   onChange={(e) => handleDailyChange(e.target.value)}
                   placeholder="0.5500"
-                  className={[
-                    INPUT_CLS,
-                    errors.standingChargeDaily ? 'border-red-700' : '',
-                  ].join(' ')}
+                  className={[INPUT_CLS, errors.standingChargeDaily ? 'border-red-700' : ''].join(' ')}
                 />
               </div>
             </div>
@@ -1024,28 +1086,6 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
                 charge.
               </p>
             )}
-            <div className="mt-2.5 flex items-center gap-2">
-              <button
-                type="button"
-                role="checkbox"
-                aria-checked={standingVatInclusive}
-                onClick={() => setStandingVatInclusive((v) => !v)}
-                className={[
-                  'h-4 w-4 rounded border flex items-center justify-center transition-colors',
-                  standingVatInclusive
-                    ? 'border-emerald-500 bg-emerald-500/20'
-                    : 'border-slate-600 bg-slate-800',
-                ].join(' ')}
-              >
-                {standingVatInclusive && <CheckCircle2 size={10} className="text-emerald-400" />}
-              </button>
-              <span
-                className="text-xs text-slate-400 cursor-pointer select-none"
-                onClick={() => setStandingVatInclusive((v) => !v)}
-              >
-                Amount already includes VAT
-              </span>
-            </div>
           </div>
         </div>
       </SectionCard>
@@ -1053,16 +1093,13 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
       {/* 3. Rate schedule */}
       <SectionCard title="Rate schedule">
         <div className="flex flex-col gap-4">
-          {/* Coverage summary */}
-          {uncoveredDays.length > 0 && submitted && (
+          {submitted && errors.coverage && (
             <div className="flex items-start gap-2.5 rounded-xl border border-red-800/40 bg-red-950/20 px-3.5 py-3">
               <AlertTriangle size={13} className="mt-0.5 shrink-0 text-red-400" />
-              <p className="text-xs text-red-300">
-                {errors.coverage} — every day must belong to exactly one group.
-              </p>
+              <p className="text-xs text-red-300">{errors.coverage}</p>
             </div>
           )}
-          {errors.groups && <p className={ERR_CLS}>{errors.groups}</p>}
+          {submitted && errors.groups && <p className={ERR_CLS}>{errors.groups}</p>}
 
           {groups.length === 0 && (
             <p className="text-sm text-slate-500 leading-relaxed">
@@ -1071,10 +1108,9 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
             </p>
           )}
 
-          {groups.map((group) => {
-            const gi = groups.indexOf(group);
+          {groups.map((group, gi) => {
             const groupErrors = Object.entries(errors)
-              .filter(([k]) => k.startsWith(`group_${gi}_`))
+              .filter(([k]) => k.startsWith(`g${gi}`))
               .map(([, v]) => v);
             return (
               <div key={group.id}>
@@ -1082,17 +1118,16 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
                   group={group}
                   allGroups={groups}
                   canDelete={groups.length > 1}
+                  submitted={submitted}
                   onUpdate={(updated) => updateGroup(group.id, updated)}
                   onDelete={() => removeGroup(group.id)}
                   onClaimDay={(dayIdx) => claimDayForGroup(group.id, dayIdx)}
                   onPaintSlot={(slotIdx, value) => paintGroupSlot(group.id, slotIdx, value)}
                 />
-                {groupErrors.length > 0 && submitted && (
-                  <div className="mt-2 flex flex-col gap-0.5">
+                {submitted && groupErrors.length > 0 && (
+                  <div className="mt-2 flex flex-col gap-0.5 px-1">
                     {groupErrors.map((msg, i) => (
-                      <p key={i} className={ERR_CLS}>
-                        {msg}
-                      </p>
+                      <p key={i} className={ERR_CLS}>{msg}</p>
                     ))}
                   </div>
                 )}
@@ -1112,78 +1147,10 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
           <div className="flex items-start gap-2 rounded-xl border border-slate-800/60 bg-slate-900/30 px-3.5 py-3">
             <Info size={12} className="mt-0.5 shrink-0 text-slate-600" />
             <p className="text-xs text-slate-500 leading-relaxed">
-              Each group covers a set of days with the same rate pattern. Click or drag on a
+              Each group covers a set of days sharing the same rate pattern. Click or drag on a
               period&apos;s bar to assign half-hour slots. All 48 slots in every group must be
               assigned before saving.
             </p>
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* 4. Contract details (collapsible) */}
-      <SectionCard
-        title="Contract details"
-        collapsible
-        defaultOpen={!!(contractEndDate || contractNotes)}
-      >
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className={LABEL_CLS}>Contract end date</label>
-            <input
-              type="date"
-              value={contractEndDate}
-              onChange={(e) => setContractEndDate(e.target.value)}
-              className={INPUT_CLS}
-            />
-            <p className="mt-1 text-xs text-slate-600">
-              When your fixed-term deal with the supplier expires.
-            </p>
-          </div>
-
-          {!showRateReview ? (
-            <button
-              type="button"
-              onClick={() => setShowRateReview(true)}
-              className="self-start text-xs text-slate-500 hover:text-slate-300 transition-colors underline decoration-dotted underline-offset-2"
-            >
-              Some suppliers update rates mid-contract. Add a reminder to check your rates?
-            </button>
-          ) : (
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className={LABEL_CLS + ' mb-0'}>Rate review reminder date</label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRateReview(false);
-                    setRateReviewDate('');
-                  }}
-                  className="text-[10px] text-slate-600 hover:text-slate-400 transition-colors"
-                >
-                  Remove
-                </button>
-              </div>
-              <input
-                type="date"
-                value={rateReviewDate}
-                onChange={(e) => setRateReviewDate(e.target.value)}
-                className={INPUT_CLS}
-              />
-              <p className="mt-1 text-xs text-slate-600">
-                A reminder that appears in Tariffs when this date approaches.
-              </p>
-            </div>
-          )}
-
-          <div>
-            <label className={LABEL_CLS}>Notes</label>
-            <textarea
-              value={contractNotes}
-              onChange={(e) => setContractNotes(e.target.value)}
-              placeholder="Anything worth remembering about this contract, e.g. renewal terms."
-              rows={3}
-              className={INPUT_CLS + ' resize-none'}
-            />
           </div>
         </div>
       </SectionCard>
@@ -1193,8 +1160,8 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
         <Info size={13} className="mt-0.5 shrink-0 text-slate-500" />
         <p className="text-xs text-slate-500 leading-relaxed">
           {mode === 'create'
-            ? 'Saving this version will calculate cost and savings figures for all days within its validity window.'
-            : "Saving changes will recalculate all cost and savings figures that fall within this version's date range. This may take a few moments."}
+            ? 'Saving this version will calculate cost and savings figures for all days within its date range.'
+            : "Saving changes will recalculate all cost and savings figures within this version's date range. This may take a few moments."}
         </p>
       </div>
 
