@@ -422,7 +422,7 @@ function TariffValidityBanner({ version }: { version: TariffVersionDetail }) {
         )}
       </div>
       <Link
-        href="#"
+        href="/settings/tariffs/new"
         className="shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-700 px-3 py-1 text-xs font-medium text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors"
       >
         Update <ArrowRight size={10} />
@@ -488,7 +488,7 @@ function ContractBanner({ contract }: { contract: ContractInfo }) {
         </p>
       </div>
       <Link
-        href="#"
+        href="/settings/tariffs/new"
         className="shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-700 px-3 py-1 text-xs font-medium text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors"
       >
         Review <ArrowRight size={10} />

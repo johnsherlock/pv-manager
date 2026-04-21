@@ -13,7 +13,6 @@ export default async function NewTariffVersionPage() {
   const overview = await loadTariffOverview(installationId);
 
   const initial: TariffEditorInitialData = {
-    versionLabel: '',
     supplierName: overview.plan?.supplierName ?? '',
     planName: overview.plan?.planName ?? '',
     validFromLocalDate: '',
@@ -22,9 +21,7 @@ export default async function NewTariffVersionPage() {
     schedule: new Array(336).fill(''),
     exportRate: '',
     vatRate: '',
-    hasStandingCharge: false,
     standingChargeAmount: '',
-    standingChargeUnit: 'per_day',
     standingChargeVatInclusive: false,
     contractEndDate: overview.contract?.contractEndDate ?? '',
     showRateReviewField: !!(overview.contract?.expectedReviewDate),
