@@ -475,7 +475,7 @@ function ContractBanner({ contract }: { contract: ContractInfo }) {
         )}
         {reviewDue && reviewDays !== null && (
           <p className="text-sm font-medium text-amber-300">
-            Tariff review due in {reviewDays} day{reviewDays !== 1 ? 's' : ''}
+            Rate review reminder in {reviewDays} day{reviewDays !== 1 ? 's' : ''}
           </p>
         )}
         <p className="mt-0.5 text-xs text-slate-400">

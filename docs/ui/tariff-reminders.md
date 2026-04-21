@@ -37,13 +37,19 @@ it means the numbers shown to the user may be incorrect.
 Defined by `installation_contracts.contract_end_date` and
 `installation_contracts.expected_review_date`.
 
-**What it means:** The user's contract with their supplier has an end date or
-a review date they asked to be reminded about. These dates do not affect
-calculations — they are reminders to take action in the real world (call
-the supplier, renew, compare rates).
+**Contract end date** — when the fixed-term deal with the supplier expires
+(typically 12 or 24 months). After this date the user is usually moved to a
+standard variable rate. Most users will have this.
 
-**This state does not affect calculations.** It is a user-requested prompt
-to take external action.
+**Mid-contract rate review date (`expectedReviewDate`)** — an optional
+user-set reminder for users whose supplier sometimes adjusts rates partway
+through a contract. Most users will not set this. It is separate from the
+contract end date and has no fixed relationship to it; a user might set it
+a month before renewal as a prompt to shop around, or at a known mid-year
+review window.
+
+Neither date affects calculations. They are prompts to take action in the
+real world (renew, compare rates, call the supplier).
 
 ### Key rule (from F-009)
 
@@ -75,14 +81,14 @@ normal state for a current tariff and requires no warning.
 | `contract-expired` | `contractEndDate` is in the past | Critical (red) |
 | `contract-ending-urgent` | `contractEndDate` is within 30 days | Critical (red) |
 | `contract-ending-soon` | `contractEndDate` is within 90 days | Warning (amber) |
-| `review-due` | `expectedReviewDate` is within 60 days and ≥ today | Warning (amber) |
+| `rate-review-due` | `expectedReviewDate` is within 60 days and ≥ today | Warning (amber) |
 | `none` | None of the above apply | No banner |
 
-When both `contract-ending-soon` and `review-due` apply, show both messages
-in the same banner rather than suppressing either.
+When both `contract-ending-soon` and `rate-review-due` apply, show both
+messages in the same banner rather than suppressing either.
 
 When `contract-ending-urgent` or `contract-expired` applies, suppress
-`review-due` (the contract state is the more important action).
+`rate-review-due` (the contract state is the more important action).
 
 ---
 
@@ -149,13 +155,13 @@ version *and* an approaching contract end date at the same time.
 └──────────────────────────────────────────────────────┘
 ```
 
-**Warning (ending soon or review due):**
+**Warning (ending soon or rate review due):**
 
 ```
 ┌──────────────────────────────────────────────────────┐
 │ 🟡  Contract reminder                                │
 │     Contract ends in N days                          │
-│     Tariff review due in N days          Review →    │
+│     Rate review reminder in N days       Review →    │
 │     [notes if present]                               │
 └──────────────────────────────────────────────────────┘
 ```
@@ -169,6 +175,28 @@ version *and* an approaching contract end date at the same time.
 
 ---
 
+## Contract Edit Form (P-043 guidance)
+
+When a user is adding or editing contract details, the form should:
+
+1. Always offer `contractEndDate` — label it "Contract end date". Most users
+   on a fixed-term deal will have this.
+
+2. Offer `expectedReviewDate` as an optional field, framed as:
+   > "Some suppliers update their rates mid-contract. Set a reminder to check
+   > your rates?"
+   The field should be collapsed or secondary by default and only expanded if
+   the user opts in. Label it "Rate review reminder date" (not "tariff review
+   date" — "review" implies the supplier acts; "reminder" is what the user
+   is setting).
+
+3. `notes` is a freeform text field for anything else the user wants to
+   remember (e.g. "Annual contract with Energia. Rates reviewed each
+   October."). Label it "Notes" with placeholder copy like "Anything else
+   worth remembering about this contract."
+
+---
+
 ## Corrective Actions
 
 | State | CTA | Destination |
@@ -177,7 +205,7 @@ version *and* an approaching contract end date at the same time.
 | `validity-expiring-soon` | "Update tariff →" | Tariff editor |
 | `contract-expired` | "Review contract →" | Contract edit (built in P-043) |
 | `contract-ending-*` | "Review contract →" | Contract edit |
-| `review-due` | "Review tariff →" | Tariff editor |
+| `rate-review-due` | "Review tariff →" | Tariff editor |
 
 All CTAs link to `#` until P-043 builds the editor routes.
 
