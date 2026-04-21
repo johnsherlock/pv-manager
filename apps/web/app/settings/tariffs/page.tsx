@@ -533,7 +533,7 @@ function CurrentTariffCard({
           </p>
         </div>
         <Link
-          href="#"
+          href={`/settings/tariffs/${version.id}/edit`}
           className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors"
         >
           Edit <ArrowRight size={10} />
@@ -599,7 +599,7 @@ function VersionTimeline({ versions }: { versions: TariffVersionSummary[] }) {
           <h3 className="text-sm font-semibold text-slate-200">Version history</h3>
         </div>
         <Link
-          href="#"
+          href="/settings/tariffs/new"
           className="inline-flex items-center gap-1 rounded-full border border-indigo-500/40 bg-indigo-600/70 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-600 transition-colors"
         >
           <Plus size={11} />
@@ -699,7 +699,7 @@ function EmptyState() {
         You can add multiple rate versions if your tariff has changed over time.
       </p>
       <Link
-        href="#"
+        href="/settings/tariffs/new"
         className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-indigo-500/50 bg-indigo-600/80 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-600 transition-colors"
       >
         <Plus size={12} />
@@ -730,7 +730,7 @@ export default async function TariffsPage() {
         </div>
         {!isEmpty && (
           <Link
-            href="#"
+            href="/settings/tariffs/new"
             className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/40 bg-indigo-600/70 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-600 transition-colors"
           >
             <Plus size={11} />

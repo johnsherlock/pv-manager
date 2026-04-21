@@ -81,6 +81,13 @@ export type TariffOverviewData = {
   contract: ContractInfo | null;
 };
 
+export type TariffVersionEditData = {
+  plan: TariffPlanInfo;
+  version: TariffVersionDetail;
+  allVersions: TariffVersionSummary[];
+  contract: ContractInfo | null;
+};
+
 // ---------------------------------------------------------------------------
 // Lazy DB deps
 // ---------------------------------------------------------------------------
@@ -246,4 +253,140 @@ export async function loadTariffOverview(installationId: string): Promise<Tariff
     .then((rows) => rows[0] ?? null);
 
   return { plan, activeVersion, allVersions, contract };
+}
+
+// ---------------------------------------------------------------------------
+// Load a single version for the editor (edit mode)
+// ---------------------------------------------------------------------------
+
+export async function loadVersionForEdit(
+  versionId: string,
+  installationId: string,
+): Promise<TariffVersionEditData | null> {
+  const {
+    db,
+    tariffPlans,
+    tariffPlanVersions,
+    tariffPricePeriods,
+    tariffFixedChargeVersions,
+    installationContracts,
+  } = await getDeps();
+
+  const plan = await db
+    .select({
+      id: tariffPlans.id,
+      supplierName: tariffPlans.supplierName,
+      planName: tariffPlans.planName,
+      productCode: tariffPlans.productCode,
+      isExportEnabled: tariffPlans.isExportEnabled,
+    })
+    .from(tariffPlans)
+    .where(eq(tariffPlans.installationId, installationId))
+    .limit(1)
+    .then((rows) => rows[0] ?? null);
+
+  if (!plan) return null;
+
+  const versionRow = await db
+    .select({
+      id: tariffPlanVersions.id,
+      versionLabel: tariffPlanVersions.versionLabel,
+      validFromLocalDate: tariffPlanVersions.validFromLocalDate,
+      validToLocalDate: tariffPlanVersions.validToLocalDate,
+      isActiveDefault: tariffPlanVersions.isActiveDefault,
+      weeklyScheduleJson: tariffPlanVersions.weeklyScheduleJson,
+      dayRate: tariffPlanVersions.dayRate,
+      nightRate: tariffPlanVersions.nightRate,
+      peakRate: tariffPlanVersions.peakRate,
+      exportRate: tariffPlanVersions.exportRate,
+      vatRate: tariffPlanVersions.vatRate,
+      nightStartLocalTime: tariffPlanVersions.nightStartLocalTime,
+      nightEndLocalTime: tariffPlanVersions.nightEndLocalTime,
+      peakStartLocalTime: tariffPlanVersions.peakStartLocalTime,
+      peakEndLocalTime: tariffPlanVersions.peakEndLocalTime,
+    })
+    .from(tariffPlanVersions)
+    .where(and(eq(tariffPlanVersions.id, versionId), eq(tariffPlanVersions.tariffPlanId, plan.id)))
+    .limit(1)
+    .then((rows) => rows[0] ?? null);
+
+  if (!versionRow) return null;
+
+  const [pricePeriods, fixedCharges, allVersionRows, contract] = await Promise.all([
+    db
+      .select({
+        id: tariffPricePeriods.id,
+        periodLabel: tariffPricePeriods.periodLabel,
+        ratePerKwh: tariffPricePeriods.ratePerKwh,
+        isFreeImport: tariffPricePeriods.isFreeImport,
+        sortOrder: tariffPricePeriods.sortOrder,
+        colourHex: tariffPricePeriods.colourHex,
+      })
+      .from(tariffPricePeriods)
+      .where(eq(tariffPricePeriods.tariffPlanVersionId, versionRow.id))
+      .orderBy(asc(tariffPricePeriods.sortOrder)),
+
+    db
+      .select({
+        id: tariffFixedChargeVersions.id,
+        chargeType: tariffFixedChargeVersions.chargeType,
+        amount: tariffFixedChargeVersions.amount,
+        unit: tariffFixedChargeVersions.unit,
+        vatInclusive: tariffFixedChargeVersions.vatInclusive,
+        validFromLocalDate: tariffFixedChargeVersions.validFromLocalDate,
+        validToLocalDate: tariffFixedChargeVersions.validToLocalDate,
+      })
+      .from(tariffFixedChargeVersions)
+      .where(eq(tariffFixedChargeVersions.tariffPlanVersionId, versionRow.id))
+      .orderBy(asc(tariffFixedChargeVersions.validFromLocalDate)),
+
+    db
+      .select({
+        id: tariffPlanVersions.id,
+        versionLabel: tariffPlanVersions.versionLabel,
+        validFromLocalDate: tariffPlanVersions.validFromLocalDate,
+        validToLocalDate: tariffPlanVersions.validToLocalDate,
+        isActiveDefault: tariffPlanVersions.isActiveDefault,
+        dayRate: tariffPlanVersions.dayRate,
+        nightRate: tariffPlanVersions.nightRate,
+        peakRate: tariffPlanVersions.peakRate,
+        exportRate: tariffPlanVersions.exportRate,
+      })
+      .from(tariffPlanVersions)
+      .where(eq(tariffPlanVersions.tariffPlanId, plan.id))
+      .orderBy(desc(tariffPlanVersions.validFromLocalDate)),
+
+    db
+      .select({
+        id: installationContracts.id,
+        contractStartDate: installationContracts.contractStartDate,
+        contractEndDate: installationContracts.contractEndDate,
+        expectedReviewDate: installationContracts.expectedReviewDate,
+        postContractDefaultBehavior: installationContracts.postContractDefaultBehavior,
+        notes: installationContracts.notes,
+      })
+      .from(installationContracts)
+      .where(
+        and(
+          eq(installationContracts.installationId, installationId),
+          eq(installationContracts.tariffPlanId, plan.id),
+        ),
+      )
+      .limit(1)
+      .then((rows) => rows[0] ?? null),
+  ]);
+
+  const version: TariffVersionDetail = {
+    ...versionRow,
+    weeklyScheduleJson: versionRow.weeklyScheduleJson as string[] | null,
+    pricePeriods,
+    fixedCharges,
+  };
+
+  return {
+    plan,
+    version,
+    allVersions: allVersionRows,
+    contract,
+  };
 }
