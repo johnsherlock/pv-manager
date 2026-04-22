@@ -40,14 +40,8 @@ const INACTIVE_SLOT_FILL = '#27324a';
 const INACTIVE_SLOT_BORDER = 'rgba(255,255,255,0.06)';
 
 const COLOUR_PALETTE = [
-  '#3b82f6',
-  '#f59e0b',
-  '#ef4444',
-  '#10b981',
-  '#8b5cf6',
-  '#f97316',
-  '#14b8a6',
-  '#ec4899',
+  '#3b82f6', '#f59e0b', '#ef4444', '#10b981',
+  '#8b5cf6', '#f97316', '#14b8a6', '#ec4899',
 ];
 
 const MONTH_NAMES = [
@@ -72,7 +66,6 @@ type EditorGroup = {
   id: string;
   days: number[];
   periods: EditorPeriod[];
-  /** 48-element array: period ID for each half-hour slot, or '' if unassigned. */
   slots: string[];
 };
 
@@ -83,12 +76,10 @@ export type TariffEditorInitialData = {
   validFromLocalDate: string;
   validToLocalDate: string;
   periods: EditorPeriod[];
-  /** 336-element flat schedule (7 days × 48 slots, Mon = 0). Used to derive groups. */
   schedule: string[];
   exportRate: string;
   /** VAT rate as a percentage string, e.g. "9" or "8.5". */
   vatRate: string;
-  /** Standing charge per day. */
   standingChargeAmount: string;
 };
 
@@ -114,10 +105,7 @@ function newId(): string {
 
 function nextColour(periods: EditorPeriod[]): string {
   const used = new Set(periods.map((p) => p.colourHex));
-  return (
-    COLOUR_PALETTE.find((c) => !used.has(c)) ??
-    COLOUR_PALETTE[periods.length % COLOUR_PALETTE.length]
-  );
+  return COLOUR_PALETTE.find((c) => !used.has(c)) ?? COLOUR_PALETTE[periods.length % COLOUR_PALETTE.length];
 }
 
 function deriveGroups(periods: EditorPeriod[], schedule: string[]): EditorGroup[] {
@@ -134,8 +122,8 @@ function deriveGroups(periods: EditorPeriod[], schedule: string[]): EditorGroup[
       groups[seen.get(key)!].days.push(d);
     } else {
       const slots = schedule.slice(d * SLOT_COUNT, d * SLOT_COUNT + SLOT_COUNT);
-      const usedIds = [...new Set(slots)].filter(Boolean);
-      const groupPeriods = usedIds
+      const groupPeriods = [...new Set(slots)]
+        .filter(Boolean)
         .map((id) => periodMap.get(id))
         .filter((p): p is EditorPeriod => !!p);
       seen.set(key, groups.length);
@@ -149,7 +137,7 @@ function addMonths(dateStr: string, months: number): string {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
   d.setMonth(d.getMonth() + months);
-  return d.toISOString().slice(0, 10);
+  return toLocalIso(d);
 }
 
 function checkOverlap(
@@ -170,47 +158,49 @@ function checkOverlap(
 
 function dailyToAnnual(daily: string): string {
   const v = parseFloat(daily);
-  if (isNaN(v)) return '';
-  return (v * 365).toFixed(2);
+  return isNaN(v) ? '' : (v * 365).toFixed(2);
 }
 
 function annualToDaily(annual: string): string {
   const v = parseFloat(annual);
-  if (isNaN(v)) return '';
-  return (v / 365).toFixed(4);
+  return isNaN(v) ? '' : (v / 365).toFixed(4);
+}
+
+/** Format a Date using local time components — avoids UTC conversion shifting the date. */
+function toLocalIso(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function buildCalCells(year: number, month: number) {
-  const startDow = (new Date(year, month, 1).getDay() + 6) % 7; // Mon = 0
+  // Mon = 0 offset (getDay returns Sun = 0)
+  const startDow = (new Date(year, month, 1).getDay() + 6) % 7;
   const cells: { iso: string; day: number; inMonth: boolean }[] = [];
+
+  // Previous month tail
   for (let i = startDow - 1; i >= 0; i--) {
     const d = new Date(year, month, -i);
-    cells.push({ iso: d.toISOString().slice(0, 10), day: d.getDate(), inMonth: false });
+    cells.push({ iso: toLocalIso(d), day: d.getDate(), inMonth: false });
   }
+  // Current month
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   for (let d = 1; d <= daysInMonth; d++) {
-    cells.push({
-      iso: new Date(year, month, d).toISOString().slice(0, 10),
-      day: d,
-      inMonth: true,
-    });
+    cells.push({ iso: toLocalIso(new Date(year, month, d)), day: d, inMonth: true });
   }
-  let next = 1;
-  while (cells.length < 42) {
-    cells.push({
-      iso: new Date(year, month + 1, next++).toISOString().slice(0, 10),
-      day: next - 1,
-      inMonth: false,
-    });
+  // Next month head — pad to complete the last row
+  const remaining = (7 - (cells.length % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    const d = new Date(year, month + 1, i);
+    cells.push({ iso: toLocalIso(d), day: d.getDate(), inMonth: false });
   }
   return cells;
 }
 
 function formatDisplayDate(iso: string): string {
   return new Intl.DateTimeFormat('en-IE', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
+    day: 'numeric', month: 'short', year: 'numeric',
   }).format(new Date(iso + 'T00:00:00'));
 }
 
@@ -220,12 +210,15 @@ function formatDisplayDate(iso: string): string {
 
 const INPUT_CLS =
   'w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-slate-500 focus:outline-none';
+// Appended to number inputs: removes spin buttons
+const NO_SPIN =
+  '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 const LABEL_CLS =
   'block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5';
 const ERR_CLS = 'mt-1 text-xs text-red-400';
 
 // ---------------------------------------------------------------------------
-// DateField — custom date picker matching the app's calendar style
+// DateField — custom calendar picker matching the app's visual style
 // ---------------------------------------------------------------------------
 
 function DateField({
@@ -233,13 +226,17 @@ function DateField({
   onChange,
   placeholder = 'Select date',
   error,
+  disabled,
+  minDate,
 }: {
   value: string;
   onChange: (iso: string) => void;
   placeholder?: string;
   error?: boolean;
+  disabled?: boolean;
+  minDate?: string;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalIso(new Date());
   const seed = value || today;
   const [open, setOpen] = useState(false);
   const [viewYear, setViewYear] = useState(() => parseInt(seed.slice(0, 4)));
@@ -277,10 +274,17 @@ function DateField({
     <div className="relative" ref={containerRef}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((o) => !o)}
         className={[
-          'flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition-colors bg-slate-900/60 hover:border-slate-600 focus:outline-none',
-          error ? 'border-red-700' : open ? 'border-slate-500' : 'border-slate-700',
+          'flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition-colors bg-slate-900/60 focus:outline-none',
+          disabled
+            ? 'border-slate-800 cursor-not-allowed opacity-40'
+            : error
+              ? 'border-red-700 hover:border-red-600'
+              : open
+                ? 'border-slate-500'
+                : 'border-slate-700 hover:border-slate-600',
         ].join(' ')}
       >
         <span className={value ? 'text-slate-100' : 'text-slate-600'}>
@@ -313,33 +317,33 @@ function DateField({
           </div>
 
           <div className="px-3 py-3">
-            {/* Day of week headers */}
             <div className="mb-1 grid grid-cols-7 text-center">
               {DOW_LABELS.map((d) => (
-                <span key={d} className="text-[10px] font-semibold text-slate-600">
-                  {d}
-                </span>
+                <span key={d} className="text-[10px] font-semibold text-slate-600">{d}</span>
               ))}
             </div>
-            {/* Calendar cells */}
             <div className="grid grid-cols-7">
               {cells.map((cell) => {
                 const isSelected = cell.iso === value;
                 const isToday = cell.iso === today;
+                const isDisabled = !!(minDate && cell.iso < minDate);
                 return (
                   <button
                     key={cell.iso}
                     type="button"
-                    onClick={() => { onChange(cell.iso); setOpen(false); }}
+                    disabled={isDisabled}
+                    onClick={() => { if (!isDisabled) { onChange(cell.iso); setOpen(false); } }}
                     className={[
                       'flex h-7 w-full items-center justify-center rounded-full text-[11px] transition-colors',
-                      isSelected
-                        ? 'bg-emerald-600 font-semibold text-white'
-                        : isToday
-                          ? 'font-medium text-emerald-400 ring-1 ring-emerald-600/60 hover:bg-slate-800'
-                          : cell.inMonth
-                            ? 'text-slate-300 hover:bg-slate-800'
-                            : 'text-slate-600 hover:bg-slate-800',
+                      isDisabled
+                        ? 'text-slate-700 cursor-not-allowed'
+                        : isSelected
+                          ? 'bg-emerald-600 font-semibold text-white'
+                          : isToday
+                            ? 'font-medium text-emerald-400 ring-1 ring-emerald-600/60 hover:bg-slate-800'
+                            : cell.inMonth
+                              ? 'text-slate-300 hover:bg-slate-800'
+                              : 'text-slate-600 hover:bg-slate-800',
                     ].join(' ')}
                   >
                     {cell.day}
@@ -381,12 +385,10 @@ function SectionCard({
         ].join(' ')}
       >
         <span className="text-sm font-semibold text-slate-200">{title}</span>
-        {collapsible &&
-          (open ? (
-            <ChevronUp size={14} className="text-slate-500" />
-          ) : (
-            <ChevronDown size={14} className="text-slate-500" />
-          ))}
+        {collapsible && (open
+          ? <ChevronUp size={14} className="text-slate-500" />
+          : <ChevronDown size={14} className="text-slate-500" />
+        )}
       </button>
       {(!collapsible || open) && (
         <div className="px-5 pb-5 border-t border-slate-800/60">
@@ -398,22 +400,27 @@ function SectionCard({
 }
 
 // ---------------------------------------------------------------------------
-// PeriodInputs — name + rate fields rendered inline in a period row
+// PeriodInputs — name + rate fields; shows red borders when submitted + invalid
 // ---------------------------------------------------------------------------
 
 function PeriodInputs({
   period,
   index,
   canDelete,
+  submitted,
   onChange,
   onDelete,
 }: {
   period: EditorPeriod;
   index: number;
   canDelete: boolean;
+  submitted: boolean;
   onChange: (updated: EditorPeriod) => void;
   onDelete: () => void;
 }) {
+  const nameError = submitted && !period.periodLabel.trim();
+  const rateError = submitted && !period.ratePerKwh;
+
   return (
     <div className="flex items-center gap-2 min-w-0 flex-1">
       <input
@@ -421,16 +428,28 @@ function PeriodInputs({
         value={period.periodLabel}
         onChange={(e) => onChange({ ...period, periodLabel: e.target.value })}
         placeholder={`Period ${index + 1}`}
-        className="min-w-0 w-24 rounded-lg border border-slate-700 bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:border-slate-500 focus:outline-none"
+        className={[
+          'min-w-0 w-24 rounded-lg border bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-500',
+          nameError ? 'border-red-700' : 'border-slate-700',
+        ].join(' ')}
       />
       <input
         type="number"
         step="0.000001"
         min="0"
         value={period.ratePerKwh}
-        onChange={(e) => onChange({ ...period, ratePerKwh: e.target.value })}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v !== '' && parseFloat(v) < 0) return;
+          onChange({ ...period, ratePerKwh: v });
+        }}
+        onKeyDown={(e) => e.key === '-' && e.preventDefault()}
         placeholder="€/kWh"
-        className="w-20 rounded-lg border border-slate-700 bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:border-slate-500 focus:outline-none tabular-nums"
+        className={[
+          'w-20 rounded-lg border bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-500 tabular-nums',
+          NO_SPIN,
+          rateError ? 'border-red-700' : 'border-slate-700',
+        ].join(' ')}
       />
       {canDelete && (
         <button
@@ -447,7 +466,7 @@ function PeriodInputs({
 }
 
 // ---------------------------------------------------------------------------
-// ActivityBar — one period's interactive 48-slot bar
+// ActivityBar
 // ---------------------------------------------------------------------------
 
 function ActivityBar({
@@ -492,15 +511,11 @@ function ActivityBar({
           );
         })}
       </div>
-
-      {/* 2-hour guide lines */}
       {TWO_HOUR_MARKERS.map((hour) => {
         const left =
-          hour === 0
-            ? -SLOT_GAP / 2
-            : hour === 24
-              ? GRID_WIDTH + SLOT_GAP / 2
-              : hour * 2 * (SLOT_WIDTH + SLOT_GAP) - SLOT_GAP / 2;
+          hour === 0 ? -SLOT_GAP / 2
+          : hour === 24 ? GRID_WIDTH + SLOT_GAP / 2
+          : hour * 2 * (SLOT_WIDTH + SLOT_GAP) - SLOT_GAP / 2;
         const strong = hour % 6 === 0;
         return (
           <div
@@ -525,17 +540,14 @@ function TimeAxis() {
       {TWO_HOUR_MARKERS.map((hour) => {
         const left = Math.max(0, Math.min(GRID_WIDTH, hour * 2 * (SLOT_WIDTH + SLOT_GAP)));
         const strong = hour % 6 === 0 || hour === 24;
-        const pos =
-          hour === 0 ? 'translate-x-0' : hour === 24 ? '-translate-x-full' : '-translate-x-1/2';
+        const pos = hour === 0 ? 'translate-x-0' : hour === 24 ? '-translate-x-full' : '-translate-x-1/2';
         return (
           <div
             key={hour}
             className={`absolute top-0 text-[10px] tabular-nums pointer-events-none ${pos}`}
             style={{ left }}
           >
-            <span className={strong ? 'font-semibold text-slate-300' : 'text-slate-500'}>
-              {hour}
-            </span>
+            <span className={strong ? 'font-semibold text-slate-300' : 'text-slate-500'}>{hour}</span>
           </div>
         );
       })}
@@ -559,14 +571,8 @@ type GroupCardProps = {
 };
 
 function ScheduleGroupCard({
-  group,
-  allGroups,
-  canDelete,
-  submitted,
-  onUpdate,
-  onDelete,
-  onClaimDay,
-  onPaintSlot,
+  group, allGroups, canDelete, submitted,
+  onUpdate, onDelete, onClaimDay, onPaintSlot,
 }: GroupCardProps) {
   const isPaintingRef = useRef(false);
   const paintValueRef = useRef<string>('');
@@ -599,34 +605,25 @@ function ScheduleGroupCard({
     paintValueRef.current = group.slots[slotIdx] === periodId ? '' : periodId;
     onPaintSlot(slotIdx, paintValueRef.current);
   }
-
   function handleSlotMouseEnter(slotIdx: number) {
     if (isPaintingRef.current) onPaintSlot(slotIdx, paintValueRef.current);
   }
-
   function toggleDay(dayIdx: number) {
-    if (group.days.includes(dayIdx)) {
-      onUpdate({ ...group, days: group.days.filter((d) => d !== dayIdx) });
-    } else {
-      onClaimDay(dayIdx);
-    }
+    if (group.days.includes(dayIdx)) onUpdate({ ...group, days: group.days.filter((d) => d !== dayIdx) });
+    else onClaimDay(dayIdx);
   }
-
   function addPeriod() {
-    const period: EditorPeriod = {
-      id: newId(),
-      periodLabel: '',
-      ratePerKwh: '',
-      isFreeImport: false,
-      colourHex: nextColour(group.periods),
-    };
-    onUpdate({ ...group, periods: [...group.periods, period] });
+    onUpdate({
+      ...group,
+      periods: [...group.periods, {
+        id: newId(), periodLabel: '', ratePerKwh: '',
+        isFreeImport: false, colourHex: nextColour(group.periods),
+      }],
+    });
   }
-
   function updatePeriod(idx: number, updated: EditorPeriod) {
     onUpdate({ ...group, periods: group.periods.map((p, i) => (i === idx ? updated : p)) });
   }
-
   function removePeriod(idx: number) {
     const removed = group.periods[idx];
     onUpdate({
@@ -642,7 +639,7 @@ function ScheduleGroupCard({
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-4">
-      {/* Day pills + delete */}
+      {/* Day pills */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <p className={LABEL_CLS + ' mb-2'}>Days</p>
@@ -658,16 +655,10 @@ function ScheduleGroupCard({
                   disabled={taken}
                   title={taken ? `${DAY_LABELS[i]} is in another group` : DAY_LABELS[i]}
                   style={{
-                    width: DAY_PILL_SIZE,
-                    height: DAY_PILL_SIZE,
-                    borderRadius: '50%',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    userSelect: 'none',
-                    boxSizing: 'border-box',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    width: DAY_PILL_SIZE, height: DAY_PILL_SIZE,
+                    borderRadius: '50%', fontSize: 12, fontWeight: 600,
+                    userSelect: 'none', boxSizing: 'border-box',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                     backgroundColor: active ? '#475569' : taken ? '#18202e' : '#1e293b',
                     color: active ? '#f1f5f9' : taken ? '#2d3a4e' : '#64748b',
                     border: `1.5px solid ${active ? '#64748b' : taken ? '#232d3e' : '#2d3a4e'}`,
@@ -699,7 +690,6 @@ function ScheduleGroupCard({
         </p>
       )}
 
-      {/* Bars region */}
       {group.periods.length > 0 && (
         <div className="overflow-x-auto -mx-4 px-4" ref={containerRef}>
           <div style={{ minWidth: GRID_WIDTH + LABEL_COL_WIDTH + 12 }}>
@@ -708,9 +698,9 @@ function ScheduleGroupCard({
                 <div key={period.id}>
                   <div className="mb-1.5 md:hidden">
                     <PeriodInputs
-                      period={period}
-                      index={pIdx}
+                      period={period} index={pIdx}
                       canDelete={group.periods.length > 1}
+                      submitted={submitted}
                       onChange={(u) => updatePeriod(pIdx, u)}
                       onDelete={() => removePeriod(pIdx)}
                     />
@@ -718,9 +708,9 @@ function ScheduleGroupCard({
                   <div className="flex items-center gap-3">
                     <div className="hidden md:flex shrink-0" style={{ width: LABEL_COL_WIDTH }}>
                       <PeriodInputs
-                        period={period}
-                        index={pIdx}
+                        period={period} index={pIdx}
                         canDelete={group.periods.length > 1}
+                        submitted={submitted}
                         onChange={(u) => updatePeriod(pIdx, u)}
                         onDelete={() => removePeriod(pIdx)}
                       />
@@ -743,13 +733,12 @@ function ScheduleGroupCard({
         </div>
       )}
 
-      {/* Unassigned warning — only shown after a save attempt */}
+      {/* Unassigned — only shown after save attempt */}
       {submitted && unassigned > 0 && group.periods.length > 0 && (
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-700/30 bg-amber-950/20 px-3 py-2.5">
           <AlertTriangle size={12} className="mt-0.5 shrink-0 text-amber-400" />
           <p className="text-xs text-amber-300">
-            {unassigned} slot{unassigned !== 1 ? 's' : ''} unassigned — click or drag on a
-            period&apos;s bar to assign.
+            {unassigned} slot{unassigned !== 1 ? 's' : ''} unassigned — click or drag on a period&apos;s bar to assign.
           </p>
         </div>
       )}
@@ -772,13 +761,11 @@ function ScheduleGroupCard({
 // ---------------------------------------------------------------------------
 
 export default function TariffEditor({ mode, initial, existingVersions }: Props) {
-  // ---- Identity ----
   const [supplierName, setSupplierName] = useState(initial.supplierName);
   const [planName, setPlanName] = useState(initial.planName);
   const [validFrom, setValidFrom] = useState(initial.validFromLocalDate);
   const [validTo, setValidTo] = useState(initial.validToLocalDate);
 
-  // ---- Charges ----
   const [exportRate, setExportRate] = useState(initial.exportRate);
   const [vatRate, setVatRate] = useState(initial.vatRate);
   const [standingChargeDaily, setStandingChargeDaily] = useState(initial.standingChargeAmount);
@@ -786,16 +773,13 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
     () => dailyToAnnual(initial.standingChargeAmount),
   );
 
-  // ---- Schedule groups ----
   const [groups, setGroups] = useState<EditorGroup[]>(() =>
     deriveGroups(initial.periods, initial.schedule),
   );
 
-  // ---- UI ----
   const [submitted, setSubmitted] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'success'>('idle');
 
-  // ---- Standing charge dual-entry ----
   function handleDailyChange(val: string) {
     setStandingChargeDaily(val);
     setStandingChargeAnnual(dailyToAnnual(val));
@@ -805,13 +789,14 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
     setStandingChargeDaily(annualToDaily(val));
   }
 
-  // ---- Valid-to default in create mode ----
   function handleValidFromChange(val: string) {
     setValidFrom(val);
+    // Default end date to 12 months out in create mode if not yet set
     if (mode === 'create' && !validTo && val) setValidTo(addMonths(val, 12));
+    // If the new start date is after the current end date, clear the end date
+    if (validTo && val > validTo) setValidTo('');
   }
 
-  // ---- Group management ----
   function updateGroup(groupId: string, updated: EditorGroup) {
     setGroups((prev) => prev.map((g) => (g.id === groupId ? updated : g)));
   }
@@ -819,46 +804,38 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
     setGroups((prev) => prev.filter((g) => g.id !== groupId));
   }
   function addGroup() {
-    setGroups((prev) => [
-      ...prev,
-      { id: newId(), days: [], periods: [], slots: new Array(SLOT_COUNT).fill('') },
-    ]);
+    setGroups((prev) => [...prev, {
+      id: newId(), days: [], periods: [], slots: new Array(SLOT_COUNT).fill(''),
+    }]);
   }
   function claimDayForGroup(groupId: string, dayIdx: number) {
-    setGroups((prev) =>
-      prev.map((g) => {
-        if (g.id === groupId) return { ...g, days: [...g.days, dayIdx] };
-        return { ...g, days: g.days.filter((d) => d !== dayIdx) };
-      }),
-    );
+    setGroups((prev) => prev.map((g) => {
+      if (g.id === groupId) return { ...g, days: [...g.days, dayIdx] };
+      return { ...g, days: g.days.filter((d) => d !== dayIdx) };
+    }));
   }
   function paintGroupSlot(groupId: string, slotIdx: number, value: string) {
-    setGroups((prev) =>
-      prev.map((g) => {
-        if (g.id !== groupId) return g;
-        if (g.slots[slotIdx] === value) return g;
-        const slots = [...g.slots];
-        slots[slotIdx] = value;
-        return { ...g, slots };
-      }),
-    );
+    setGroups((prev) => prev.map((g) => {
+      if (g.id !== groupId || g.slots[slotIdx] === value) return g;
+      const slots = [...g.slots];
+      slots[slotIdx] = value;
+      return { ...g, slots };
+    }));
   }
 
-  // ---- Derived ----
   const overlapWarning = checkOverlap(validFrom, validTo, existingVersions, initial.versionId);
   const coveredDays = new Set(groups.flatMap((g) => g.days));
   const uncoveredDays = Array.from({ length: 7 }, (_, i) => i).filter((d) => !coveredDays.has(d));
 
-  // ---- Validation ----
   function validate(): Record<string, string> {
     const e: Record<string, string> = {};
-    if (!supplierName.trim()) e.supplierName = 'Supplier name is required';
-    if (!validFrom) e.validFrom = 'Start date is required';
-    if (!validTo) e.validTo = 'End date is required';
-    if (validFrom && validTo && validTo < validFrom) e.validTo = 'End date must be after start date';
-    if (exportRate === '') e.exportRate = 'Export rate is required (enter 0 if none)';
-    if (vatRate === '') e.vatRate = 'VAT rate is required (enter 0 if none)';
-    if (standingChargeDaily === '') e.standingChargeDaily = 'Standing charge is required (enter 0 if none)';
+    if (!supplierName.trim()) e.supplierName = 'required';
+    if (!validFrom) e.validFrom = 'required';
+    if (!validTo) e.validTo = 'required';
+    if (validFrom && validTo && validTo < validFrom) e.validTo = 'end before start';
+    if (exportRate === '') e.exportRate = 'required';
+    if (vatRate === '') e.vatRate = 'required';
+    if (standingChargeDaily === '') e.standingChargeDaily = 'required';
     if (groups.length === 0) e.groups = 'At least one schedule group is required';
     if (uncoveredDays.length > 0)
       e.coverage = `${uncoveredDays.map((d) => DAY_LABELS[d]).join(', ')} not assigned to any group`;
@@ -866,11 +843,11 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
       if (g.days.length === 0) e[`g${gi}_days`] = `Group ${gi + 1}: select at least one day`;
       if (g.periods.length === 0) e[`g${gi}_periods`] = `Group ${gi + 1}: add at least one price period`;
       g.periods.forEach((p, pi) => {
-        if (!p.periodLabel.trim()) e[`g${gi}p${pi}_label`] = `Group ${gi + 1}, period ${pi + 1}: name required`;
-        if (!p.ratePerKwh) e[`g${gi}p${pi}_rate`] = `Group ${gi + 1}, period ${pi + 1}: rate required`;
+        if (!p.periodLabel.trim()) e[`g${gi}p${pi}_label`] = 'period name';
+        if (!p.ratePerKwh) e[`g${gi}p${pi}_rate`] = 'period rate';
       });
       const unassigned = g.slots.filter((s) => s === '').length;
-      if (unassigned > 0) e[`g${gi}_slots`] = `Group ${gi + 1}: ${unassigned} slot${unassigned !== 1 ? 's' : ''} unassigned`;
+      if (unassigned > 0) e[`g${gi}_slots`] = `${unassigned} slot${unassigned !== 1 ? 's' : ''} unassigned`;
     });
     return e;
   }
@@ -884,7 +861,6 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
     setSaveState('success');
   }
 
-  // ---- Success screen ----
   if (saveState === 'success') {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center px-4">
@@ -897,16 +873,10 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
         <p className="text-sm text-slate-400 leading-relaxed max-w-sm mb-2">
           Historical cost and savings calculations from{' '}
           <span className="text-slate-200">{validFrom}</span>
-          {validTo ? (
-            <> to <span className="text-slate-200">{validTo}</span></>
-          ) : (
-            ' onwards'
-          )}{' '}
+          {validTo ? <> to <span className="text-slate-200">{validTo}</span></> : ' onwards'}{' '}
           will be recalculated. This may take a few moments.
         </p>
-        <p className="text-xs text-slate-600 mb-8">
-          This is a prototype — no data was actually saved.
-        </p>
+        <p className="text-xs text-slate-600 mb-8">This is a prototype — no data was actually saved.</p>
         <Link
           href="/settings/tariffs"
           className="inline-flex items-center gap-2 rounded-full bg-emerald-700/80 border border-emerald-600/40 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
@@ -947,7 +917,6 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
               className={[INPUT_CLS, errors.supplierName ? 'border-red-700' : ''].join(' ')}
               readOnly={mode === 'edit'}
             />
-            {errors.supplierName && <p className={ERR_CLS}>{errors.supplierName}</p>}
           </div>
           <div>
             <label className={LABEL_CLS}>Plan name</label>
@@ -968,7 +937,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
           </p>
         )}
 
-        {/* Dates — two columns on all screen sizes */}
+        {/* Dates — two columns on all viewports */}
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
             <label className={LABEL_CLS}>Start date</label>
@@ -978,7 +947,6 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
               placeholder="Pick a date"
               error={!!errors.validFrom}
             />
-            {errors.validFrom && <p className={ERR_CLS}>{errors.validFrom}</p>}
           </div>
           <div>
             <label className={LABEL_CLS}>End date</label>
@@ -987,8 +955,9 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
               onChange={setValidTo}
               placeholder="Pick a date"
               error={!!errors.validTo}
+              disabled={!validFrom}
+              minDate={validFrom || undefined}
             />
-            {errors.validTo && <p className={ERR_CLS}>{errors.validTo}</p>}
           </div>
         </div>
 
@@ -999,9 +968,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
               This date range overlaps with{' '}
               <span className="font-medium">{overlapWarning.versionLabel}</span> (
               {overlapWarning.validFromLocalDate}
-              {overlapWarning.validToLocalDate
-                ? ` – ${overlapWarning.validToLocalDate}`
-                : ' onwards'}
+              {overlapWarning.validToLocalDate ? ` – ${overlapWarning.validToLocalDate}` : ' onwards'}
               ). Adjust the dates or update the other version first.
             </p>
           </div>
@@ -1018,15 +985,12 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
               step="0.000001"
               min="0"
               value={exportRate}
-              onChange={(e) => setExportRate(e.target.value)}
+              onChange={(e) => { if (e.target.value !== '' && parseFloat(e.target.value) < 0) return; setExportRate(e.target.value); }}
+              onKeyDown={(e) => e.key === '-' && e.preventDefault()}
               placeholder="0.1850"
-              className={[INPUT_CLS, errors.exportRate ? 'border-red-700' : ''].join(' ')}
+              className={[INPUT_CLS, NO_SPIN, errors.exportRate ? 'border-red-700' : ''].join(' ')}
             />
-            {errors.exportRate ? (
-              <p className={ERR_CLS}>{errors.exportRate}</p>
-            ) : (
-              <p className="mt-1 text-xs text-slate-600">Enter 0 if you don&apos;t export.</p>
-            )}
+            <p className="mt-1 text-xs text-slate-600">Enter 0 if you don&apos;t export.</p>
           </div>
           <div>
             <label className={LABEL_CLS}>VAT rate %</label>
@@ -1036,20 +1000,16 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
               min="0"
               max="100"
               value={vatRate}
-              onChange={(e) => setVatRate(e.target.value)}
+              onChange={(e) => { if (e.target.value !== '' && parseFloat(e.target.value) < 0) return; setVatRate(e.target.value); }}
+              onKeyDown={(e) => e.key === '-' && e.preventDefault()}
               placeholder="e.g. 9 or 8.5"
-              className={[INPUT_CLS, errors.vatRate ? 'border-red-700' : ''].join(' ')}
+              className={[INPUT_CLS, NO_SPIN, errors.vatRate ? 'border-red-700' : ''].join(' ')}
             />
-            {errors.vatRate ? (
-              <p className={ERR_CLS}>{errors.vatRate}</p>
-            ) : (
-              <p className="mt-1 text-xs text-slate-600">
-                Applies to imports and standing charge. Enter 0 if no VAT.
-              </p>
-            )}
+            <p className="mt-1 text-xs text-slate-600">
+              Applies to imports and standing charge. Enter 0 if no VAT.
+            </p>
           </div>
 
-          {/* Standing charge — dual entry, both columns */}
           <div className="sm:col-span-2">
             <label className={LABEL_CLS}>Standing charge (VAT-exclusive)</label>
             <div className="grid grid-cols-2 gap-3">
@@ -1060,9 +1020,10 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
                   step="0.01"
                   min="0"
                   value={standingChargeAnnual}
-                  onChange={(e) => handleAnnualChange(e.target.value)}
+                  onChange={(e) => { if (e.target.value !== '' && parseFloat(e.target.value) < 0) return; handleAnnualChange(e.target.value); }}
+                  onKeyDown={(e) => e.key === '-' && e.preventDefault()}
                   placeholder="200.75"
-                  className={[INPUT_CLS, errors.standingChargeDaily ? 'border-red-700' : ''].join(' ')}
+                  className={[INPUT_CLS, NO_SPIN, errors.standingChargeDaily ? 'border-red-700' : ''].join(' ')}
                 />
               </div>
               <div>
@@ -1072,20 +1033,16 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
                   step="0.0001"
                   min="0"
                   value={standingChargeDaily}
-                  onChange={(e) => handleDailyChange(e.target.value)}
+                  onChange={(e) => { if (e.target.value !== '' && parseFloat(e.target.value) < 0) return; handleDailyChange(e.target.value); }}
+                  onKeyDown={(e) => e.key === '-' && e.preventDefault()}
                   placeholder="0.5500"
-                  className={[INPUT_CLS, errors.standingChargeDaily ? 'border-red-700' : ''].join(' ')}
+                  className={[INPUT_CLS, NO_SPIN, errors.standingChargeDaily ? 'border-red-700' : ''].join(' ')}
                 />
               </div>
             </div>
-            {errors.standingChargeDaily ? (
-              <p className={ERR_CLS}>{errors.standingChargeDaily}</p>
-            ) : (
-              <p className="mt-1.5 text-xs text-slate-600">
-                Enter either field — the other is calculated automatically. Enter 0 if no standing
-                charge.
-              </p>
-            )}
+            <p className="mt-1.5 text-xs text-slate-600">
+              Enter either field — the other is calculated automatically. Enter 0 if no standing charge.
+            </p>
           </div>
         </div>
       </SectionCard>
@@ -1109,9 +1066,12 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
           )}
 
           {groups.map((group, gi) => {
-            const groupErrors = Object.entries(errors)
-              .filter(([k]) => k.startsWith(`g${gi}`))
-              .map(([, v]) => v);
+            // Only show structural group errors (days/periods/slots), not field-level ones
+            const groupStructureErrors = [
+              errors[`g${gi}_days`],
+              errors[`g${gi}_periods`],
+              errors[`g${gi}_slots`],
+            ].filter(Boolean);
             return (
               <div key={group.id}>
                 <ScheduleGroupCard
@@ -1124,9 +1084,9 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
                   onClaimDay={(dayIdx) => claimDayForGroup(group.id, dayIdx)}
                   onPaintSlot={(slotIdx, value) => paintGroupSlot(group.id, slotIdx, value)}
                 />
-                {submitted && groupErrors.length > 0 && (
-                  <div className="mt-2 flex flex-col gap-0.5 px-1">
-                    {groupErrors.map((msg, i) => (
+                {submitted && groupStructureErrors.length > 0 && (
+                  <div className="mt-2 px-1 flex flex-col gap-0.5">
+                    {groupStructureErrors.map((msg, i) => (
                       <p key={i} className={ERR_CLS}>{msg}</p>
                     ))}
                   </div>
