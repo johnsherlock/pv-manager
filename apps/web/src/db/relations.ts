@@ -1,18 +1,16 @@
 import { relations } from 'drizzle-orm';
 import {
-  billingComparisons,
   dailySummaries,
   dataHealthEvents,
   deletionRequests,
-  energyReadings,
   installationContracts,
   installations,
   jobRuns,
   providerConnections,
-  providerRawImports,
   tariffFixedChargeVersions,
   tariffPlanVersions,
   tariffPlans,
+  tariffPricePeriods,
   users,
 } from './schema';
 
@@ -29,9 +27,7 @@ export const installationsRelations = relations(installations, ({ one, many }) =
   tariffPlans: many(tariffPlans),
   providerConnections: many(providerConnections),
   installationContracts: many(installationContracts),
-  energyReadings: many(energyReadings),
   dailySummaries: many(dailySummaries),
-  billingComparisons: many(billingComparisons),
   dataHealthEvents: many(dataHealthEvents),
   jobRuns: many(jobRuns),
 }));
@@ -51,11 +47,19 @@ export const tariffPlanVersionsRelations = relations(tariffPlanVersions, ({ one,
     references: [tariffPlans.id],
   }),
   fixedChargeVersions: many(tariffFixedChargeVersions),
+  pricePeriods: many(tariffPricePeriods),
 }));
 
 export const tariffFixedChargeVersionsRelations = relations(tariffFixedChargeVersions, ({ one }) => ({
   tariffPlanVersion: one(tariffPlanVersions, {
     fields: [tariffFixedChargeVersions.tariffPlanVersionId],
+    references: [tariffPlanVersions.id],
+  }),
+}));
+
+export const tariffPricePeriodsRelations = relations(tariffPricePeriods, ({ one }) => ({
+  tariffPlanVersion: one(tariffPlanVersions, {
+    fields: [tariffPricePeriods.tariffPlanVersionId],
     references: [tariffPlanVersions.id],
   }),
 }));
@@ -76,20 +80,7 @@ export const providerConnectionsRelations = relations(providerConnections, ({ on
     fields: [providerConnections.installationId],
     references: [installations.id],
   }),
-  energyReadings: many(energyReadings),
-  providerRawImports: many(providerRawImports),
   dataHealthEvents: many(dataHealthEvents),
-}));
-
-export const energyReadingsRelations = relations(energyReadings, ({ one }) => ({
-  installation: one(installations, {
-    fields: [energyReadings.installationId],
-    references: [installations.id],
-  }),
-  providerConnection: one(providerConnections, {
-    fields: [energyReadings.providerConnectionId],
-    references: [providerConnections.id],
-  }),
 }));
 
 export const dailySummariesRelations = relations(dailySummaries, ({ one }) => ({
@@ -99,29 +90,10 @@ export const dailySummariesRelations = relations(dailySummaries, ({ one }) => ({
   }),
 }));
 
-export const billingComparisonsRelations = relations(billingComparisons, ({ one }) => ({
-  installation: one(installations, {
-    fields: [billingComparisons.installationId],
-    references: [installations.id],
-  }),
-}));
-
-export const jobRunsRelations = relations(jobRuns, ({ one, many }) => ({
+export const jobRunsRelations = relations(jobRuns, ({ one }) => ({
   installation: one(installations, {
     fields: [jobRuns.installationId],
     references: [installations.id],
-  }),
-  providerRawImports: many(providerRawImports),
-}));
-
-export const providerRawImportsRelations = relations(providerRawImports, ({ one }) => ({
-  providerConnection: one(providerConnections, {
-    fields: [providerRawImports.providerConnectionId],
-    references: [providerConnections.id],
-  }),
-  importRun: one(jobRuns, {
-    fields: [providerRawImports.importRunId],
-    references: [jobRuns.id],
   }),
 }));
 

@@ -96,7 +96,7 @@ Scheduled Jobs
 
 - timezone
 - locale
-- finance cost settings
+- finance cost and finance-duration settings
 - provider metadata
 - privacy-scoped ownership boundary for all related readings and summaries
 
@@ -177,6 +177,7 @@ Key fields:
 - `finance_mode` text nullable such as `cash` or `finance`
 - `install_cost_amount` numeric nullable
 - `monthly_finance_payment_amount` numeric nullable
+- `finance_term_months` integer nullable
 - `provider_type` text
 - `created_at`, `updated_at`
 
@@ -769,7 +770,7 @@ type ProviderImportResult = {
 
 ### MyEnergi-specific first-pass assumptions
 
-- MyEnergi minute payloads can be requested by date, but the adapter should trust the returned local date fields when selecting the final local-day slice.
+- The legacy V1 MyEnergi proxy has a known DST-boundary quirk: it adjusts `hr`/`min` for timezone but can leave `dom`/`mon`/`yr` on the previous local day for the leading 00:00-00:59 block. Any future direct v2 MyEnergi adapter must normalize full timestamps at the adapter layer and must not trust partially shifted local date fields from this legacy proxy behavior.
 - Canonical consumption may be derived as `import + generation - export - immersionDiverted` when not provided directly.
 - Import, export, generation, and immersion values should stay distinct even when some are later combined in summaries or billing comparisons.
 

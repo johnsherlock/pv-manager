@@ -5,8 +5,71 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1774479454738,
-      "tag": "0000_faulty_galactus",
+      "when": 1774553272581,
+      "tag": "0000_deep_shinobi_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774571461773,
+      "tag": "0001_previous_kang",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774906172391,
+      "tag": "0002_naive_silk_fever",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775246744292,
+      "tag": "0003_confused_shockwave",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775496726838,
+      "tag": "0004_petite_bill_hollister",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776029756246,
+      "tag": "0005_premium_hydra",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776035939264,
+      "tag": "0006_gifted_vin_gonzales",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776194964107,
+      "tag": "0007_warm_lorna_dane",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776376438313,
+      "tag": "0008_black_smasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776379306210,
+      "tag": "0009_parallel_overlord",
       "breakpoints": true
     }
   ]

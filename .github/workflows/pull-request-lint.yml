@@ -1,6 +1,8 @@
 name: pull-request-lint
 on:
   pull_request_target:
+    branches:
+      - v2
     types:
       - labeled
       - opened
@@ -22,5 +24,6 @@ jobs:
           types: |-
             feat
             fix
-            chore
+            docs
+            test
           requireScope: false
