@@ -35,8 +35,7 @@ function formatDate(iso: string): string {
 function formatRate(rate: string | null, isFree?: boolean): string {
   if (isFree) return 'Free';
   if (!rate) return '—';
-  const c = (parseFloat(rate) * 100).toFixed(2);
-  return `${c}¢`;
+  return `€${parseFloat(rate).toFixed(4)}`;
 }
 
 function formatStandingCharge(amount: string, unit: string): string {
