@@ -759,9 +759,10 @@ export default async function TariffsPage() {
             />
           )}
 
-          {data.allVersions.length > 0 && (
-            <VersionTimeline versions={data.allVersions} />
-          )}
+          {(() => {
+            const previous = data.allVersions.filter((v) => v.id !== data.activeVersion?.id);
+            return previous.length > 0 ? <VersionTimeline versions={previous} /> : null;
+          })()}
 
           <div className="flex items-start gap-2.5 rounded-2xl border border-slate-800/60 bg-slate-900/30 px-4 py-3.5">
             <Info size={13} className="mt-0.5 shrink-0 text-slate-500" />

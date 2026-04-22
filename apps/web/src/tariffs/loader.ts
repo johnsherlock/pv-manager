@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -134,8 +134,9 @@ export async function loadTariffOverview(installationId: string): Promise<Tariff
     installationContracts,
   } = await getDeps();
 
-  // Fetch the tariff plan for this installation (one plan per installation for now)
-  const plan = await db
+  // Fetch all tariff plans for this installation — users may end up with more
+  // than one if they added versions under different supplier/plan names.
+  const planRows = await db
     .select({
       id: tariffPlans.id,
       supplierName: tariffPlans.supplierName,
@@ -144,18 +145,20 @@ export async function loadTariffOverview(installationId: string): Promise<Tariff
       isExportEnabled: tariffPlans.isExportEnabled,
     })
     .from(tariffPlans)
-    .where(eq(tariffPlans.installationId, installationId))
-    .limit(1)
-    .then((rows) => rows[0] ?? null);
+    .where(eq(tariffPlans.installationId, installationId));
 
-  if (!plan) {
+  if (planRows.length === 0) {
     return { plan: null, activeVersion: null, allVersions: [], contract: null };
   }
 
-  // Fetch all versions ordered newest first
+  const planMap = new Map(planRows.map((p) => [p.id, p]));
+  const planIds = planRows.map((p) => p.id);
+
+  // Fetch all versions across all plans, newest first
   const versions = await db
     .select({
       id: tariffPlanVersions.id,
+      tariffPlanId: tariffPlanVersions.tariffPlanId,
       versionLabel: tariffPlanVersions.versionLabel,
       validFromLocalDate: tariffPlanVersions.validFromLocalDate,
       validToLocalDate: tariffPlanVersions.validToLocalDate,
@@ -172,7 +175,11 @@ export async function loadTariffOverview(installationId: string): Promise<Tariff
       peakEndLocalTime: tariffPlanVersions.peakEndLocalTime,
     })
     .from(tariffPlanVersions)
-    .where(eq(tariffPlanVersions.tariffPlanId, plan.id))
+    .where(
+      planIds.length === 1
+        ? eq(tariffPlanVersions.tariffPlanId, planIds[0])
+        : inArray(tariffPlanVersions.tariffPlanId, planIds),
+    )
     .orderBy(desc(tariffPlanVersions.validFromLocalDate));
 
   const activeVersionRow =
@@ -180,6 +187,11 @@ export async function loadTariffOverview(installationId: string): Promise<Tariff
     versions.find((v) => v.validToLocalDate === null) ??
     versions[0] ??
     null;
+
+  // Resolve the plan for the active version; fall back to the first plan if needed.
+  const plan = activeVersionRow
+    ? (planMap.get(activeVersionRow.tariffPlanId) ?? planRows[0])
+    : planRows[0];
 
   let activeVersion: TariffVersionDetail | null = null;
 
