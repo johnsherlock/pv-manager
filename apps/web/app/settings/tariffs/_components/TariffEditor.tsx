@@ -208,8 +208,18 @@ function formatDisplayDate(iso: string): string {
 // Shared styling
 // ---------------------------------------------------------------------------
 
-const INPUT_CLS =
-  'w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-slate-500 focus:outline-none';
+// Base input without border colour — use ib() to apply the correct border
+const INPUT_BASE =
+  'w-full rounded-xl border bg-slate-900/60 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none';
+// Kept for any places that don't need error-aware borders
+const INPUT_CLS = `${INPUT_BASE} border-slate-700 focus:border-slate-500`;
+// Returns the correct border classes depending on error state (avoids Tailwind
+// stylesheet-order conflicts when both border-slate-* and border-red-* appear)
+function ib(error?: boolean): string {
+  return error
+    ? 'border-red-700 focus:border-red-600'
+    : 'border-slate-700 focus:border-slate-500';
+}
 // Appended to number inputs: removes spin buttons
 const NO_SPIN =
   '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
@@ -433,24 +443,27 @@ function PeriodInputs({
           nameError ? 'border-red-700' : 'border-slate-700',
         ].join(' ')}
       />
-      <input
-        type="number"
-        step="0.000001"
-        min="0"
-        value={period.ratePerKwh}
-        onChange={(e) => {
-          const v = e.target.value;
-          if (v !== '' && parseFloat(v) < 0) return;
-          onChange({ ...period, ratePerKwh: v });
-        }}
-        onKeyDown={(e) => e.key === '-' && e.preventDefault()}
-        placeholder="€/kWh"
-        className={[
-          'w-20 rounded-lg border bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-500 tabular-nums',
-          NO_SPIN,
-          rateError ? 'border-red-700' : 'border-slate-700',
-        ].join(' ')}
-      />
+      <div className="flex items-center gap-1.5">
+        <input
+          type="number"
+          step="0.000001"
+          min="0"
+          value={period.ratePerKwh}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v !== '' && parseFloat(v) < 0) return;
+            onChange({ ...period, ratePerKwh: v });
+          }}
+          onKeyDown={(e) => e.key === '-' && e.preventDefault()}
+          placeholder="0.0000"
+          className={[
+            'w-20 rounded-lg border bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-500 tabular-nums',
+            NO_SPIN,
+            rateError ? 'border-red-700' : 'border-slate-700',
+          ].join(' ')}
+        />
+        <span className="text-xs text-slate-600 whitespace-nowrap">¢/kWh ex-VAT</span>
+      </div>
       {canDelete && (
         <button
           type="button"
@@ -831,7 +844,8 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
     const e: Record<string, string> = {};
     if (!supplierName.trim()) e.supplierName = 'required';
     if (!validFrom) e.validFrom = 'required';
-    if (!validTo) e.validTo = 'required';
+    // Only require validTo once validFrom is set (it's disabled before then)
+    if (validFrom && !validTo) e.validTo = 'required';
     if (validFrom && validTo && validTo < validFrom) e.validTo = 'end before start';
     if (exportRate === '') e.exportRate = 'required';
     if (vatRate === '') e.vatRate = 'required';
@@ -840,14 +854,18 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
     if (uncoveredDays.length > 0)
       e.coverage = `${uncoveredDays.map((d) => DAY_LABELS[d]).join(', ')} not assigned to any group`;
     groups.forEach((g, gi) => {
-      if (g.days.length === 0) e[`g${gi}_days`] = `Group ${gi + 1}: select at least one day`;
-      if (g.periods.length === 0) e[`g${gi}_periods`] = `Group ${gi + 1}: add at least one price period`;
+      // Structural group issues (days/periods/slots) are visually obvious —
+      // empty pills, missing period rows, white slots in the bar. Count them
+      // for gate purposes but don't add their own error keys to avoid
+      // inflating the count with non-highlighted items.
+      const hasNoDay = g.days.length === 0;
+      const hasNoPeriod = g.periods.length === 0;
+      const hasUnassigned = g.slots.some((s) => s === '');
+      if (hasNoDay || hasNoPeriod || hasUnassigned) e[`g${gi}_structure`] = 'incomplete';
       g.periods.forEach((p, pi) => {
         if (!p.periodLabel.trim()) e[`g${gi}p${pi}_label`] = 'period name';
         if (!p.ratePerKwh) e[`g${gi}p${pi}_rate`] = 'period rate';
       });
-      const unassigned = g.slots.filter((s) => s === '').length;
-      if (unassigned > 0) e[`g${gi}_slots`] = `${unassigned} slot${unassigned !== 1 ? 's' : ''} unassigned`;
     });
     return e;
   }
@@ -914,7 +932,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
               value={supplierName}
               onChange={(e) => setSupplierName(e.target.value)}
               placeholder="e.g. Energia"
-              className={[INPUT_CLS, errors.supplierName ? 'border-red-700' : ''].join(' ')}
+              className={[INPUT_BASE, ib(!!errors.supplierName)].join(' ')}
               readOnly={mode === 'edit'}
             />
           </div>
@@ -988,7 +1006,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
               onChange={(e) => { if (e.target.value !== '' && parseFloat(e.target.value) < 0) return; setExportRate(e.target.value); }}
               onKeyDown={(e) => e.key === '-' && e.preventDefault()}
               placeholder="0.1850"
-              className={[INPUT_CLS, NO_SPIN, errors.exportRate ? 'border-red-700' : ''].join(' ')}
+              className={[INPUT_BASE, ib(!!errors.exportRate), NO_SPIN].join(' ')}
             />
             <p className="mt-1 text-xs text-slate-600">Enter 0 if you don&apos;t export.</p>
           </div>
@@ -1003,7 +1021,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
               onChange={(e) => { if (e.target.value !== '' && parseFloat(e.target.value) < 0) return; setVatRate(e.target.value); }}
               onKeyDown={(e) => e.key === '-' && e.preventDefault()}
               placeholder="e.g. 9 or 8.5"
-              className={[INPUT_CLS, NO_SPIN, errors.vatRate ? 'border-red-700' : ''].join(' ')}
+              className={[INPUT_BASE, ib(!!errors.vatRate), NO_SPIN].join(' ')}
             />
             <p className="mt-1 text-xs text-slate-600">
               Applies to imports and standing charge. Enter 0 if no VAT.
@@ -1023,7 +1041,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
                   onChange={(e) => { if (e.target.value !== '' && parseFloat(e.target.value) < 0) return; handleAnnualChange(e.target.value); }}
                   onKeyDown={(e) => e.key === '-' && e.preventDefault()}
                   placeholder="200.75"
-                  className={[INPUT_CLS, NO_SPIN, errors.standingChargeDaily ? 'border-red-700' : ''].join(' ')}
+                  className={[INPUT_BASE, ib(!!errors.standingChargeDaily), NO_SPIN].join(' ')}
                 />
               </div>
               <div>
@@ -1036,7 +1054,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
                   onChange={(e) => { if (e.target.value !== '' && parseFloat(e.target.value) < 0) return; handleDailyChange(e.target.value); }}
                   onKeyDown={(e) => e.key === '-' && e.preventDefault()}
                   placeholder="0.5500"
-                  className={[INPUT_CLS, NO_SPIN, errors.standingChargeDaily ? 'border-red-700' : ''].join(' ')}
+                  className={[INPUT_BASE, ib(!!errors.standingChargeDaily), NO_SPIN].join(' ')}
                 />
               </div>
             </div>
@@ -1056,8 +1074,6 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
               <p className="text-xs text-red-300">{errors.coverage}</p>
             </div>
           )}
-          {submitted && errors.groups && <p className={ERR_CLS}>{errors.groups}</p>}
-
           {groups.length === 0 && (
             <p className="text-sm text-slate-500 leading-relaxed">
               Add a schedule group to define which days share the same rate pattern. For example:
@@ -1065,35 +1081,20 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
             </p>
           )}
 
-          {groups.map((group, gi) => {
-            // Only show structural group errors (days/periods/slots), not field-level ones
-            const groupStructureErrors = [
-              errors[`g${gi}_days`],
-              errors[`g${gi}_periods`],
-              errors[`g${gi}_slots`],
-            ].filter(Boolean);
-            return (
-              <div key={group.id}>
-                <ScheduleGroupCard
-                  group={group}
-                  allGroups={groups}
-                  canDelete={groups.length > 1}
-                  submitted={submitted}
-                  onUpdate={(updated) => updateGroup(group.id, updated)}
-                  onDelete={() => removeGroup(group.id)}
-                  onClaimDay={(dayIdx) => claimDayForGroup(group.id, dayIdx)}
-                  onPaintSlot={(slotIdx, value) => paintGroupSlot(group.id, slotIdx, value)}
-                />
-                {submitted && groupStructureErrors.length > 0 && (
-                  <div className="mt-2 px-1 flex flex-col gap-0.5">
-                    {groupStructureErrors.map((msg, i) => (
-                      <p key={i} className={ERR_CLS}>{msg}</p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {groups.map((group, gi) => (
+            <div key={group.id}>
+              <ScheduleGroupCard
+                group={group}
+                allGroups={groups}
+                canDelete={groups.length > 1}
+                submitted={submitted}
+                onUpdate={(updated) => updateGroup(group.id, updated)}
+                onDelete={() => removeGroup(group.id)}
+                onClaimDay={(dayIdx) => claimDayForGroup(group.id, dayIdx)}
+                onPaintSlot={(slotIdx, value) => paintGroupSlot(group.id, slotIdx, value)}
+              />
+            </div>
+          ))}
 
           <button
             type="button"
@@ -1135,9 +1136,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
         </Link>
         <div className="flex items-center gap-3">
           {submitted && errorCount > 0 && (
-            <p className="text-xs text-red-400">
-              {errorCount} issue{errorCount !== 1 ? 's' : ''} to fix before saving
-            </p>
+            <p className="text-xs text-red-400">Fix the highlighted issues before saving</p>
           )}
           <button
             type="button"
