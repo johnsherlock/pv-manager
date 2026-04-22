@@ -175,6 +175,14 @@ Epic tracking:
 1. `FE-007` Define the auth and onboarding foundation so real beta users can sign in, connect MyEnergi, and complete first-run setup.
 2. `FE-012` Tighten beta delivery and deployment so the rewrite can be shipped and operated confidently outside local-only use.
 
+## Known Issues
+
+These are confirmed data integrity or architectural gaps that exist in the current implementation. They are not delivery risks — they are real limitations that are accepted for now and should be addressed before the product is considered complete.
+
+| # | Area | Description | Impact | Preferred Resolution |
+| --- | --- | --- | --- | --- |
+| KI-001 | Tariff / Daily Summary | Band breakdown data in `daily_summaries` (`day_import_kwh`, `night_import_kwh`, `peak_import_kwh`, `band_breakdown_json`) is classified at job-run time using the tariff schedule that was active on that day. Raw half-hour interval data is not persisted. If a user later edits a tariff version's schedule structure (e.g. moves when peak starts), existing summary rows are not reprocessed and will reflect the old schedule. Rate price changes are unaffected — those are applied at read time. | Historical cost breakdowns by rate band will be incorrect for days processed under the old schedule. Raw energy totals (`import_kwh`, `export_kwh`) are unaffected. | Store raw 30-min interval data per installation so band classification can be reprocessed from source at any time. Alternatively, trigger a targeted provider re-fetch for the affected date range on tariff edit. A simpler interim option is to warn the user at edit time if summaries exist within the version's date range. |
+
 ## Active Risks
 
 - Financial logic may drift if billing evidence arrives too late.
