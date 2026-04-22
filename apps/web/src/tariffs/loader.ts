@@ -320,7 +320,7 @@ export async function loadVersionForEdit(
     installationContracts,
   } = await getDeps();
 
-  const plan = await db
+  const planRows = await db
     .select({
       id: tariffPlans.id,
       supplierName: tariffPlans.supplierName,
@@ -329,15 +329,17 @@ export async function loadVersionForEdit(
       isExportEnabled: tariffPlans.isExportEnabled,
     })
     .from(tariffPlans)
-    .where(eq(tariffPlans.installationId, installationId))
-    .limit(1)
-    .then((rows) => rows[0] ?? null);
+    .where(eq(tariffPlans.installationId, installationId));
 
-  if (!plan) return null;
+  if (planRows.length === 0) return null;
+
+  const planMap = new Map(planRows.map((p) => [p.id, p]));
+  const planIds = planRows.map((p) => p.id);
 
   const versionRow = await db
     .select({
       id: tariffPlanVersions.id,
+      tariffPlanId: tariffPlanVersions.tariffPlanId,
       versionLabel: tariffPlanVersions.versionLabel,
       validFromLocalDate: tariffPlanVersions.validFromLocalDate,
       validToLocalDate: tariffPlanVersions.validToLocalDate,
@@ -354,11 +356,20 @@ export async function loadVersionForEdit(
       peakEndLocalTime: tariffPlanVersions.peakEndLocalTime,
     })
     .from(tariffPlanVersions)
-    .where(and(eq(tariffPlanVersions.id, versionId), eq(tariffPlanVersions.tariffPlanId, plan.id)))
+    .where(
+      and(
+        eq(tariffPlanVersions.id, versionId),
+        planIds.length === 1
+          ? eq(tariffPlanVersions.tariffPlanId, planIds[0])
+          : inArray(tariffPlanVersions.tariffPlanId, planIds),
+      ),
+    )
     .limit(1)
     .then((rows) => rows[0] ?? null);
 
   if (!versionRow) return null;
+
+  const plan = planMap.get(versionRow.tariffPlanId) ?? planRows[0];
 
   const [pricePeriods, fixedCharges, allVersionRows, contract] = await Promise.all([
     db
@@ -401,7 +412,11 @@ export async function loadVersionForEdit(
         exportRate: tariffPlanVersions.exportRate,
       })
       .from(tariffPlanVersions)
-      .where(eq(tariffPlanVersions.tariffPlanId, plan.id))
+      .where(
+        planIds.length === 1
+          ? eq(tariffPlanVersions.tariffPlanId, planIds[0])
+          : inArray(tariffPlanVersions.tariffPlanId, planIds),
+      )
       .orderBy(desc(tariffPlanVersions.validFromLocalDate)),
 
     db
