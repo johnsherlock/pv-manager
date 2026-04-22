@@ -482,15 +482,50 @@ function ActivityBar({
   onMouseDown: (slotIdx: number) => void;
   onMouseEnter: (slotIdx: number) => void;
 }) {
+  const [tipSlot, setTipSlot] = useState<number | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  function slotFromPoint(x: number, y: number): number | null {
+    const el = document.elementFromPoint(x, y) as HTMLElement | null;
+    const s = el?.dataset?.slot;
+    return s !== undefined ? parseInt(s, 10) : null;
+  }
+
   return (
     <div className="relative flex-1">
+      {/* Time tooltip — shown on hover (desktop) and touch (mobile) */}
+      {tipSlot !== null && (
+        <div
+          className="pointer-events-none absolute -top-6 z-10 rounded bg-slate-800 px-1.5 py-0.5 text-[11px] text-slate-200 whitespace-nowrap"
+          style={{
+            left: Math.min(
+              tipSlot * (SLOT_WIDTH + SLOT_GAP),
+              GRID_WIDTH - 60,
+            ),
+          }}
+        >
+          {slotToTime(tipSlot)}–{slotToTime(tipSlot + 1)}
+        </div>
+      )}
       <div
+        ref={gridRef}
         className="grid select-none"
         style={{
           gridTemplateColumns: `repeat(${SLOT_COUNT}, ${SLOT_WIDTH}px)`,
           columnGap: `${SLOT_GAP}px`,
           width: GRID_WIDTH,
         }}
+        onMouseLeave={() => setTipSlot(null)}
+        onTouchStart={(e) => {
+          const t = e.touches[0];
+          setTipSlot(slotFromPoint(t.clientX, t.clientY));
+        }}
+        onTouchMove={(e) => {
+          const t = e.touches[0];
+          setTipSlot(slotFromPoint(t.clientX, t.clientY));
+        }}
+        onTouchEnd={() => setTipSlot(null)}
+        onTouchCancel={() => setTipSlot(null)}
       >
         {groupSlots.map((pid, slotIdx) => {
           const isActive = pid === periodId;
@@ -506,9 +541,8 @@ function ActivityBar({
                 boxSizing: 'border-box',
                 cursor: 'crosshair',
               }}
-              title={`${slotToTime(slotIdx)}–${slotToTime(slotIdx + 1)}`}
               onMouseDown={() => onMouseDown(slotIdx)}
-              onMouseEnter={() => onMouseEnter(slotIdx)}
+              onMouseEnter={() => { setTipSlot(slotIdx); onMouseEnter(slotIdx); }}
             />
           );
         })}
@@ -678,10 +712,10 @@ function ScheduleGroupCard({
           <button
             type="button"
             onClick={onDelete}
-            className="mt-1 shrink-0 rounded-lg p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+            className="mt-1 shrink-0 rounded-lg p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors"
             title="Remove group"
           >
-            <X size={13} />
+            <X size={14} />
           </button>
         )}
       </div>
@@ -711,10 +745,10 @@ function ScheduleGroupCard({
                       <button
                         type="button"
                         onClick={() => removePeriod(pIdx)}
-                        className="shrink-0 rounded-lg p-1 text-slate-600 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                        className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors"
                         title="Remove period"
                       >
-                        <Trash2 size={11} />
+                        <Trash2 size={14} />
                       </button>
                     )}
                   </div>
