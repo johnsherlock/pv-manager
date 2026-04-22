@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   Trash2,
@@ -16,8 +17,10 @@ import {
   Info,
   ArrowLeft,
   X,
+  Loader2,
 } from 'lucide-react';
 import type { TariffVersionSummary } from '@/src/tariffs/loader';
+import { saveTariffVersion } from '../actions';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -203,6 +206,32 @@ function formatDisplayDate(iso: string): string {
   return new Intl.DateTimeFormat('en-IE', {
     day: 'numeric', month: 'short', year: 'numeric',
   }).format(new Date(iso + 'T00:00:00'));
+}
+
+function buildSavePayload(groups: EditorGroup[]): {
+  periods: { clientId: string; periodLabel: string; ratePerKwh: string; colourHex: string }[];
+  weeklySchedule: string[];
+} {
+  const schedule = new Array<string>(336).fill('');
+  const seen = new Set<string>();
+  const periods: { clientId: string; periodLabel: string; ratePerKwh: string; colourHex: string }[] = [];
+
+  for (const group of groups) {
+    for (const p of group.periods) {
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        periods.push({ clientId: p.id, periodLabel: p.periodLabel, ratePerKwh: p.ratePerKwh, colourHex: p.colourHex });
+      }
+    }
+    for (const day of group.days) {
+      const offset = day * SLOT_COUNT;
+      for (let s = 0; s < SLOT_COUNT; s++) {
+        schedule[offset + s] = group.slots[s];
+      }
+    }
+  }
+
+  return { periods, weeklySchedule: schedule };
 }
 
 // ---------------------------------------------------------------------------
@@ -837,6 +866,8 @@ function ScheduleGroupCard({
 // ---------------------------------------------------------------------------
 
 export default function TariffEditor({ mode, initial, existingVersions }: Props) {
+  const router = useRouter();
+
   const [supplierName, setSupplierName] = useState(initial.supplierName);
   const [planName, setPlanName] = useState(initial.planName);
   const [validFrom, setValidFrom] = useState(initial.validFromLocalDate);
@@ -855,6 +886,26 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
 
   const [submitted, setSubmitted] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'success'>('idle');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Dirty tracking — ref to avoid re-renders on every keystroke
+  const isDirtyRef = useRef(false);
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    isDirtyRef.current = true;
+  }, [supplierName, planName, validFrom, validTo, exportRate, vatRate, standingChargeDaily, groups]);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!isDirtyRef.current) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
 
   function handleDailyChange(val: string) {
     setStandingChargeDaily(val);
@@ -936,10 +987,42 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
   const errors = submitted ? validate() : {};
   const errorCount = Object.keys(errors).length;
 
-  function handleSave() {
+  function handleCancel() {
+    if (isDirtyRef.current) {
+      if (!window.confirm('You have unsaved changes. Discard them?')) return;
+    }
+    router.push('/settings/tariffs');
+  }
+
+  async function handleSave() {
     setSubmitted(true);
+    setSaveError(null);
     if (Object.keys(validate()).length > 0) return;
-    setSaveState('success');
+
+    setSaving(true);
+    const { periods, weeklySchedule } = buildSavePayload(groups);
+
+    const result = await saveTariffVersion({
+      mode,
+      versionId: initial.versionId,
+      supplierName,
+      planName,
+      validFromLocalDate: validFrom,
+      validToLocalDate: validTo,
+      vatRate,
+      exportRate,
+      standingChargePerDay: standingChargeDaily,
+      periods,
+      weeklySchedule,
+    });
+
+    if (result.ok) {
+      isDirtyRef.current = false;
+      setSaveState('success');
+    } else {
+      setSaveError(result.error);
+      setSaving(false);
+    }
   }
 
   if (saveState === 'success') {
@@ -951,13 +1034,12 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
         <h2 className="text-xl font-semibold text-slate-100 mb-2">
           {mode === 'create' ? 'Tariff version added' : 'Tariff version updated'}
         </h2>
-        <p className="text-sm text-slate-400 leading-relaxed max-w-sm mb-2">
+        <p className="text-sm text-slate-400 leading-relaxed max-w-sm mb-8">
           Historical cost and savings calculations from{' '}
           <span className="text-slate-200">{validFrom}</span>
           {validTo ? <> to <span className="text-slate-200">{validTo}</span></> : ' onwards'}{' '}
           will be recalculated. This may take a few moments.
         </p>
-        <p className="text-xs text-slate-600 mb-8">This is a prototype — no data was actually saved.</p>
         <Link
           href="/settings/tariffs"
           className="inline-flex items-center gap-2 rounded-full bg-emerald-700/80 border border-emerald-600/40 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
@@ -1191,22 +1273,29 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
 
       {/* Save / Cancel */}
       <div className="flex items-center justify-between gap-4 pt-2 pb-8">
-        <Link
-          href="/settings/tariffs"
-          className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors"
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={saving}
+          className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors disabled:opacity-40"
         >
           Cancel
-        </Link>
+        </button>
         <div className="flex items-center gap-3">
-          {submitted && errorCount > 0 && (
+          {saveError && (
+            <p className="text-xs text-red-400">{saveError}</p>
+          )}
+          {submitted && errorCount > 0 && !saveError && (
             <p className="text-xs text-red-400">Fix the highlighted issues before saving</p>
           )}
           <button
             type="button"
             onClick={handleSave}
-            className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/40 bg-indigo-600/80 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-600 transition-colors"
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/40 bg-indigo-600/80 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-600 transition-colors disabled:opacity-70"
           >
-            {mode === 'create' ? 'Add version' : 'Save changes'}
+            {saving && <Loader2 size={13} className="animate-spin" />}
+            {saving ? 'Saving…' : mode === 'create' ? 'Add version' : 'Save changes'}
           </button>
         </div>
       </div>

@@ -671,7 +671,7 @@ function VersionTimeline({ versions }: { versions: TariffVersionSummary[] }) {
               </div>
               {!isCurrent && (
                 <Link
-                  href="#"
+                  href={`/settings/tariffs/${v.id}/edit`}
                   className="shrink-0 text-xs text-slate-500 hover:text-slate-300 transition-colors"
                 >
                   View
