@@ -134,6 +134,10 @@ export async function saveTariffVersion(input: SaveTariffInput): Promise<SaveTar
 
       if (existingPlan) {
         planId = existingPlan.id;
+        const hasExport = exportRateVal !== null && parseFloat(exportRateVal) > 0;
+        if (hasExport) {
+          await db.update(tariffPlans).set({ isExportEnabled: true }).where(eq(tariffPlans.id, planId));
+        }
       } else {
         const [newPlan] = await db
           .insert(tariffPlans)

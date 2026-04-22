@@ -973,6 +973,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
     // Only require validTo once validFrom is set (it's disabled before then)
     if (validFrom && !validTo) e.validTo = 'required';
     if (validFrom && validTo && validTo < validFrom) e.validTo = 'end before start';
+    if (checkOverlap(validFrom, validTo, existingVersions, initial.versionId)) e.overlap = 'overlaps existing version';
     if (exportRate === '') e.exportRate = 'required';
     if (vatRate === '') e.vatRate = 'required';
     if (standingChargeDaily === '') e.standingChargeDaily = 'required';
@@ -1063,13 +1064,14 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link
-          href="/settings/tariffs"
+        <button
+          type="button"
+          onClick={handleCancel}
           className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
         >
           <ArrowLeft size={13} />
           Tariffs
-        </Link>
+        </button>
         <span className="text-slate-700">/</span>
         <span className="text-sm font-semibold text-slate-100">
           {mode === 'create' ? 'New tariff version' : 'Edit tariff version'}
