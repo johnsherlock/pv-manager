@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
   Plus,
@@ -482,8 +483,22 @@ function ActivityBar({
   onMouseDown: (slotIdx: number) => void;
   onMouseEnter: (slotIdx: number) => void;
 }) {
+  // tipSlot + fixed pixel position so the tooltip escapes overflow-x-auto clipping
   const [tipSlot, setTipSlot] = useState<number | null>(null);
+  const [tipPos, setTipPos] = useState<{ left: number; top: number } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  function showTip(slotIdx: number) {
+    setTipSlot(slotIdx);
+    if (gridRef.current) {
+      const rect = gridRef.current.getBoundingClientRect();
+      const rawLeft = rect.left + slotIdx * (SLOT_WIDTH + SLOT_GAP);
+      setTipPos({
+        left: Math.min(rawLeft, rect.right - 72),
+        top: rect.top - 26,
+      });
+    }
+  }
 
   function slotFromPoint(x: number, y: number): number | null {
     const el = document.elementFromPoint(x, y) as HTMLElement | null;
@@ -493,20 +508,18 @@ function ActivityBar({
 
   return (
     <div className="relative flex-1">
-      {/* Time tooltip — shown on hover (desktop) and touch (mobile) */}
-      {tipSlot !== null && (
-        <div
-          className="pointer-events-none absolute -top-6 z-10 rounded bg-slate-800 px-1.5 py-0.5 text-[11px] text-slate-200 whitespace-nowrap"
-          style={{
-            left: Math.min(
-              tipSlot * (SLOT_WIDTH + SLOT_GAP),
-              GRID_WIDTH - 60,
-            ),
-          }}
-        >
-          {slotToTime(tipSlot)}–{slotToTime(tipSlot + 1)}
-        </div>
-      )}
+      {/* Tooltip rendered via portal so overflow-x-auto clipping can't hide it */}
+      {tipSlot !== null && tipPos !== null &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed z-[9999] rounded bg-slate-800/95 px-1.5 py-0.5 text-[11px] text-slate-200 whitespace-nowrap shadow-lg"
+            style={{ left: tipPos.left, top: tipPos.top }}
+          >
+            {slotToTime(tipSlot)}–{slotToTime(tipSlot + 1)}
+          </div>,
+          document.body,
+        )
+      }
       <div
         ref={gridRef}
         className="grid select-none"
@@ -515,17 +528,19 @@ function ActivityBar({
           columnGap: `${SLOT_GAP}px`,
           width: GRID_WIDTH,
         }}
-        onMouseLeave={() => setTipSlot(null)}
+        onMouseLeave={() => { setTipSlot(null); setTipPos(null); }}
         onTouchStart={(e) => {
           const t = e.touches[0];
-          setTipSlot(slotFromPoint(t.clientX, t.clientY));
+          const s = slotFromPoint(t.clientX, t.clientY);
+          if (s !== null) showTip(s);
         }}
         onTouchMove={(e) => {
           const t = e.touches[0];
-          setTipSlot(slotFromPoint(t.clientX, t.clientY));
+          const s = slotFromPoint(t.clientX, t.clientY);
+          if (s !== null) showTip(s);
         }}
-        onTouchEnd={() => setTipSlot(null)}
-        onTouchCancel={() => setTipSlot(null)}
+        onTouchEnd={() => { setTipSlot(null); setTipPos(null); }}
+        onTouchCancel={() => { setTipSlot(null); setTipPos(null); }}
       >
         {groupSlots.map((pid, slotIdx) => {
           const isActive = pid === periodId;
@@ -542,7 +557,7 @@ function ActivityBar({
                 cursor: 'crosshair',
               }}
               onMouseDown={() => onMouseDown(slotIdx)}
-              onMouseEnter={() => { setTipSlot(slotIdx); onMouseEnter(slotIdx); }}
+              onMouseEnter={() => { showTip(slotIdx); onMouseEnter(slotIdx); }}
             />
           );
         })}
