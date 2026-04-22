@@ -4,7 +4,6 @@ import {
   Receipt,
   Plus,
   AlertTriangle,
-  Info,
   ArrowRight,
   CheckCircle2,
 } from 'lucide-react';
@@ -665,14 +664,6 @@ export default async function TariffsPage() {
             return previous.length > 0 ? <VersionHistory versions={previous} /> : null;
           })()}
 
-          <div className="flex items-start gap-2.5 rounded-2xl border border-slate-800/60 bg-slate-900/30 px-4 py-3.5">
-            <Info size={13} className="mt-0.5 shrink-0 text-slate-500" />
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Editing a tariff version will trigger a recalculation of all historical cost and
-              savings figures that fall within that version's date range. This may take a few
-              moments.
-            </p>
-          </div>
         </div>
       )}
     </div>

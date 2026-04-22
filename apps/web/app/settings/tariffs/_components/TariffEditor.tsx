@@ -1047,10 +1047,7 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
           {mode === 'create' ? 'Tariff version added' : 'Tariff version updated'}
         </h2>
         <p className="text-sm text-slate-400 leading-relaxed max-w-sm mb-8">
-          Historical cost and savings calculations from{' '}
-          <span className="text-slate-200">{validFrom}</span>
-          {validTo ? <> to <span className="text-slate-200">{validTo}</span></> : ' onwards'}{' '}
-          will be recalculated. This may take a few moments.
+          Your tariff has been saved successfully.
         </p>
         <Link
           href="/settings/tariffs"
@@ -1272,16 +1269,6 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
           </div>
         </div>
       </SectionCard>
-
-      {/* Recalculation note */}
-      <div className="flex items-start gap-2.5 rounded-2xl border border-slate-800/60 bg-slate-900/30 px-4 py-3.5">
-        <Info size={13} className="mt-0.5 shrink-0 text-slate-500" />
-        <p className="text-xs text-slate-500 leading-relaxed">
-          {mode === 'create'
-            ? 'Saving this version will calculate cost and savings figures for all days within its date range.'
-            : "Saving changes will recalculate all cost and savings figures within this version's date range. This may take a few moments."}
-        </p>
-      </div>
 
       {/* Save / Cancel */}
       <div className="flex items-center justify-between gap-4 pt-2 pb-8">
