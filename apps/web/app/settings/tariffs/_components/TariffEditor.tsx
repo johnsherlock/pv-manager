@@ -416,37 +416,36 @@ function SectionCard({
 function PeriodInputs({
   period,
   index,
-  canDelete,
   submitted,
   onChange,
-  onDelete,
 }: {
   period: EditorPeriod;
   index: number;
-  canDelete: boolean;
   submitted: boolean;
   onChange: (updated: EditorPeriod) => void;
-  onDelete: () => void;
 }) {
   const nameError = submitted && !period.periodLabel.trim();
   const rateError = submitted && !period.ratePerKwh;
 
   return (
-    <div className="flex items-center gap-2 min-w-0 flex-1">
+    <div className="flex items-center gap-2 min-w-0 w-full">
+      {/* Period name — takes all remaining space */}
       <input
         type="text"
         value={period.periodLabel}
         onChange={(e) => onChange({ ...period, periodLabel: e.target.value })}
         placeholder={`Period ${index + 1}`}
         className={[
-          'min-w-0 w-24 rounded-lg border bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-500',
+          'flex-1 min-w-0 rounded-lg border bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-500',
           nameError ? 'border-red-700' : 'border-slate-700',
         ].join(' ')}
       />
-      <div className="flex items-center gap-1.5">
+      {/* Rate — € prefix + x.xxxx input + ex-VAT label */}
+      <div className="flex items-center gap-1 shrink-0">
+        <span className="text-sm text-slate-400">€</span>
         <input
           type="number"
-          step="0.000001"
+          step="0.0001"
           min="0"
           value={period.ratePerKwh}
           onChange={(e) => {
@@ -457,23 +456,13 @@ function PeriodInputs({
           onKeyDown={(e) => e.key === '-' && e.preventDefault()}
           placeholder="0.0000"
           className={[
-            'w-20 rounded-lg border bg-slate-950/60 px-2.5 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-500 tabular-nums',
+            'w-16 rounded-lg border bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-slate-500 tabular-nums',
             NO_SPIN,
             rateError ? 'border-red-700' : 'border-slate-700',
           ].join(' ')}
         />
-        <span className="text-xs text-slate-600 whitespace-nowrap">¢/kWh ex-VAT</span>
+        <span className="text-xs text-slate-500 whitespace-nowrap">ex-VAT</span>
       </div>
-      {canDelete && (
-        <button
-          type="button"
-          onClick={onDelete}
-          className="shrink-0 rounded-lg p-1 text-slate-600 hover:text-red-400 hover:bg-red-950/30 transition-colors"
-          title="Remove period"
-        >
-          <Trash2 size={11} />
-        </button>
-      )}
     </div>
   );
 }
@@ -709,23 +698,33 @@ function ScheduleGroupCard({
             <div className="flex flex-col gap-3">
               {group.periods.map((period, pIdx) => (
                 <div key={period.id}>
-                  <div className="mb-1.5 md:hidden">
-                    <PeriodInputs
-                      period={period} index={pIdx}
-                      canDelete={group.periods.length > 1}
-                      submitted={submitted}
-                      onChange={(u) => updatePeriod(pIdx, u)}
-                      onDelete={() => removePeriod(pIdx)}
-                    />
+                  {/* Mobile: inputs + trash above the bar */}
+                  <div className="mb-1.5 md:hidden flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <PeriodInputs
+                        period={period} index={pIdx}
+                        submitted={submitted}
+                        onChange={(u) => updatePeriod(pIdx, u)}
+                      />
+                    </div>
+                    {group.periods.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removePeriod(pIdx)}
+                        className="shrink-0 rounded-lg p-1 text-slate-600 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                        title="Remove period"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    )}
                   </div>
+                  {/* Desktop: inputs column left, bar + trash right */}
                   <div className="flex items-center gap-3">
                     <div className="hidden md:flex shrink-0" style={{ width: LABEL_COL_WIDTH }}>
                       <PeriodInputs
                         period={period} index={pIdx}
-                        canDelete={group.periods.length > 1}
                         submitted={submitted}
                         onChange={(u) => updatePeriod(pIdx, u)}
-                        onDelete={() => removePeriod(pIdx)}
                       />
                     </div>
                     <ActivityBar
@@ -734,6 +733,19 @@ function ScheduleGroupCard({
                       onMouseDown={(s) => handleSlotMouseDown(period.id, s)}
                       onMouseEnter={handleSlotMouseEnter}
                     />
+                    {/* Trash at far right of bar — desktop only */}
+                    <div className="hidden md:flex shrink-0 w-6 items-center justify-center">
+                      {group.periods.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removePeriod(pIdx)}
+                          className="rounded-lg p-1 text-slate-600 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                          title="Remove period"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -741,6 +753,8 @@ function ScheduleGroupCard({
             <div className="flex items-start gap-3 mt-2">
               <div className="hidden md:block shrink-0" style={{ width: LABEL_COL_WIDTH }} />
               <TimeAxis />
+              {/* Spacer matching the trash column */}
+              <div className="hidden md:block shrink-0 w-6" />
             </div>
           </div>
         </div>
