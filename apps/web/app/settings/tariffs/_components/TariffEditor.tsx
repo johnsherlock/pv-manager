@@ -889,12 +889,24 @@ export default function TariffEditor({ mode, initial, existingVersions }: Props)
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Dirty tracking — ref to avoid re-renders on every keystroke
+  // Dirty tracking — compare against initial values so React 18 Strict Mode's
+  // double-invoke doesn't falsely mark the form dirty on mount.
   const isDirtyRef = useRef(false);
-  const isFirstRender = useRef(true);
+  const initialGroupsRef = useRef(groups); // stable reference to the initial groups state
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
-    isDirtyRef.current = true;
+    if (
+      supplierName !== initial.supplierName ||
+      planName !== initial.planName ||
+      validFrom !== initial.validFromLocalDate ||
+      validTo !== initial.validToLocalDate ||
+      exportRate !== initial.exportRate ||
+      vatRate !== initial.vatRate ||
+      standingChargeDaily !== initial.standingChargeAmount ||
+      groups !== initialGroupsRef.current
+    ) {
+      isDirtyRef.current = true;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierName, planName, validFrom, validTo, exportRate, vatRate, standingChargeDaily, groups]);
 
   useEffect(() => {

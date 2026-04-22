@@ -305,11 +305,8 @@ export default function VersionHistory({ versions }: { versions: TariffVersionDe
                 className="w-full flex items-center justify-between gap-4 px-4 py-3.5 text-left hover:bg-slate-800/30 transition-colors"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-200 truncate">{v.versionLabel}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {formatDate(v.validFromLocalDate)}
-                    {' — '}
-                    {v.validToLocalDate ? formatDate(v.validToLocalDate) : 'present'}
+                  <p className="text-sm font-medium text-slate-200 truncate">
+                    {v.supplierName} – {formatDate(v.validFromLocalDate)} to {v.validToLocalDate ? formatDate(v.validToLocalDate) : 'present'}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
