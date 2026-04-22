@@ -512,7 +512,7 @@ function ActivityBar({
       {tipSlot !== null && tipPos !== null &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[9999] rounded bg-slate-800/95 px-1.5 py-0.5 text-[11px] text-slate-200 whitespace-nowrap shadow-lg"
+            className="pointer-events-none fixed z-[9999] rounded bg-slate-800/95 px-1.5 py-0.5 text-[11px] font-sans text-slate-200 whitespace-nowrap shadow-lg"
             style={{ left: tipPos.left, top: tipPos.top }}
           >
             {slotToTime(tipSlot)}–{slotToTime(tipSlot + 1)}
