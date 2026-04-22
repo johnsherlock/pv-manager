@@ -7,15 +7,14 @@ import {
   Info,
   ArrowRight,
   CheckCircle2,
-  History,
 } from 'lucide-react';
 import { loadTariffOverview } from '@/src/tariffs/loader';
 import type {
   TariffVersionDetail,
-  TariffVersionSummary,
   ContractInfo,
   PricePeriod,
 } from '@/src/tariffs/loader';
+import VersionHistory from './_components/VersionHistory';
 import { resolveEffectiveInstallationId } from '@/src/installation-helpers';
 
 export const dynamic = 'force-dynamic';
@@ -585,104 +584,6 @@ function CurrentTariffCard({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Version history timeline
-// ---------------------------------------------------------------------------
-
-function VersionTimeline({ versions }: { versions: TariffVersionSummary[] }) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <History size={15} className="text-slate-400" />
-          <h3 className="text-sm font-semibold text-slate-200">Version history</h3>
-        </div>
-        <Link
-          href="/settings/tariffs/new"
-          className="inline-flex items-center gap-1 rounded-full border border-indigo-500/40 bg-indigo-600/70 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-600 transition-colors"
-        >
-          <Plus size={11} />
-          Add version
-        </Link>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {versions.map((v, i) => {
-          const isCurrent = v.isActiveDefault || v.validToLocalDate === null;
-          return (
-            <div
-              key={v.id}
-              className={[
-                'relative flex items-start gap-4 rounded-2xl border px-4 py-3.5',
-                isCurrent
-                  ? 'border-emerald-800/30 bg-[#0d1f18]'
-                  : 'border-slate-800/60 bg-slate-900/40',
-              ].join(' ')}
-            >
-              {i < versions.length - 1 && (
-                <div className="absolute left-[1.65rem] top-full h-2 w-px bg-slate-800" />
-              )}
-              <div
-                className={[
-                  'mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full border',
-                  isCurrent
-                    ? 'border-emerald-500 bg-emerald-500/40'
-                    : 'border-slate-600 bg-slate-700',
-                ].join(' ')}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2 flex-wrap">
-                  <div>
-                    <p
-                      className={[
-                        'text-sm font-medium',
-                        isCurrent ? 'text-slate-100' : 'text-slate-300',
-                      ].join(' ')}
-                    >
-                      {v.versionLabel}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {formatDate(v.validFromLocalDate)}
-                      {' — '}
-                      {v.validToLocalDate ? formatDate(v.validToLocalDate) : 'present'}
-                    </p>
-                  </div>
-                  {isCurrent && (
-                    <span className="shrink-0 rounded-full bg-emerald-900/50 border border-emerald-800/40 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
-                      Current
-                    </span>
-                  )}
-                </div>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500">
-                  {v.dayRate && (
-                    <span>Day <span className="text-slate-300 tabular-nums">{formatRate(v.dayRate)}</span></span>
-                  )}
-                  {v.nightRate && (
-                    <span>Night <span className="text-slate-300 tabular-nums">{formatRate(v.nightRate)}</span></span>
-                  )}
-                  {v.peakRate && (
-                    <span>Peak <span className="text-slate-300 tabular-nums">{formatRate(v.peakRate)}</span></span>
-                  )}
-                  {v.exportRate && (
-                    <span>Export <span className="text-slate-300 tabular-nums">{formatRate(v.exportRate)}</span></span>
-                  )}
-                </div>
-              </div>
-              {!isCurrent && (
-                <Link
-                  href={`/settings/tariffs/${v.id}/edit`}
-                  className="shrink-0 text-xs text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  View
-                </Link>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Empty state
@@ -761,7 +662,7 @@ export default async function TariffsPage() {
 
           {(() => {
             const previous = data.allVersions.filter((v) => v.id !== data.activeVersion?.id);
-            return previous.length > 0 ? <VersionTimeline versions={previous} /> : null;
+            return previous.length > 0 ? <VersionHistory versions={previous} /> : null;
           })()}
 
           <div className="flex items-start gap-2.5 rounded-2xl border border-slate-800/60 bg-slate-900/30 px-4 py-3.5">
