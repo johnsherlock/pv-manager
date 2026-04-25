@@ -35,15 +35,15 @@ export function deriveTotalInvestment(inputs: FinanceInputs): number {
 }
 
 /**
- * Returns elapsed whole months between two ISO date strings.
- * Uses year/month arithmetic — no partial-month rounding, consistent with
- * the "approximate" framing of the investment date.
+ * Returns elapsed whole months between a date-only ISO string and a Date.
+ * Parses year/month directly from the ISO string to avoid the UTC-midnight vs
+ * local-time skew that occurs when date-only strings are fed to `new Date()`.
  */
 export function elapsedMonths(fromDateStr: string, toDate: Date): number {
-  const from = new Date(fromDateStr);
-  const years = toDate.getFullYear() - from.getFullYear();
-  const months = toDate.getMonth() - from.getMonth();
-  return Math.max(0, years * 12 + months);
+  const [fromYear, fromMonth] = fromDateStr.split('-').map(Number);
+  const toYear = toDate.getUTCFullYear();
+  const toMonth = toDate.getUTCMonth() + 1; // 1-based
+  return Math.max(0, (toYear - fromYear) * 12 + (toMonth - fromMonth));
 }
 
 export function deriveRemainingMonths(
