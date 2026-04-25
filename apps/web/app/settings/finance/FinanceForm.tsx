@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Pencil, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { saveFinanceSettings } from './actions';
 import type { FinanceSettingsPayload } from '@/src/finance/finance-types';
+import DateField from '@/src/components/DateField';
 
 // ---------------------------------------------------------------------------
 // Formatting helpers
@@ -214,14 +215,13 @@ function FinanceEditForm({
         <FieldLabel htmlFor="investmentDate" required>
           Approximate investment date
         </FieldLabel>
-        <TextInput
-          id="investmentDate"
-          type="date"
-          value={investmentDate}
-          onChange={(e) => setInvestmentDate(e.target.value)}
-          required
-          className="w-48"
-        />
+        <div className="w-56">
+          <DateField
+            value={investmentDate}
+            onChange={setInvestmentDate}
+            placeholder="Select investment date"
+          />
+        </div>
         <p className="mt-1.5 text-xs text-slate-500">
           The approximate date your solar installation was paid for or financed.
         </p>
