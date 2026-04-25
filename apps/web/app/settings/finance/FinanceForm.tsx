@@ -136,9 +136,11 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={[
-        'w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600',
+        'rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600',
         'focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500',
         'transition-colors',
+        // Remove number input spinners
+        '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
         props.className ?? '',
       ].join(' ')}
     />
@@ -218,6 +220,7 @@ function FinanceEditForm({
           value={investmentDate}
           onChange={(e) => setInvestmentDate(e.target.value)}
           required
+          className="w-48"
         />
         <p className="mt-1.5 text-xs text-slate-500">
           The approximate date your solar installation was paid for or financed.
@@ -237,6 +240,7 @@ function FinanceEditForm({
           placeholder="0.00"
           value={upfrontPayment}
           onChange={(e) => setUpfrontPayment(e.target.value)}
+          className="w-40"
         />
         <p className="mt-1.5 text-xs text-slate-500">
           Cash paid upfront at the time of installation. Leave blank if fully financed.
@@ -256,6 +260,7 @@ function FinanceEditForm({
           placeholder="0.00"
           value={monthlyRepayment}
           onChange={(e) => setMonthlyRepayment(e.target.value)}
+          className="w-40"
         />
         <p className="mt-1.5 text-xs text-slate-500">
           Monthly finance payment including interest. Required if repayment duration is set.
@@ -275,6 +280,7 @@ function FinanceEditForm({
           placeholder="e.g. 60"
           value={repaymentDurationMonths}
           onChange={(e) => setRepaymentDurationMonths(e.target.value)}
+          className="w-28"
         />
         <p className="mt-1.5 text-xs text-slate-500">
           Total number of monthly repayments. Required when monthly repayment is set.
