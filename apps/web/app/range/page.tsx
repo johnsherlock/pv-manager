@@ -88,6 +88,7 @@ export default async function RangePage({ searchParams }: PageProps) {
       <RangeHistoryScreen
         payload={payload}
         today={today}
+        activeMonthlyRepayment={installationContext?.activeMonthlyRepayment ?? null}
         initialMode={mode ?? null}
         initialFrom={initialFrom ?? null}
         initialTo={initialTo ?? null}
@@ -100,6 +101,7 @@ export default async function RangePage({ searchParams }: PageProps) {
       <RangeHistoryScreen
         payload={null}
         today={today}
+        activeMonthlyRepayment={null}
         initialMode={mode ?? null}
         initialFrom={initialFrom ?? null}
         initialTo={initialTo ?? null}
