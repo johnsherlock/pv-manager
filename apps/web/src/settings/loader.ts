@@ -10,7 +10,6 @@ export type SettingsCompletionState = {
   tariffs: SectionStatus;
   provider: SectionStatus;
   finance: SectionStatus;
-  solar: SectionStatus;
   location: SectionStatus;
   notifications: 'coming-soon';
   providerName: string | null;
@@ -69,7 +68,6 @@ export async function loadSettingsCompletionState(
   const [installation, providerConnection, tariffVersion, systemAdditionCount] = await Promise.all([
     db
       .select({
-        arrayCapacityKw: installations.arrayCapacityKw,
         locationLatitude: installations.locationLatitude,
       })
       .from(installations)
@@ -123,14 +121,12 @@ export async function loadSettingsCompletionState(
   const providerStatus: SectionStatus =
     providerConnection?.status === 'active' ? 'complete' : 'actionable';
   const financeStatus: SectionStatus = systemAdditionCount > 0 ? 'complete' : 'actionable';
-  const solarStatus: SectionStatus = installation?.arrayCapacityKw ? 'complete' : 'actionable';
   const locationStatus: SectionStatus = installation?.locationLatitude ? 'complete' : 'actionable';
 
   const actionable: SectionStatus[] = [
     tariffsStatus,
     providerStatus,
     financeStatus,
-    solarStatus,
     locationStatus,
   ];
   const totalComplete = actionable.filter((s) => s === 'complete').length;
@@ -139,7 +135,6 @@ export async function loadSettingsCompletionState(
     tariffs: tariffsStatus,
     provider: providerStatus,
     finance: financeStatus,
-    solar: solarStatus,
     location: locationStatus,
     notifications: 'coming-soon',
     providerName: providerConnection?.providerType ?? null,
