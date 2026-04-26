@@ -4,7 +4,13 @@ import type {
   SystemAdditionsSettingsPayload,
   SystemAdditionValidationResult,
 } from './system-addition-types';
-import { elapsedMonths } from './finance-domain';
+
+function elapsedMonths(fromDateStr: string, toDate: Date): number {
+  const [fromYear, fromMonth] = fromDateStr.split('-').map(Number);
+  const toYear = toDate.getUTCFullYear();
+  const toMonth = toDate.getUTCMonth() + 1;
+  return Math.max(0, (toYear - fromYear) * 12 + (toMonth - fromMonth));
+}
 
 // ---------------------------------------------------------------------------
 // Validation

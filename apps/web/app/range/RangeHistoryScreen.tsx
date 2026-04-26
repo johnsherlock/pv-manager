@@ -50,9 +50,6 @@ import { ExportRatioChart } from './ExportRatioChart';
 export type RangeHistoryScreenProps = {
   payload: RangeSummaryPayload | null;
   today: string;
-  financeMode: string | null;
-  monthlyFinancePaymentAmount: number | null;
-  financeTermMonths: number | null;
   initialMode: string | null;
   initialFrom: string | null;
   initialTo: string | null;
@@ -63,7 +60,7 @@ export type RangeHistoryScreenProps = {
 // Root screen
 // ---------------------------------------------------------------------------
 
-export function RangeHistoryScreen({ payload, today, financeMode, monthlyFinancePaymentAmount, financeTermMonths, initialMode, initialFrom, initialTo, error }: RangeHistoryScreenProps) {
+export function RangeHistoryScreen({ payload, today, initialMode, initialFrom, initialTo, error }: RangeHistoryScreenProps) {
   const router = useRouter();
 
   const earliestDate = payload?.meta.earliestDate ?? null;
@@ -113,8 +110,6 @@ export function RangeHistoryScreen({ payload, today, financeMode, monthlyFinance
     if (!payload) return null;
     return aggregateKpisFromSeries(filteredSeries, effectiveRange.from, effectiveRange.to);
   }, [payload, filteredSeries, effectiveRange]);
-
-  const isFinanced = financeMode === 'finance';
 
   // ---------------------------------------------------------------------------
   // Navigation handler — handles picker selections from this screen
@@ -317,16 +312,6 @@ export function RangeHistoryScreen({ payload, today, financeMode, monthlyFinance
                   currency={payload?.meta.currency ?? 'EUR'}
                 />
 
-                {/* §10 — Payback tracker (financed installations only) */}
-                {isFinanced && (
-                  <PaybackTracker
-                    periodSavings={kpis.savings}
-                    periodDays={filteredSeries.length}
-                    monthlyPayment={monthlyFinancePaymentAmount}
-                    termMonths={financeTermMonths}
-                    currency={payload?.meta.currency ?? 'EUR'}
-                  />
-                )}
               </>
             )}
           </>
@@ -657,78 +642,6 @@ function ChartCard({
 }
 
 // ---------------------------------------------------------------------------
-// §10 — Payback tracker (financed installations only)
-// ---------------------------------------------------------------------------
-
-const AVG_DAYS_PER_MONTH = 30.4375;
-
-function PaybackTracker({
-  periodSavings,
-  periodDays,
-  monthlyPayment,
-  termMonths,
-  currency,
-}: {
-  periodSavings: number;
-  periodDays: number;
-  monthlyPayment: number | null;
-  termMonths: number | null;
-  currency: string;
-}) {
-  if (!monthlyPayment || monthlyPayment <= 0) return null;
-
-  const periodPayments = Math.round((monthlyPayment * periodDays / AVG_DAYS_PER_MONTH) * 100) / 100;
-  const isPositive = periodSavings >= periodPayments;
-  const fillPct = periodPayments > 0
-    ? Math.min(100, Math.round((periodSavings / periodPayments) * 100))
-    : 0;
-
-  return (
-    <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-3 sm:p-5">
-      <div className="mb-4 flex items-center gap-2">
-        <TrendingUp size={14} className="text-slate-600" />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Payback progress</span>
-        {termMonths && (
-          <span className="ml-auto text-[11px] text-slate-600">
-            {termMonths}-month finance term · {formatCurrency(monthlyPayment, currency)}/mo
-          </span>
-        )}
-      </div>
-
-      {/* Progress bar */}
-      <div className="mb-3 h-3 overflow-hidden rounded-full bg-slate-800">
-        <div
-          className={[
-            'h-full rounded-full transition-all duration-500',
-            isPositive ? 'bg-emerald-500' : 'bg-slate-600',
-          ].join(' ')}
-          style={{ width: `${fillPct}%` }}
-        />
-      </div>
-
-      {/* Labels */}
-      <div className="flex items-baseline justify-between">
-        <p className="text-xs text-slate-400">
-          Solar saved{' '}
-          <span className={isPositive ? 'font-semibold text-emerald-400' : 'font-semibold text-slate-300'}>
-            {formatCurrency(periodSavings, currency)}
-          </span>
-          {' '}of your{' '}
-          <span className="text-slate-300">{formatCurrency(periodPayments, currency)}</span>
-          {' '}in payments this period
-        </p>
-        <span
-          className={[
-            'shrink-0 pl-4 text-xs font-semibold tabular-nums',
-            isPositive ? 'text-emerald-400' : 'text-slate-500',
-          ].join(' ')}
-        >
-          {fillPct}%
-        </span>
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
