@@ -227,6 +227,21 @@ export const dataHealthEvents = pgTable('data_health_events', {
   detailsJson: jsonb('details_json'),
 });
 
+export const systemAdditions = pgTable('system_additions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  installationId: uuid('installation_id').notNull().references(() => installations.id, { onDelete: 'cascade' }),
+  label: text('label').notNull(),
+  additionDate: date('addition_date').notNull(),
+  capacityAddedKw: numeric('capacity_added_kw', { precision: 8, scale: 2 }),
+  upfrontPayment: numeric('upfront_payment', { precision: 12, scale: 2 }),
+  monthlyRepayment: numeric('monthly_repayment', { precision: 12, scale: 2 }),
+  repaymentDurationMonths: integer('repayment_duration_months'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  installationIdIdx: index('system_additions_installation_id_idx').on(table.installationId),
+}));
+
 export const deletionRequests = pgTable('deletion_requests', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
