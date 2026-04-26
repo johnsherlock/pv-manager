@@ -71,10 +71,6 @@ export async function loadSettingsCompletionState(
       .select({
         arrayCapacityKw: installations.arrayCapacityKw,
         locationLatitude: installations.locationLatitude,
-        // Fallback until P-052 ships the system-additions save flow and retires
-        // the flat finance action. Users who saved finance via the old form still
-        // have data here; we count that as complete so they don't lose progress.
-        financeInvestmentDate: installations.financeInvestmentDate,
       })
       .from(installations)
       .where(eq(installations.id, installationId))
@@ -112,8 +108,7 @@ export async function loadSettingsCompletionState(
   const tariffsStatus: SectionStatus = tariffVersion ? 'complete' : 'actionable';
   const providerStatus: SectionStatus =
     providerConnection?.status === 'active' ? 'complete' : 'actionable';
-  const financeStatus: SectionStatus =
-    systemAdditionCount > 0 || !!installation?.financeInvestmentDate ? 'complete' : 'actionable';
+  const financeStatus: SectionStatus = systemAdditionCount > 0 ? 'complete' : 'actionable';
   const solarStatus: SectionStatus = installation?.arrayCapacityKw ? 'complete' : 'actionable';
   const locationStatus: SectionStatus = installation?.locationLatitude ? 'complete' : 'actionable';
 
