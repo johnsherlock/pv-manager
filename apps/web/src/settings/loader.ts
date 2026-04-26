@@ -1,4 +1,4 @@
-import { count, eq } from 'drizzle-orm';
+import { and, count, eq, isNotNull, isNull, or } from 'drizzle-orm';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -97,11 +97,25 @@ export async function loadSettingsCompletionState(
       .limit(1)
       .then((rows) => rows[0] ?? null),
 
-    // Finance is complete when at least one system addition record exists.
+    // Finance is complete when at least one record with valid finance details exists.
+    // Mirrors the rules in validateSystemAdditionInputs: at least one payment field
+    // required, and monthly repayment requires a duration.
     db
       .select({ n: count() })
       .from(systemAdditions)
-      .where(eq(systemAdditions.installationId, installationId))
+      .where(
+        and(
+          eq(systemAdditions.installationId, installationId),
+          or(
+            isNotNull(systemAdditions.upfrontPayment),
+            isNotNull(systemAdditions.monthlyRepayment),
+          ),
+          or(
+            isNull(systemAdditions.monthlyRepayment),
+            isNotNull(systemAdditions.repaymentDurationMonths),
+          ),
+        ),
+      )
       .then((rows) => rows[0]?.n ?? 0),
   ]);
 

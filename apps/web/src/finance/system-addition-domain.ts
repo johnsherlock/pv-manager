@@ -99,11 +99,12 @@ export function buildSystemAdditionsPayload(
   rows: Array<{ id: string } & SystemAdditionInputs>,
   today: Date = new Date(),
 ): SystemAdditionsSettingsPayload {
-  if (rows.length === 0) {
+  const validRows = rows.filter((row) => validateSystemAdditionInputs(row).valid);
+  if (validRows.length === 0) {
     return { configured: false };
   }
   return {
     configured: true,
-    records: rows.map((row) => buildSystemAdditionRecord(row.id, row, today)),
+    records: validRows.map((row) => buildSystemAdditionRecord(row.id, row, today)),
   };
 }

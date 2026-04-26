@@ -242,6 +242,40 @@ describe('buildSystemAdditionsPayload', () => {
     }
   });
 
+  it('returns configured: false when all rows are invalid', () => {
+    const invalidRow = {
+      id: 'id-bad',
+      label: 'No finance',
+      additionDate: '2024-04-01',
+      capacityAddedKw: 4.0,
+      upfrontPayment: null,
+      monthlyRepayment: null,
+      repaymentDurationMonths: null,
+    };
+    expect(buildSystemAdditionsPayload([invalidRow], TODAY)).toEqual({ configured: false });
+  });
+
+  it('excludes invalid rows from a mixed list', () => {
+    const invalidRow = {
+      id: 'id-bad',
+      label: 'No finance',
+      additionDate: '2024-04-01',
+      capacityAddedKw: null,
+      upfrontPayment: null,
+      monthlyRepayment: null,
+      repaymentDurationMonths: null,
+    };
+    const payload = buildSystemAdditionsPayload(
+      [invalidRow, { id: 'id-1', ...upfrontOnly }],
+      TODAY,
+    );
+    expect(payload).toMatchObject({ configured: true });
+    if (payload.configured) {
+      expect(payload.records).toHaveLength(1);
+      expect(payload.records[0].id).toBe('id-1');
+    }
+  });
+
   it('derives totals independently per record', () => {
     const payload = buildSystemAdditionsPayload(
       [
