@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { saveFinanceSettings } from './actions';
@@ -160,6 +160,7 @@ function FinanceEditForm({
   onCancel: (() => void) | null;
 }) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const configured = initial.configured ? initial : null;
 
@@ -180,6 +181,7 @@ function FinanceEditForm({
   const [error, setError] = useState<string | null>(null);
 
   const derivedTotal = previewTotal(upfrontPayment, monthlyRepayment, repaymentDurationMonths);
+  const busy = saving || isPending;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -193,11 +195,11 @@ function FinanceEditForm({
       repaymentDurationMonths,
     });
 
+    setSaving(false);
     if (result.ok) {
-      router.refresh();
+      startTransition(() => router.refresh());
     } else {
       setError(result.error);
-      setSaving(false);
     }
   }
 
@@ -301,17 +303,17 @@ function FinanceEditForm({
       <div className="flex items-center gap-3 pt-1">
         <button
           type="submit"
-          disabled={saving}
+          disabled={busy}
           className="inline-flex items-center gap-2 rounded-full border border-indigo-500/50 bg-indigo-600/80 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {saving && <Loader2 size={12} className="animate-spin" />}
-          {saving ? 'Saving…' : 'Save finance details'}
+          {busy && <Loader2 size={12} className="animate-spin" />}
+          {busy ? 'Saving…' : 'Save finance details'}
         </button>
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            disabled={saving}
+            disabled={busy}
             className="text-xs text-slate-400 hover:text-slate-200 transition-colors disabled:opacity-50"
           >
             Cancel
@@ -328,6 +330,11 @@ function FinanceEditForm({
 
 export default function FinanceForm({ initialPayload }: { initialPayload: FinanceSettingsPayload }) {
   const [editing, setEditing] = useState(!initialPayload.configured);
+
+  // When router.refresh() delivers updated server props, exit edit mode.
+  useEffect(() => {
+    if (initialPayload.configured) setEditing(false);
+  }, [initialPayload]);
 
   if (!editing && initialPayload.configured) {
     return (
