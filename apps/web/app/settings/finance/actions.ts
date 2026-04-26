@@ -57,6 +57,14 @@ export async function saveFinanceSettings(input: SaveFinanceInput): Promise<Save
   const repaymentDurationMonths =
     input.repaymentDurationMonths !== '' ? parseInt(input.repaymentDurationMonths, 10) : null;
 
+  if (
+    (upfrontPayment !== null && !Number.isFinite(upfrontPayment)) ||
+    (monthlyRepayment !== null && !Number.isFinite(monthlyRepayment)) ||
+    (repaymentDurationMonths !== null && (!Number.isInteger(repaymentDurationMonths) || repaymentDurationMonths < 1))
+  ) {
+    return { ok: false, error: 'Invalid numeric input.' };
+  }
+
   const validation = validateFinanceInputs({
     investmentDate: input.investmentDate || null,
     upfrontPayment,
@@ -74,6 +82,7 @@ export async function saveFinanceSettings(input: SaveFinanceInput): Promise<Save
     .update(installations)
     .set({
       financeInvestmentDate: input.investmentDate,
+      financeMode: 'finance',
       installCostAmount: upfrontPayment != null ? String(upfrontPayment) : null,
       monthlyFinancePaymentAmount:
         monthlyRepayment != null ? String(monthlyRepayment) : null,
