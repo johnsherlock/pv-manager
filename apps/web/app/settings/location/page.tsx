@@ -42,7 +42,7 @@ export default async function LocationPage() {
 
       <p className="text-sm text-slate-400 leading-relaxed max-w-prose mb-8">
         Set your installation location to enable weather context and solar yield interpretation.
-        Only a town or postcode is needed — no street-level precision required.
+        Only a city or town is needed.
       </p>
 
       <LocationForm current={current} />
