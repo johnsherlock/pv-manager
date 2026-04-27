@@ -14,6 +14,7 @@ import {
 import { RangeHistoryScreen } from './RangeHistoryScreen';
 import { redirect } from 'next/navigation';
 import { resolveEffectiveInstallationId } from '@/src/installation-helpers';
+import { loadStaleTariffWarning } from '@/src/tariffs/stale-check';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +71,8 @@ export default async function RangePage({ searchParams }: PageProps) {
     installationContext?.totalSystemInvestment != null &&
     installationContext?.earliestAdditionDate != null;
   const needsAllTimeLoad = hasFinanceContext && earliestDate != null && earliestDate !== windowStart;
+
+  const staleTariffWarning = await loadStaleTariffWarning(installationId, timezone);
 
   try {
     const [tariffVersions, fixedCharges, summaryRows, allTimeRows] = await Promise.all([
@@ -143,6 +146,7 @@ export default async function RangePage({ searchParams }: PageProps) {
         initialFrom={initialFrom ?? null}
         initialTo={initialTo ?? null}
         error={false}
+        staleTariffWarning={staleTariffWarning}
       />
     );
   } catch (err) {
@@ -156,6 +160,7 @@ export default async function RangePage({ searchParams }: PageProps) {
         initialFrom={initialFrom ?? null}
         initialTo={initialTo ?? null}
         error={true}
+        staleTariffWarning={staleTariffWarning}
       />
     );
   }

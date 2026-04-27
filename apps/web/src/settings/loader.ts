@@ -11,11 +11,11 @@ export type SettingsCompletionState = {
   provider: SectionStatus;
   finance: SectionStatus;
   location: SectionStatus;
-  notifications: 'coming-soon';
+  notifications: 'complete' | 'actionable';
   providerName: string | null;
   providerStatus: string | null;
   providerLastSyncAt: Date | null;
-  /** Sections that count toward the progress denominator (excludes coming-soon). */
+  /** Sections that count toward the progress denominator (excludes notifications). */
   totalActionable: number;
   /** Number of sections currently complete. */
   totalComplete: number;
@@ -69,6 +69,7 @@ export async function loadSettingsCompletionState(
     db
       .select({
         locationLatitude: installations.locationLatitude,
+        notificationPreferencesJson: installations.notificationPreferencesJson,
       })
       .from(installations)
       .where(eq(installations.id, installationId))
@@ -125,7 +126,10 @@ export async function loadSettingsCompletionState(
     providerConnection?.status === 'active' ? 'complete' : 'actionable';
   const financeStatus: SectionStatus = systemAdditionCount > 0 ? 'complete' : 'actionable';
   const locationStatus: SectionStatus = installation?.locationLatitude ? 'complete' : 'actionable';
+  const notificationsStatus: 'complete' | 'actionable' =
+    installation?.notificationPreferencesJson != null ? 'complete' : 'actionable';
 
+  // Notifications are optional and do not count toward the setup progress denominator.
   const actionable: SectionStatus[] = [
     tariffsStatus,
     providerStatus,
@@ -139,7 +143,7 @@ export async function loadSettingsCompletionState(
     provider: providerStatus,
     finance: financeStatus,
     location: locationStatus,
-    notifications: 'coming-soon',
+    notifications: notificationsStatus,
     providerName: providerConnection?.providerType ?? null,
     providerStatus: providerConnection?.status ?? null,
     providerLastSyncAt: providerConnection?.lastSuccessfulSyncAt ?? null,
