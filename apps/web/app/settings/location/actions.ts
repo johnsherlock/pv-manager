@@ -11,8 +11,24 @@ export type LocationInput = {
   precisionMode: 'exact' | 'approximate';
 };
 
-export type LocationResult =
-  | { ok: true; displayName: string }
+// Resolved but not yet saved — passed back to the client for confirmation.
+export type ResolvedLocationPreview = {
+  rawInput: string;
+  displayName: string;
+  latitude: number;
+  longitude: number;
+  precisionMode: 'exact' | 'approximate';
+  countryCode: string | undefined;
+  locality: string | undefined;
+  geocoderProvider: string;
+};
+
+export type ResolveLocationResult =
+  | { ok: true; preview: ResolvedLocationPreview }
+  | { ok: false; error: string };
+
+export type SaveLocationResult =
+  | { ok: true }
   | { ok: false; error: string };
 
 // ---------------------------------------------------------------------------
@@ -37,58 +53,81 @@ async function getDeps() {
 }
 
 // ---------------------------------------------------------------------------
-// Save (geocode + persist)
+// Step 1: Geocode only — no DB write
 // ---------------------------------------------------------------------------
 
-export async function saveLocation(input: LocationInput): Promise<LocationResult> {
+export async function resolveLocation(input: LocationInput): Promise<ResolveLocationResult> {
   const session = await getSession();
   if (!session?.userId || session.status !== UserStatus.Approved) {
     return { ok: false, error: 'Not authorised.' };
   }
 
   const rawInput = input.rawInput.trim();
-  if (!rawInput) {
-    return { ok: false, error: 'Please enter a location.' };
-  }
+  if (!rawInput) return { ok: false, error: 'Please enter a location.' };
   if (input.precisionMode !== 'exact' && input.precisionMode !== 'approximate') {
     return { ok: false, error: 'Invalid precision mode.' };
+  }
+
+  const result = await geocodeLocation(rawInput, input.precisionMode);
+  if (!result.ok) return result;
+
+  const { location } = result;
+  return {
+    ok: true,
+    preview: {
+      rawInput,
+      displayName: location.displayName,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      precisionMode: location.precisionMode,
+      countryCode: location.countryCode,
+      locality: location.locality,
+      geocoderProvider: location.geocoderProvider,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Step 2: Persist a confirmed preview
+// ---------------------------------------------------------------------------
+
+export async function saveLocation(preview: ResolvedLocationPreview): Promise<SaveLocationResult> {
+  const session = await getSession();
+  if (!session?.userId || session.status !== UserStatus.Approved) {
+    return { ok: false, error: 'Not authorised.' };
   }
 
   const installationId = await resolveEffectiveInstallationId();
   if (!installationId) return { ok: false, error: 'No installation found.' };
 
-  const geocodeResult = await geocodeLocation(rawInput, input.precisionMode);
-  if (!geocodeResult.ok) {
-    return { ok: false, error: geocodeResult.error };
-  }
-
-  const { location } = geocodeResult;
   const { db, installations } = await getDeps();
 
   await db
     .update(installations)
     .set({
-      locationRawInput: rawInput,
-      locationDisplayName: location.displayName,
-      locationLatitude: String(location.latitude),
-      locationLongitude: String(location.longitude),
-      locationPrecisionMode: location.precisionMode,
-      locationCountryCode: location.countryCode ?? null,
-      locationLocality: location.locality ?? null,
+      locationRawInput: preview.rawInput,
+      locationDisplayName: preview.displayName,
+      locationLatitude: String(preview.latitude),
+      locationLongitude: String(preview.longitude),
+      locationPrecisionMode: preview.precisionMode,
+      locationCountryCode: preview.countryCode ?? null,
+      locationLocality: preview.locality ?? null,
       locationGeocodedAt: new Date(),
-      locationGeocoderProvider: location.geocoderProvider,
+      locationGeocoderProvider: preview.geocoderProvider,
       updatedAt: new Date(),
     })
     .where(eq(installations.id, installationId));
 
-  return { ok: true, displayName: location.displayName };
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------
 // Clear
 // ---------------------------------------------------------------------------
 
-export async function clearLocation(): Promise<LocationResult> {
+export type ClearLocationResult = { ok: true } | { ok: false; error: string };
+
+export async function clearLocation(): Promise<ClearLocationResult> {
   const session = await getSession();
   if (!session?.userId || session.status !== UserStatus.Approved) {
     return { ok: false, error: 'Not authorised.' };
@@ -115,5 +154,5 @@ export async function clearLocation(): Promise<LocationResult> {
     })
     .where(eq(installations.id, installationId));
 
-  return { ok: true, displayName: '' };
+  return { ok: true };
 }

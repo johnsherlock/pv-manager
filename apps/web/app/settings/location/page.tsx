@@ -15,6 +15,8 @@ export default async function LocationPage() {
       locationRawInput: installations.locationRawInput,
       locationDisplayName: installations.locationDisplayName,
       locationPrecisionMode: installations.locationPrecisionMode,
+      locationLatitude: installations.locationLatitude,
+      locationLongitude: installations.locationLongitude,
     })
     .from(installations)
     .where(eq(installations.id, installationId))
@@ -26,6 +28,8 @@ export default async function LocationPage() {
         rawInput: row.locationRawInput,
         displayName: row.locationDisplayName,
         precisionMode: row.locationPrecisionMode,
+        latitude: row.locationLatitude,
+        longitude: row.locationLongitude,
       }
     : null;
 
