@@ -128,18 +128,16 @@ export async function searchLocationCandidates(text: string): Promise<LocationCa
 }
 
 // ---------------------------------------------------------------------------
-// Public: resolve a chosen candidate to a storable location
+// Public: resolve a chosen candidate to a storable location.
+// Always stores the full context label — no precision mode needed.
 // ---------------------------------------------------------------------------
 
-export function resolveCandidate(
-  candidate: LocationCandidate,
-  precisionMode: 'exact' | 'approximate',
-): ResolvedLocation {
+export function resolveCandidate(candidate: LocationCandidate): ResolvedLocation {
   return {
-    displayName: precisionMode === 'approximate' ? candidate.name : candidate.contextLabel,
+    displayName: candidate.contextLabel,
     latitude: candidate.latitude,
     longitude: candidate.longitude,
-    precisionMode,
+    precisionMode: 'exact',
     countryCode: candidate.countryCode,
     locality: candidate.name,
     geocoderProvider: candidate.geocoderProvider,

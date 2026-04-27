@@ -12,7 +12,6 @@ export type { LocationCandidate };
 // The confirmed selection passed from the client to saveLocation.
 export type ConfirmedLocation = {
   candidate: LocationCandidate;
-  precisionMode: 'exact' | 'approximate';
 };
 
 export type SearchLocationsResult =
@@ -78,7 +77,7 @@ export async function saveLocation(confirmed: ConfirmedLocation): Promise<SaveLo
   const installationId = await resolveEffectiveInstallationId();
   if (!installationId) return { ok: false, error: 'No installation found.' };
 
-  const location = resolveCandidate(confirmed.candidate, confirmed.precisionMode);
+  const location = resolveCandidate(confirmed.candidate);
   const { db, installations } = await getDeps();
 
   await db

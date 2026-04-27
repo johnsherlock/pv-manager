@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  MapPin, Loader2, AlertCircle, CheckCircle2, Trash2, Search, ArrowLeft, X,
-} from 'lucide-react';
+import { MapPin, Loader2, AlertCircle, CheckCircle2, Trash2, Search, ArrowLeft, X } from 'lucide-react';
 import { searchLocations, saveLocation, clearLocation } from './actions';
 import type { LocationCandidate } from './actions';
 
@@ -79,16 +77,14 @@ function SavedLocationCard({
 // ---------------------------------------------------------------------------
 
 function SelectedCandidateCard({
-  candidate, precisionMode, onConfirm, onBack, isSaving, error,
+  candidate, onConfirm, onBack, isSaving, error,
 }: {
   candidate: LocationCandidate;
-  precisionMode: 'exact' | 'approximate';
   onConfirm: () => void;
   onBack: () => void;
   isSaving: boolean;
   error: string | null;
 }) {
-  const storedName = precisionMode === 'approximate' ? candidate.name : candidate.contextLabel;
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-[16px] border border-indigo-700/40 bg-indigo-950/20 p-4">
@@ -97,13 +93,6 @@ function SelectedCandidateCard({
         <p className="mt-1 text-xs text-slate-500 tabular-nums">
           {formatCoords(candidate.latitude, candidate.longitude)}
         </p>
-        {storedName !== candidate.contextLabel && (
-          <p className="mt-2 text-xs text-slate-500">
-            Saved as:{' '}
-            <span className="text-slate-400 font-medium">"{storedName}"</span>
-            <span className="text-slate-600 ml-1">(approximate mode)</span>
-          </p>
-        )}
       </div>
 
       {error && (
@@ -153,21 +142,21 @@ export function LocationForm({ current }: Props) {
   const [query, setQuery] = useState('');
   const [candidates, setCandidates] = useState<LocationCandidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [selected, setSelected] = useState<LocationCandidate | null>(null);
-  const [precisionMode, setPrecisionMode] = useState<'exact' | 'approximate'>(
-    (current?.precisionMode as 'exact' | 'approximate') ?? 'approximate',
-  );
   const [saveError, setSaveError] = useState<string | null>(null);
   const [clearError, setClearError] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced search on query change
+  // Debounced search
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    setHighlightedIndex(-1);
 
     if (query.trim().length < MIN_QUERY_LENGTH) {
       setCandidates([]);
@@ -189,19 +178,22 @@ export function LocationForm({ current }: Props) {
       }
     }, DEBOUNCE_MS);
 
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query]);
+
+  // Scroll highlighted item into view
+  useEffect(() => {
+    if (highlightedIndex >= 0) {
+      itemRefs.current[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [highlightedIndex]);
 
   // Close dropdown on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(e.target as Node)
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
+        inputRef.current && !inputRef.current.contains(e.target as Node)
       ) {
         setDropdownOpen(false);
       }
@@ -210,9 +202,28 @@ export function LocationForm({ current }: Props) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!dropdownOpen || candidates.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((i) => Math.min(i + 1, candidates.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (highlightedIndex >= 0) handleSelect(candidates[highlightedIndex]);
+    } else if (e.key === 'Escape') {
+      setDropdownOpen(false);
+      setHighlightedIndex(-1);
+    }
+  }
+
   function handleSelect(candidate: LocationCandidate) {
     setSelected(candidate);
     setDropdownOpen(false);
+    setHighlightedIndex(-1);
     setQuery('');
     setSaveError(null);
   }
@@ -221,7 +232,7 @@ export function LocationForm({ current }: Props) {
     if (!selected) return;
     setSaveError(null);
     startSaveTransition(async () => {
-      const result = await saveLocation({ candidate: selected, precisionMode });
+      const result = await saveLocation({ candidate: selected });
       if (!result.ok) {
         setSaveError(result.error);
       } else {
@@ -288,10 +299,9 @@ export function LocationForm({ current }: Props) {
       {/* Search form */}
       {isEditing && !selected && (
         <div className="flex flex-col gap-5">
-          {/* Typeahead input */}
           <div>
             <label htmlFor="location-search" className="block text-xs font-medium text-slate-300 mb-1.5">
-              Town, city, or postcode
+              Town or city
             </label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
@@ -307,8 +317,13 @@ export function LocationForm({ current }: Props) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => candidates.length > 0 && setDropdownOpen(true)}
+                onKeyDown={handleKeyDown}
                 placeholder="e.g. Blackrock, Cork, Galway…"
                 autoComplete="off"
+                aria-autocomplete="list"
+                aria-expanded={dropdownOpen}
+                aria-controls="location-listbox"
+                aria-activedescendant={highlightedIndex >= 0 ? `location-option-${highlightedIndex}` : undefined}
                 className="w-full rounded-xl border border-slate-700 bg-slate-900/60 py-2.5 pl-8 pr-8 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
               />
               {query && (
@@ -326,14 +341,24 @@ export function LocationForm({ current }: Props) {
               {dropdownOpen && candidates.length > 0 && (
                 <div
                   ref={dropdownRef}
-                  className="absolute z-20 mt-1 w-full rounded-xl border border-slate-700 bg-[#111b2b] shadow-[0_8px_30px_rgba(2,6,23,0.4)] overflow-hidden"
+                  id="location-listbox"
+                  role="listbox"
+                  className="absolute z-20 mt-1 w-full rounded-xl border border-slate-700 bg-[#111b2b] shadow-[0_8px_30px_rgba(2,6,23,0.4)] overflow-hidden max-h-56 overflow-y-auto"
                 >
-                  {candidates.map((c) => (
+                  {candidates.map((c, i) => (
                     <button
                       key={c.id}
+                      ref={(el) => { itemRefs.current[i] = el; }}
+                      id={`location-option-${i}`}
+                      role="option"
+                      aria-selected={highlightedIndex === i}
                       type="button"
                       onMouseDown={(e) => { e.preventDefault(); handleSelect(c); }}
-                      className="flex w-full items-start gap-2.5 px-4 py-3 text-left hover:bg-slate-800/60 transition-colors border-b border-slate-800/60 last:border-0"
+                      onMouseEnter={() => setHighlightedIndex(i)}
+                      className={[
+                        'flex w-full items-start gap-2.5 px-4 py-3 text-left transition-colors border-b border-slate-800/60 last:border-0',
+                        highlightedIndex === i ? 'bg-slate-700/50' : 'hover:bg-slate-800/60',
+                      ].join(' ')}
                     >
                       <MapPin size={12} className="mt-0.5 shrink-0 text-slate-500" />
                       <span className="text-sm text-slate-200">{c.contextLabel}</span>
@@ -342,60 +367,16 @@ export function LocationForm({ current }: Props) {
                 </div>
               )}
 
-              {/* No results hint */}
-              {dropdownOpen && candidates.length === 0 && !isSearching && query.trim().length >= MIN_QUERY_LENGTH && (
+              {/* No results */}
+              {!isSearching && query.trim().length >= MIN_QUERY_LENGTH && !dropdownOpen && candidates.length === 0 && (
                 <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-700 bg-[#111b2b] px-4 py-3 text-xs text-slate-500">
                   No locations found — try a different search term.
                 </div>
               )}
             </div>
-            <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">
+            <p className="mt-1.5 text-xs text-slate-500">
               Used for weather and solar context only. Not shared.
             </p>
-          </div>
-
-          {/* Precision mode */}
-          <div>
-            <p className="text-xs font-medium text-slate-300 mb-2">What name to store</p>
-            <div className="flex flex-col gap-2">
-              {(
-                [
-                  {
-                    value: 'approximate' as const,
-                    label: 'Town only',
-                    description: 'Stores just the town name — e.g. "Blackrock"',
-                  },
-                  {
-                    value: 'exact' as const,
-                    label: 'Full label',
-                    description: 'Stores the full resolved label — e.g. "Blackrock, Leinster, Ireland"',
-                  },
-                ]
-              ).map(({ value, label, description }) => (
-                <label
-                  key={value}
-                  className={[
-                    'flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors',
-                    precisionMode === value
-                      ? 'border-indigo-500/50 bg-indigo-600/10'
-                      : 'border-slate-700 bg-slate-900/40 hover:border-slate-600',
-                  ].join(' ')}
-                >
-                  <input
-                    type="radio"
-                    name="precisionMode"
-                    value={value}
-                    checked={precisionMode === value}
-                    onChange={() => setPrecisionMode(value)}
-                    className="mt-0.5 accent-indigo-500"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">{label}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{description}</p>
-                  </div>
-                </label>
-              ))}
-            </div>
           </div>
 
           {current?.displayName && (
@@ -414,7 +395,6 @@ export function LocationForm({ current }: Props) {
       {isEditing && selected && (
         <SelectedCandidateCard
           candidate={selected}
-          precisionMode={precisionMode}
           onConfirm={handleSave}
           onBack={() => { setSelected(null); setTimeout(() => inputRef.current?.focus(), 50); }}
           isSaving={isSaving}
