@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { MapPin, Loader2, AlertCircle, CheckCircle2, Trash2, Search, ArrowLeft } from 'lucide-react';
-import { resolveLocation, saveLocation, clearLocation } from './actions';
-import type { ResolvedLocationPreview } from './actions';
+import {
+  MapPin, Loader2, AlertCircle, CheckCircle2, Trash2, Search, ArrowLeft, X,
+} from 'lucide-react';
+import { searchLocations, saveLocation, clearLocation } from './actions';
+import type { LocationCandidate } from './actions';
 
 type Props = {
   current: {
@@ -22,39 +24,12 @@ function formatCoords(lat: number, lon: number): string {
   return `${Math.abs(lat).toFixed(4)}°${latDir}, ${Math.abs(lon).toFixed(4)}°${lonDir}`;
 }
 
-function FieldLabel({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) {
-  return (
-    <label htmlFor={htmlFor} className="block text-xs font-medium text-slate-300 mb-1.5">
-      {children}
-    </label>
-  );
-}
-
-function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className={[
-        'w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600',
-        'focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500',
-        'transition-colors',
-        props.className ?? '',
-      ].join(' ')}
-    />
-  );
-}
-
 // ---------------------------------------------------------------------------
-// Saved location display (read state)
+// Saved location card (read state)
 // ---------------------------------------------------------------------------
 
 function SavedLocationCard({
-  displayName,
-  latitude,
-  longitude,
-  onEdit,
-  onClear,
-  isClearing,
+  displayName, latitude, longitude, onEdit, onClear, isClearing,
 }: {
   displayName: string;
   latitude: string;
@@ -100,33 +75,45 @@ function SavedLocationCard({
 }
 
 // ---------------------------------------------------------------------------
-// Resolved preview card (confirm step)
+// Selected candidate confirmation card
 // ---------------------------------------------------------------------------
 
-function ResolvedPreviewCard({
-  preview,
-  onConfirm,
-  onSearchAgain,
-  isSaving,
+function SelectedCandidateCard({
+  candidate, precisionMode, onConfirm, onBack, isSaving, error,
 }: {
-  preview: ResolvedLocationPreview;
+  candidate: LocationCandidate;
+  precisionMode: 'exact' | 'approximate';
   onConfirm: () => void;
-  onSearchAgain: () => void;
+  onBack: () => void;
   isSaving: boolean;
+  error: string | null;
 }) {
+  const storedName = precisionMode === 'approximate' ? candidate.name : candidate.contextLabel;
   return (
-    <div className="rounded-[16px] border border-indigo-700/40 bg-indigo-950/20 p-4">
-      <p className="text-xs font-medium text-indigo-400 mb-2">Location found</p>
-      <p className="text-sm font-semibold text-slate-100 break-words">{preview.displayName}</p>
-      <p className="mt-1 text-xs text-slate-500 tabular-nums">
-        {formatCoords(preview.latitude, preview.longitude)}
-      </p>
-      {preview.rawInput.toLowerCase() !== preview.displayName.toLowerCase() && (
-        <p className="mt-1.5 text-xs text-slate-500">
-          Resolved from <span className="text-slate-400">"{preview.rawInput}"</span>
+    <div className="flex flex-col gap-4">
+      <div className="rounded-[16px] border border-indigo-700/40 bg-indigo-950/20 p-4">
+        <p className="text-xs font-medium text-indigo-400 mb-1">Location found</p>
+        <p className="text-sm font-semibold text-slate-100">{candidate.contextLabel}</p>
+        <p className="mt-1 text-xs text-slate-500 tabular-nums">
+          {formatCoords(candidate.latitude, candidate.longitude)}
         </p>
+        {storedName !== candidate.contextLabel && (
+          <p className="mt-2 text-xs text-slate-500">
+            Saved as:{' '}
+            <span className="text-slate-400 font-medium">"{storedName}"</span>
+            <span className="text-slate-600 ml-1">(approximate mode)</span>
+          </p>
+        )}
+      </div>
+
+      {error && (
+        <div className="flex items-start gap-2 rounded-xl border border-red-800/40 bg-red-950/30 px-4 py-3">
+          <AlertCircle size={14} className="mt-0.5 shrink-0 text-red-400" />
+          <p className="text-xs text-red-300">{error}</p>
+        </div>
       )}
-      <div className="mt-4 flex items-center gap-2">
+
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onConfirm}
@@ -138,7 +125,7 @@ function ResolvedPreviewCard({
         </button>
         <button
           type="button"
-          onClick={onSearchAgain}
+          onClick={onBack}
           disabled={isSaving}
           className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 px-4 py-2 text-xs font-medium text-slate-400 hover:text-slate-200 hover:border-slate-500 disabled:opacity-50 transition-colors"
         >
@@ -154,78 +141,129 @@ function ResolvedPreviewCard({
 // Main form
 // ---------------------------------------------------------------------------
 
+const DEBOUNCE_MS = 320;
+const MIN_QUERY_LENGTH = 2;
+
 export function LocationForm({ current }: Props) {
   const router = useRouter();
-  const [isLooking, startLookupTransition] = useTransition();
   const [isSaving, startSaveTransition] = useTransition();
   const [isClearing, startClearTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<ResolvedLocationPreview | null>(null);
 
-  // Editing state: true when user clicks "Change location" on a saved location
   const [isEditing, setIsEditing] = useState(!current?.displayName);
-  const [rawInput, setRawInput] = useState(current?.rawInput ?? '');
+  const [query, setQuery] = useState('');
+  const [candidates, setCandidates] = useState<LocationCandidate[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selected, setSelected] = useState<LocationCandidate | null>(null);
   const [precisionMode, setPrecisionMode] = useState<'exact' | 'approximate'>(
     (current?.precisionMode as 'exact' | 'approximate') ?? 'approximate',
   );
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [clearError, setClearError] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  function handleLookup(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setPreview(null);
-    startLookupTransition(async () => {
-      const result = await resolveLocation({ rawInput, precisionMode });
-      if (!result.ok) {
-        setError(result.error);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced search on query change
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (query.trim().length < MIN_QUERY_LENGTH) {
+      setCandidates([]);
+      setDropdownOpen(false);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      const result = await searchLocations(query);
+      setIsSearching(false);
+      if (result.ok) {
+        setCandidates(result.candidates);
+        setDropdownOpen(result.candidates.length > 0);
       } else {
-        setPreview(result.preview);
+        setCandidates([]);
+        setDropdownOpen(false);
       }
-    });
+    }, DEBOUNCE_MS);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(e.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  function handleSelect(candidate: LocationCandidate) {
+    setSelected(candidate);
+    setDropdownOpen(false);
+    setQuery('');
+    setSaveError(null);
   }
 
-  function handleConfirm() {
-    if (!preview) return;
-    setError(null);
+  function handleSave() {
+    if (!selected) return;
+    setSaveError(null);
     startSaveTransition(async () => {
-      const result = await saveLocation(preview);
+      const result = await saveLocation({ candidate: selected, precisionMode });
       if (!result.ok) {
-        setError(result.error);
+        setSaveError(result.error);
       } else {
-        setPreview(null);
+        setSelected(null);
         setIsEditing(false);
         router.refresh();
       }
     });
   }
 
-  function handleSearchAgain() {
-    setPreview(null);
-    setError(null);
-  }
-
   function handleClear() {
-    setError(null);
+    setClearError(null);
     startClearTransition(async () => {
       const result = await clearLocation();
       if (!result.ok) {
-        setError(result.error);
+        setClearError(result.error);
       } else {
-        setRawInput('');
-        setPrecisionMode('approximate');
-        setPreview(null);
+        setQuery('');
+        setSelected(null);
+        setCandidates([]);
         setIsEditing(true);
         router.refresh();
       }
     });
   }
 
-  function handleChangeLocation() {
-    setPreview(null);
-    setError(null);
+  function handleStartEditing() {
+    setSelected(null);
+    setQuery('');
+    setCandidates([]);
+    setSaveError(null);
     setIsEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
   }
 
-  const isWorking = isLooking || isSaving || isClearing;
+  function handleCancelEdit() {
+    setSelected(null);
+    setQuery('');
+    setCandidates([]);
+    setSaveError(null);
+    setIsEditing(false);
+  }
 
   return (
     <div className="max-w-md">
@@ -235,39 +273,104 @@ export function LocationForm({ current }: Props) {
           displayName={current.displayName}
           latitude={current.latitude ?? ''}
           longitude={current.longitude ?? ''}
-          onEdit={handleChangeLocation}
+          onEdit={handleStartEditing}
           onClear={handleClear}
           isClearing={isClearing}
         />
       )}
+      {clearError && (
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-800/40 bg-red-950/30 px-4 py-3">
+          <AlertCircle size={14} className="mt-0.5 shrink-0 text-red-400" />
+          <p className="text-xs text-red-300">{clearError}</p>
+        </div>
+      )}
 
       {/* Search form */}
-      {isEditing && !preview && (
-        <form onSubmit={handleLookup} className="flex flex-col gap-5">
+      {isEditing && !selected && (
+        <div className="flex flex-col gap-5">
+          {/* Typeahead input */}
           <div>
-            <FieldLabel htmlFor="rawInput">Town, postcode, or Eircode</FieldLabel>
-            <TextInput
-              id="rawInput"
-              type="text"
-              value={rawInput}
-              onChange={(e) => { setRawInput(e.target.value); setError(null); }}
-              placeholder="e.g. Cork, D02 XY45, or Galway"
-              autoComplete="off"
-              disabled={isWorking}
-            />
+            <label htmlFor="location-search" className="block text-xs font-medium text-slate-300 mb-1.5">
+              Town, city, or postcode
+            </label>
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                {isSearching
+                  ? <Loader2 size={13} className="animate-spin text-slate-500" />
+                  : <Search size={13} className="text-slate-500" />
+                }
+              </div>
+              <input
+                ref={inputRef}
+                id="location-search"
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => candidates.length > 0 && setDropdownOpen(true)}
+                placeholder="e.g. Blackrock, Cork, Galway…"
+                autoComplete="off"
+                className="w-full rounded-xl border border-slate-700 bg-slate-900/60 py-2.5 pl-8 pr-8 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => { setQuery(''); setCandidates([]); setDropdownOpen(false); inputRef.current?.focus(); }}
+                  className="absolute inset-y-0 right-3 flex items-center text-slate-600 hover:text-slate-400 transition-colors"
+                  tabIndex={-1}
+                >
+                  <X size={13} />
+                </button>
+              )}
+
+              {/* Dropdown */}
+              {dropdownOpen && candidates.length > 0 && (
+                <div
+                  ref={dropdownRef}
+                  className="absolute z-20 mt-1 w-full rounded-xl border border-slate-700 bg-[#111b2b] shadow-[0_8px_30px_rgba(2,6,23,0.4)] overflow-hidden"
+                >
+                  {candidates.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); handleSelect(c); }}
+                      className="flex w-full items-start gap-2.5 px-4 py-3 text-left hover:bg-slate-800/60 transition-colors border-b border-slate-800/60 last:border-0"
+                    >
+                      <MapPin size={12} className="mt-0.5 shrink-0 text-slate-500" />
+                      <span className="text-sm text-slate-200">{c.contextLabel}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* No results hint */}
+              {dropdownOpen && candidates.length === 0 && !isSearching && query.trim().length >= MIN_QUERY_LENGTH && (
+                <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-700 bg-[#111b2b] px-4 py-3 text-xs text-slate-500">
+                  No locations found — try a different search term.
+                </div>
+              )}
+            </div>
             <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">
-              Used to fetch weather and solar context. Never shared or used to identify your street address.
+              Used for weather and solar context only. Not shared.
             </p>
           </div>
 
+          {/* Precision mode */}
           <div>
-            <p className="text-xs font-medium text-slate-300 mb-2">Location precision</p>
+            <p className="text-xs font-medium text-slate-300 mb-2">What name to store</p>
             <div className="flex flex-col gap-2">
               {(
                 [
-                  { value: 'approximate', label: 'Approximate', description: 'Store only a town or area name — better for privacy' },
-                  { value: 'exact', label: 'Exact', description: 'Store the full resolved address' },
-                ] as const
+                  {
+                    value: 'approximate' as const,
+                    label: 'Town only',
+                    description: 'Stores just the town name — e.g. "Blackrock"',
+                  },
+                  {
+                    value: 'exact' as const,
+                    label: 'Full label',
+                    description: 'Stores the full resolved label — e.g. "Blackrock, Leinster, Ireland"',
+                  },
+                ]
               ).map(({ value, label, description }) => (
                 <label
                   key={value}
@@ -284,7 +387,6 @@ export function LocationForm({ current }: Props) {
                     value={value}
                     checked={precisionMode === value}
                     onChange={() => setPrecisionMode(value)}
-                    disabled={isWorking}
                     className="mt-0.5 accent-indigo-500"
                   />
                   <div>
@@ -296,52 +398,28 @@ export function LocationForm({ current }: Props) {
             </div>
           </div>
 
-          {error && (
-            <div className="flex items-start gap-2 rounded-xl border border-red-800/40 bg-red-950/30 px-4 py-3">
-              <AlertCircle size={14} className="mt-0.5 shrink-0 text-red-400" />
-              <p className="text-xs text-red-300">{error}</p>
-            </div>
-          )}
-
-          <div className="flex items-center gap-3 pt-1">
+          {current?.displayName && (
             <button
-              type="submit"
-              disabled={isWorking || !rawInput.trim()}
-              className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/50 bg-indigo-600/80 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              type="button"
+              onClick={handleCancelEdit}
+              className="self-start text-xs text-slate-500 hover:text-slate-300 transition-colors"
             >
-              {isLooking ? <Loader2 size={12} className="animate-spin" /> : <Search size={12} />}
-              Find location
+              Cancel
             </button>
-            {current?.displayName && (
-              <button
-                type="button"
-                onClick={() => { setIsEditing(false); setError(null); setPreview(null); }}
-                disabled={isWorking}
-                className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
+          )}
+        </div>
       )}
 
       {/* Confirmation step */}
-      {isEditing && preview && (
-        <div className="flex flex-col gap-4">
-          <ResolvedPreviewCard
-            preview={preview}
-            onConfirm={handleConfirm}
-            onSearchAgain={handleSearchAgain}
-            isSaving={isSaving}
-          />
-          {error && (
-            <div className="flex items-start gap-2 rounded-xl border border-red-800/40 bg-red-950/30 px-4 py-3">
-              <AlertCircle size={14} className="mt-0.5 shrink-0 text-red-400" />
-              <p className="text-xs text-red-300">{error}</p>
-            </div>
-          )}
-        </div>
+      {isEditing && selected && (
+        <SelectedCandidateCard
+          candidate={selected}
+          precisionMode={precisionMode}
+          onConfirm={handleSave}
+          onBack={() => { setSelected(null); setTimeout(() => inputRef.current?.focus(), 50); }}
+          isSaving={isSaving}
+          error={saveError}
+        />
       )}
     </div>
   );

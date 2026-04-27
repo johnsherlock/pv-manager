@@ -4,32 +4,23 @@ import { eq } from 'drizzle-orm';
 import { getSession } from '@/src/auth-helpers';
 import { resolveEffectiveInstallationId } from '@/src/installation-helpers';
 import { UserStatus } from '@/src/user-constants';
-import { geocodeLocation } from '@/src/location/geocoder';
+import { searchLocationCandidates, resolveCandidate } from '@/src/location/geocoder';
+import type { LocationCandidate } from '@/src/location/geocoder';
 
-export type LocationInput = {
-  rawInput: string;
+export type { LocationCandidate };
+
+// The confirmed selection passed from the client to saveLocation.
+export type ConfirmedLocation = {
+  candidate: LocationCandidate;
   precisionMode: 'exact' | 'approximate';
 };
 
-// Resolved but not yet saved — passed back to the client for confirmation.
-export type ResolvedLocationPreview = {
-  rawInput: string;
-  displayName: string;
-  latitude: number;
-  longitude: number;
-  precisionMode: 'exact' | 'approximate';
-  countryCode: string | undefined;
-  locality: string | undefined;
-  geocoderProvider: string;
-};
-
-export type ResolveLocationResult =
-  | { ok: true; preview: ResolvedLocationPreview }
+export type SearchLocationsResult =
+  | { ok: true; candidates: LocationCandidate[] }
   | { ok: false; error: string };
 
-export type SaveLocationResult =
-  | { ok: true }
-  | { ok: false; error: string };
+export type SaveLocationResult = { ok: true } | { ok: false; error: string };
+export type ClearLocationResult = { ok: true } | { ok: false; error: string };
 
 // ---------------------------------------------------------------------------
 // Lazy DB deps
@@ -53,45 +44,32 @@ async function getDeps() {
 }
 
 // ---------------------------------------------------------------------------
-// Step 1: Geocode only — no DB write
+// Search — geocode only, no DB write. Called on debounced keystrokes.
 // ---------------------------------------------------------------------------
 
-export async function resolveLocation(input: LocationInput): Promise<ResolveLocationResult> {
+export async function searchLocations(text: string): Promise<SearchLocationsResult> {
   const session = await getSession();
   if (!session?.userId || session.status !== UserStatus.Approved) {
     return { ok: false, error: 'Not authorised.' };
   }
 
-  const rawInput = input.rawInput.trim();
-  if (!rawInput) return { ok: false, error: 'Please enter a location.' };
-  if (input.precisionMode !== 'exact' && input.precisionMode !== 'approximate') {
-    return { ok: false, error: 'Invalid precision mode.' };
+  if (text.trim().length < 2) {
+    return { ok: true, candidates: [] };
   }
 
-  const result = await geocodeLocation(rawInput, input.precisionMode);
-  if (!result.ok) return result;
-
-  const { location } = result;
-  return {
-    ok: true,
-    preview: {
-      rawInput,
-      displayName: location.displayName,
-      latitude: location.latitude,
-      longitude: location.longitude,
-      precisionMode: location.precisionMode,
-      countryCode: location.countryCode,
-      locality: location.locality,
-      geocoderProvider: location.geocoderProvider,
-    },
-  };
+  try {
+    const candidates = await searchLocationCandidates(text.trim());
+    return { ok: true, candidates };
+  } catch {
+    return { ok: false, error: 'Search failed. Please try again.' };
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Step 2: Persist a confirmed preview
+// Save — persist the user-confirmed selection
 // ---------------------------------------------------------------------------
 
-export async function saveLocation(preview: ResolvedLocationPreview): Promise<SaveLocationResult> {
+export async function saveLocation(confirmed: ConfirmedLocation): Promise<SaveLocationResult> {
   const session = await getSession();
   if (!session?.userId || session.status !== UserStatus.Approved) {
     return { ok: false, error: 'Not authorised.' };
@@ -100,20 +78,21 @@ export async function saveLocation(preview: ResolvedLocationPreview): Promise<Sa
   const installationId = await resolveEffectiveInstallationId();
   if (!installationId) return { ok: false, error: 'No installation found.' };
 
+  const location = resolveCandidate(confirmed.candidate, confirmed.precisionMode);
   const { db, installations } = await getDeps();
 
   await db
     .update(installations)
     .set({
-      locationRawInput: preview.rawInput,
-      locationDisplayName: preview.displayName,
-      locationLatitude: String(preview.latitude),
-      locationLongitude: String(preview.longitude),
-      locationPrecisionMode: preview.precisionMode,
-      locationCountryCode: preview.countryCode ?? null,
-      locationLocality: preview.locality ?? null,
+      locationRawInput: confirmed.candidate.contextLabel,
+      locationDisplayName: location.displayName,
+      locationLatitude: String(location.latitude),
+      locationLongitude: String(location.longitude),
+      locationPrecisionMode: location.precisionMode,
+      locationCountryCode: location.countryCode ?? null,
+      locationLocality: location.locality ?? null,
       locationGeocodedAt: new Date(),
-      locationGeocoderProvider: preview.geocoderProvider,
+      locationGeocoderProvider: location.geocoderProvider,
       updatedAt: new Date(),
     })
     .where(eq(installations.id, installationId));
@@ -124,8 +103,6 @@ export async function saveLocation(preview: ResolvedLocationPreview): Promise<Sa
 // ---------------------------------------------------------------------------
 // Clear
 // ---------------------------------------------------------------------------
-
-export type ClearLocationResult = { ok: true } | { ok: false; error: string };
 
 export async function clearLocation(): Promise<ClearLocationResult> {
   const session = await getSession();
