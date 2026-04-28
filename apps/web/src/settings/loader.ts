@@ -126,8 +126,9 @@ export async function loadSettingsCompletionState(
     providerConnection?.status === 'active' ? 'complete' : 'actionable';
   const financeStatus: SectionStatus = systemAdditionCount > 0 ? 'complete' : 'actionable';
   const locationStatus: SectionStatus = installation?.locationLatitude ? 'complete' : 'actionable';
-  const notificationsStatus: 'complete' | 'actionable' =
-    installation?.notificationPreferencesJson != null ? 'complete' : 'actionable';
+  // Notifications are "never incomplete" per U-052 — null means the user hasn't
+  // explicitly saved preferences, but the page already has working defaults.
+  const notificationsStatus: 'complete' | 'actionable' = 'complete';
 
   // Notifications are optional and do not count toward the setup progress denominator.
   const actionable: SectionStatus[] = [

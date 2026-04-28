@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, lte } from 'drizzle-orm';
 
 export type StaleTariffWarning =
   | { stale: false }
@@ -27,12 +27,17 @@ export async function loadStaleTariffWarning(
     day: '2-digit',
   }).format(new Date());
 
-  // Find the latest tariff version for this installation by validFromLocalDate.
+  // Find the latest tariff version active on or before today.
+  // Filtering to validFromLocalDate <= today prevents a preloaded future version
+  // (with no end date) from masking a stale current tariff.
   const rows = await db
     .select({ validToLocalDate: tariffPlanVersions.validToLocalDate })
     .from(tariffPlanVersions)
     .innerJoin(tariffPlans, eq(tariffPlanVersions.tariffPlanId, tariffPlans.id))
-    .where(eq(tariffPlans.installationId, installationId))
+    .where(and(
+      eq(tariffPlans.installationId, installationId),
+      lte(tariffPlanVersions.validFromLocalDate, todayLocal),
+    ))
     .orderBy(desc(tariffPlanVersions.validFromLocalDate))
     .limit(1);
 
