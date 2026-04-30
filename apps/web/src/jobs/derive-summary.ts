@@ -182,11 +182,15 @@ export function aggregateToIntervalReadings(
   const expectedMinutes = expectedMinutesForDay(localDate, timezone);
   const totalSlots = Math.ceil(expectedMinutes / 30);
 
-  // Distribute readings into slots of 30 by sequential position.
+  // Assign each reading to the slot for its local half-hour.
+  // Using the reading's actual hour/minute rather than its sequential position
+  // ensures that gaps in the API data leave the correct slots empty/partial
+  // instead of shifting later readings into earlier half-hours.
   const slotBuckets: MinuteReading[][] = Array.from({ length: totalSlots }, () => []);
-  for (let i = 0; i < readings.length; i++) {
-    const slotIndex = Math.min(Math.floor(i / 30), totalSlots - 1);
-    slotBuckets[slotIndex].push(readings[i]);
+  for (const reading of readings) {
+    const minuteOfDay = reading.hour * 60 + reading.minute;
+    const slotIndex = Math.min(Math.floor(minuteOfDay / 30), totalSlots - 1);
+    slotBuckets[slotIndex].push(reading);
   }
 
   return slotBuckets.map((bucket, i) => {

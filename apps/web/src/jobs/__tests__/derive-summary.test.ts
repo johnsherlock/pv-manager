@@ -285,4 +285,26 @@ describe('aggregateToIntervalReadings', () => {
     expect(totalImport).toBeCloseTo(1440 * 0.005, 4);
     expect(totalGen).toBeCloseTo(1440 * 0.003, 4);
   });
+
+  it('places gap-adjacent readings in their correct local-time slots, leaving gap slots empty', () => {
+    // hour 0 (slots 0–1) and hour 2 (slots 4–5) with a gap at hour 1 (slots 2–3)
+    const hour0 = Array.from({ length: 60 }, (_, i) =>
+      makeReading({ hour: 0, minute: i, importKwh: 0.01 }),
+    );
+    const hour2 = Array.from({ length: 60 }, (_, i) =>
+      makeReading({ hour: 2, minute: i, importKwh: 0.02 }),
+    );
+    const slots = aggregateToIntervalReadings([...hour0, ...hour2], WINTER_DATE, TZ);
+    // slot 0 = 00:00–00:29 (30 readings × 0.01)
+    expect(slots[0].importKwh).toBeCloseTo(0.30, 6);
+    // slot 1 = 00:30–00:59 (30 readings × 0.01)
+    expect(slots[1].importKwh).toBeCloseTo(0.30, 6);
+    // slots 2–3 = 01:00–01:59 — gap, no readings
+    expect(slots[2].importKwh).toBe(0);
+    expect(slots[3].importKwh).toBe(0);
+    // slot 4 = 02:00–02:29 (30 readings × 0.02)
+    expect(slots[4].importKwh).toBeCloseTo(0.60, 6);
+    // slot 5 = 02:30–02:59 (30 readings × 0.02)
+    expect(slots[5].importKwh).toBeCloseTo(0.60, 6);
+  });
 });

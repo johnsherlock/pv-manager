@@ -17,6 +17,7 @@ import {
   type ScheduledTariffVersion,
   type FixedChargeVersion,
 } from '../domain/billing';
+import { expectedMinutesForDay } from '../jobs/derive-summary';
 import type {
   RangeSummarySection,
   RangeSeriesDay,
@@ -128,6 +129,7 @@ function deriveHealth(
   allDates: string[],
   dayMap: Map<string, DayAccumulator>,
   tariffVersions: ScheduledTariffVersion[],
+  timezone: string,
 ): RangeSummaryHealth {
   const missingDayDates: string[] = [];
   let partialDays = 0;
@@ -140,9 +142,12 @@ function deriveHealth(
 
     if (!day) {
       missingDayDates.push(date);
-    } else if (day.totalReadingCount < day.slotCount * 30) {
-      // Partial: fewer minute readings than expected across the day's slots
-      partialDays++;
+    } else {
+      const expectedSlots = Math.ceil(expectedMinutesForDay(date, timezone) / 30);
+      // Partial: missing whole slots OR any slot has fewer than 30 readings
+      if (day.slotCount < expectedSlots || day.totalReadingCount < day.slotCount * 30) {
+        partialDays++;
+      }
     }
 
     if (hasTariff) {
@@ -284,7 +289,8 @@ export function computeRangeSummary(
       };
     }
 
-    const isPartial = acc.totalReadingCount < acc.slotCount * 30;
+    const expectedSlots = Math.ceil(expectedMinutesForDay(date, timezone) / 30);
+    const isPartial = acc.slotCount < expectedSlots || acc.totalReadingCount < acc.slotCount * 30;
 
     let billing: RangeSeriesDay['billing'] = null;
     let tariffVersionId: string | null = null;
@@ -394,7 +400,7 @@ export function computeRangeSummary(
     },
   };
 
-  const health = deriveHealth(allDates, dayMap, tariffVersions);
+  const health = deriveHealth(allDates, dayMap, tariffVersions, timezone);
 
   return { summary, series, health };
 }
