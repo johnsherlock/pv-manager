@@ -26,12 +26,6 @@ export type TariffPricePeriod = {
  */
 export type WeeklySchedule = string[];
 
-/**
- * Per-period import kWh totals for a single day, keyed by TariffPricePeriod id.
- * Stored as dailySummaries.bandBreakdownJson when schedule-based derivation is used.
- */
-export type BandBreakdown = Record<string, number>;
-
 // ---------------------------------------------------------------------------
 // Schedule resolution helpers
 // ---------------------------------------------------------------------------
