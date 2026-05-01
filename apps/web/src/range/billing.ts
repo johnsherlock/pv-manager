@@ -306,7 +306,8 @@ export function computeRangeSummary(
         const actualNetCost = r2(importCost + dayFixedCharges - exportCredit);
         const withoutSolarNetCost = r2(withoutSolarImportCost + dayFixedCharges);
         const savings = r2(withoutSolarNetCost - actualNetCost);
-        billing = { importCost, exportCredit, fixedCharges: dayFixedCharges, actualNetCost, savings };
+        const selfConsumedSolarValue = r2(acc.selfConsumedSolarValue);
+        billing = { importCost, exportCredit, fixedCharges: dayFixedCharges, actualNetCost, savings, selfConsumedSolarValue };
       } catch {
         // No tariff coverage for this day
       }
@@ -341,6 +342,7 @@ export function computeRangeSummary(
   // Sum range-level billing over only tariff-covered days
   let rangeImportCost = 0;
   let rangeExportCredit = 0;
+  let rangeSelfConsumedSolarValue = 0;
   let rangeFixedCharges = 0;
   let rangeWithoutSolarImportCost = 0;
 
@@ -350,6 +352,7 @@ export function computeRangeSummary(
       const tariff = resolveTariffVersion(tariffVersions, `${date}T12:00`) as ScheduledTariffVersion;
       rangeImportCost += acc.actualImportCost;
       rangeExportCredit += acc.exportCredit;
+      rangeSelfConsumedSolarValue += acc.selfConsumedSolarValue;
       rangeFixedCharges += fixedChargeContributionForDate(date, tariff.id, fixedCharges);
       rangeWithoutSolarImportCost += acc.withoutSolarImportCost;
     } catch {
@@ -388,9 +391,10 @@ export function computeRangeSummary(
     solar: hasBilling ? {
       savings,
       exportValue: r2(rangeExportCredit),
+      selfConsumedSolarValue: r2(rangeSelfConsumedSolarValue),
       selfConsumptionRatio,
       gridDependenceRatio,
-    } : { savings: 0, exportValue: 0, selfConsumptionRatio: 0, gridDependenceRatio: 0 },
+    } : { savings: 0, exportValue: 0, selfConsumedSolarValue: 0, selfConsumptionRatio: 0, gridDependenceRatio: 0 },
     totals: {
       generatedKwh: r2(totalGeneratedKwh),
       importKwh: r2(totalImportKwh),

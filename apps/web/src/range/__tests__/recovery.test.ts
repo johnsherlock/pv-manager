@@ -23,6 +23,7 @@ function makeDay(date: string, savings: number): RangeSeriesDay {
       fixedCharges: 0,
       savings,
       actualNetCost: 0,
+      selfConsumedSolarValue: 0,
     },
     tariffVersionId: 'v1',
     dayImportKwh: null,

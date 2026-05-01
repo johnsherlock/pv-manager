@@ -296,8 +296,8 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
 
             {kpis && kpis.coveredDays > 0 && (
               <>
-                {/* §2 — KPI row */}
-                <KpiRow
+                {/* §2 — Financial summary */}
+                <FinancialSummaryPanel
                   kpis={kpis}
                   currency={payload?.meta.currency ?? 'EUR'}
                 />
@@ -330,7 +330,7 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
                 {/* §10 — Investment insights (recovery, repayment coverage, payoff outlook) */}
                 <InvestmentInsightsPanel
                   financeContext={financeContext}
-                  periodSavings={kpis.savings}
+                  periodTotalSolarValue={kpis.totalSolarValue}
                   periodFrom={effectiveRange.from}
                   periodTo={effectiveRange.to}
                   hasTariff={kpis.hasTariff}
@@ -348,15 +348,15 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
 }
 
 // ---------------------------------------------------------------------------
-// §2 — KPI row
+// §2 — Financial summary panel
 // ---------------------------------------------------------------------------
 
-type KpiRowProps = {
+type FinancialSummaryPanelProps = {
   kpis: ReturnType<typeof aggregateKpisFromSeries>;
   currency: string;
 };
 
-function KpiRow({ kpis, currency }: KpiRowProps) {
+function FinancialSummaryPanel({ kpis, currency }: FinancialSummaryPanelProps) {
   if (!kpis.hasTariff) {
     return (
       <div className="rounded-[28px] border border-dashed border-slate-700 bg-[#111b2b] p-6 text-center">
@@ -375,7 +375,7 @@ function KpiRow({ kpis, currency }: KpiRowProps) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {kpis.tariffGapDays > 0 && (
         <p className="text-xs text-slate-500">
           Financial data covers {kpis.coveredDays - kpis.tariffGapDays} of {kpis.coveredDays} days.{' '}
@@ -384,49 +384,111 @@ function KpiRow({ kpis, currency }: KpiRowProps) {
           </Link>
         </p>
       )}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <KpiCard label="Solar savings" value={formatCurrency(kpis.savings, currency)} highlight />
-        <KpiCard label="Actual cost" value={formatCurrency(kpis.actualNetCost, currency)} />
-        <KpiCard label="Without solar" value={formatCurrency(kpis.withoutSolarNetCost, currency)} />
-        <KpiCard label="Export credit" value={formatCurrency(kpis.actualExportCredit, currency)} />
-        <KpiCard
-          label="Avg solar coverage"
-          value={kpis.avgSelfConsumptionRatio != null ? formatPercent(kpis.avgSelfConsumptionRatio) : '—'}
-          className="col-span-2 sm:col-span-1"
+      <SolarValueHero kpis={kpis} currency={currency} />
+      <BillImpactSection kpis={kpis} currency={currency} />
+    </div>
+  );
+}
+
+function SolarValueHero({ kpis, currency }: { kpis: ReturnType<typeof aggregateKpisFromSeries>; currency: string }) {
+  return (
+    <div className="rounded-[28px] border border-indigo-500/20 bg-indigo-950/30 p-5 shadow-[0_24px_50px_rgba(2,6,23,0.28)]">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-400">Solar created</p>
+          <p className="mt-1 font-mono text-3xl font-semibold tracking-tight text-indigo-200">
+            {formatCurrency(kpis.totalSolarValue, currency)}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">of value this period</p>
+        </div>
+        {kpis.avgSelfConsumptionRatio != null && (
+          <div className="shrink-0 text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Solar coverage</p>
+            <p className="mt-1 font-mono text-xl font-semibold text-slate-200">
+              {formatPercent(kpis.avgSelfConsumptionRatio)}
+            </p>
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-3 border-t border-indigo-500/15 pt-4">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Self-consumed value</p>
+          <p className="mt-1.5 font-mono text-lg font-semibold text-slate-200">
+            {formatCurrency(kpis.selfConsumedSolarValue, currency)}
+          </p>
+          <p className="mt-0.5 text-[10px] text-slate-600">Avoided import cost</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Export credit</p>
+          <p className="mt-1.5 font-mono text-lg font-semibold text-slate-200">
+            {formatCurrency(kpis.actualExportCredit, currency)}
+          </p>
+          <p className="mt-0.5 text-[10px] text-slate-600">Earned from grid export</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BillImpactSection({ kpis, currency }: { kpis: ReturnType<typeof aggregateKpisFromSeries>; currency: string }) {
+  return (
+    <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-5">
+      <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Bill impact</p>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+        <BillMetric
+          label="Import bill"
+          value={formatCurrency(kpis.importBill, currency)}
+          note="Tariff-priced actual"
+        />
+        <BillMetric
+          label="Net energy bill"
+          value={formatCurrency(kpis.netEnergyBill, currency)}
+          note="After export credit"
+        />
+        <BillMetric
+          label="Bill without solar"
+          value={formatCurrency(kpis.withoutSolarNetCost, currency)}
+          note="Estimated counterfactual"
+          estimated
+        />
+        <BillMetric
+          label="Bill reduction"
+          value={formatCurrency(kpis.billReductionFromSolar, currency)}
+          note="Estimated saving on bill"
+          estimated
+          positive
         />
       </div>
     </div>
   );
 }
 
-function KpiCard({
+function BillMetric({
   label,
   value,
-  highlight = false,
-  className = '',
+  note,
+  estimated = false,
+  positive = false,
 }: {
   label: string;
   value: string;
-  highlight?: boolean;
-  className?: string;
+  note: string;
+  estimated?: boolean;
+  positive?: boolean;
 }) {
   return (
-    <div
-      className={[
-        'rounded-2xl border p-4 shadow-[0_24px_50px_rgba(2,6,23,0.28)]',
-        highlight
-          ? 'border-indigo-500/30 bg-indigo-900/30'
-          : 'border-slate-800 bg-slate-900/75',
-        className,
-      ].join(' ')}
-    >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+        {estimated && <span className="ml-1 normal-case tracking-normal text-slate-700">est.</span>}
+      </p>
       <p className={[
-        'mt-3 font-mono text-2xl font-semibold tracking-tight',
-        highlight ? 'text-indigo-200' : 'text-slate-50',
+        'mt-1.5 font-mono text-base font-semibold',
+        positive ? 'text-emerald-400' : 'text-slate-200',
       ].join(' ')}>
         {value}
       </p>
+      <p className="mt-0.5 text-[10px] text-slate-600">{note}</p>
     </div>
   );
 }
@@ -667,7 +729,7 @@ function ChartCard({
 
 function InvestmentInsightsPanel({
   financeContext,
-  periodSavings,
+  periodTotalSolarValue,
   periodFrom,
   periodTo,
   hasTariff,
@@ -676,7 +738,7 @@ function InvestmentInsightsPanel({
   currency,
 }: {
   financeContext: RangeFinanceContext | null;
-  periodSavings: number;
+  periodTotalSolarValue: number;
   periodFrom: string;
   periodTo: string;
   hasTariff: boolean;
@@ -757,7 +819,7 @@ function InvestmentInsightsPanel({
       {/* Period repayment coverage — only when the period has tariff data and scheduled repayments */}
       {hasTariff && repaymentsInPeriod > 0 && (
         <PeriodRepaymentCoverage
-          periodSavings={periodSavings}
+          periodTotalSolarValue={periodTotalSolarValue}
           periodPayments={repaymentsInPeriod}
           currency={currency}
         />
@@ -772,22 +834,23 @@ function InvestmentInsightsPanel({
 }
 
 function PeriodRepaymentCoverage({
-  periodSavings,
+  periodTotalSolarValue,
   periodPayments,
   currency,
 }: {
-  periodSavings: number;
+  periodTotalSolarValue: number;
   periodPayments: number;
   currency: string;
 }) {
-  const isPositive = periodSavings >= periodPayments;
-  const fillPct = Math.min(100, Math.round((periodSavings / periodPayments) * 100));
+  const isPositive = periodTotalSolarValue >= periodPayments;
+  const fillPct = Math.min(100, Math.round((periodTotalSolarValue / periodPayments) * 100));
+  const netSolarPosition = Math.round((periodTotalSolarValue - periodPayments) * 100) / 100;
 
   return (
     <div className="border-t border-slate-800/80 pt-4">
       <div className="mb-1.5 flex items-baseline justify-between">
-        <span className="text-xs font-medium text-slate-400">Repayment coverage this period</span>
-        <span className="text-[11px] text-slate-500">{formatCurrency(periodPayments, currency)} due</span>
+        <span className="text-xs font-medium text-slate-400">Net solar position this period</span>
+        <span className="text-[11px] text-slate-500">{formatCurrency(periodPayments, currency)} repayments due</span>
       </div>
       <div className="mb-1.5 h-2.5 overflow-hidden rounded-full bg-slate-800">
         <div
@@ -800,13 +863,14 @@ function PeriodRepaymentCoverage({
       </div>
       <div className="flex items-baseline justify-between">
         <p className="text-[11px] text-slate-500">
-          Solar saved{' '}
+          Solar created{' '}
           <span className={isPositive ? 'font-medium text-emerald-400' : 'font-medium text-slate-300'}>
-            {formatCurrency(periodSavings, currency)}
+            {formatCurrency(periodTotalSolarValue, currency)}
           </span>
-          {' '}of{' '}
-          <span className="text-slate-400">{formatCurrency(periodPayments, currency)}</span>
-          {' '}in scheduled repayments
+          {' '}— net position{' '}
+          <span className={isPositive ? 'font-medium text-emerald-400' : 'font-medium text-rose-400'}>
+            {isPositive ? '+' : ''}{formatCurrency(netSolarPosition, currency)}
+          </span>
         </p>
         <span
           className={[

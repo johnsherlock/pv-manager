@@ -30,6 +30,7 @@ export type RangeWithoutSolarBreakdown = {
 export type RangeSolarSummary = {
   savings: number;
   exportValue: number;
+  selfConsumedSolarValue: number;
   selfConsumptionRatio: number;
   gridDependenceRatio: number;
 };
@@ -55,6 +56,7 @@ export type RangeSeriesDayBilling = {
   exportCredit: number;
   importCost: number;
   fixedCharges: number;
+  selfConsumedSolarValue: number;
 };
 
 export type RangeSeriesDay = {
