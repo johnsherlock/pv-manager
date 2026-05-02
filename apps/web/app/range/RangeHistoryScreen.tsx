@@ -641,7 +641,7 @@ function ChartPlaceholders({
       </ChartCard>
       {hasTariff ? (
         <>
-          <ChartCard title="Daily cost vs without solar" icon={<BarChart3 size={14} />} onReset={resetCharts}>
+          <ChartCard title="Net daily cost vs without solar" icon={<BarChart3 size={14} />} onReset={resetCharts}>
             <CostHistogramChart key={resetKey} series={series} currency={currency} />
           </ChartCard>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">

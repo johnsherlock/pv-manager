@@ -399,7 +399,9 @@ export function buildCostHistogramOption(series: RangeSeriesDay[], currency = 'E
 
   const actualData = series.map((d) => {
     if (!d.hasSummary || !d.billing) return null;
-    return round2(d.billing.actualNetCost);
+    const value = round2(d.billing.actualNetCost);
+    // Negative bars extend downward — round the bottom corners, not the top.
+    return { value, itemStyle: { borderRadius: value < 0 ? [0, 0, 3, 3] : [3, 3, 0, 0] } };
   });
 
   const withoutSolarData = series.map((d) => {
