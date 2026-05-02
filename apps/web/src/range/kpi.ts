@@ -23,7 +23,7 @@ export type RangeKpis = {
   netEnergyBill: number;
   /** Modelled counterfactual import bill without solar. */
   withoutSolarNetCost: number;
-  /** withoutSolarNetCost − netEnergyBill — labelled as estimated/counterfactual. */
+  /** withoutSolarNetCost − actualNetCost — comparable full-bill bases, labelled as estimated. */
   billReductionFromSolar: number;
 
   // --- retained for investment panel and legacy chart use ---
@@ -99,7 +99,7 @@ export function aggregateKpisFromSeries(
   const withoutSolarNetCost = actualNetCost + savings;
   const totalSolarValue = Math.round((selfConsumedSolarValue + actualExportCredit) * 100) / 100;
   const netEnergyBill = Math.round((importBill - actualExportCredit) * 100) / 100;
-  const billReductionFromSolar = Math.round((withoutSolarNetCost - netEnergyBill) * 100) / 100;
+  const billReductionFromSolar = Math.round((withoutSolarNetCost - actualNetCost) * 100) / 100;
 
   const avgSelfConsumptionRatio =
     selfConsumptionCount > 0 ? selfConsumptionSum / selfConsumptionCount : null;
