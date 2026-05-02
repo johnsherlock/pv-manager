@@ -92,8 +92,7 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
     return defaultActiveRange(today);
   });
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [tariffCalloutDismissed, setTariffCalloutDismissed] = useState(false);
-  const [completenessCalloutDismissed, setCompletenessCalloutDismissed] = useState(false);
+  const [warningsDismissed, setWarningsDismissed] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Effective range clamped to what's loaded server-side
@@ -170,11 +169,8 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
   const health = payload?.health;
   const hasTariffChange = useMemo(() => {
     const ids = new Set(filteredSeries.map((d) => d.tariffVersionId).filter(Boolean));
-    return ids.size > 1 && !tariffCalloutDismissed;
-  }, [filteredSeries, tariffCalloutDismissed]);
-  const hasMissing = (kpis?.missingDays ?? 0) > 0;
-  const hasPartial = (kpis?.partialDays ?? 0) > 0;
-  const showCompletenessBanner = hasMissing || hasPartial;
+    return ids.size > 1;
+  }, [filteredSeries]);
 
   const lastCoveredDate = payload
     ? [...payload.series].reverse().find((d) => d.hasSummary)?.date ?? null
@@ -297,13 +293,15 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
 
             {kpis && kpis.coveredDays > 0 && (
               <>
-                {/* §2a — Data completeness callout */}
-                {(kpis.missingDays > 0 || kpis.partialDays > 0) && !completenessCalloutDismissed && (
-                  <DataCompletenessCallout
+                {/* §2a — Combined warnings callout */}
+                {(kpis.missingDays > 0 || kpis.partialDays > 0 || hasTariffChange) && !warningsDismissed && (
+                  <WarningsCallout
                     missingDays={kpis.missingDays}
                     partialDays={kpis.partialDays}
                     coveredDays={kpis.coveredDays}
-                    onDismiss={() => setCompletenessCalloutDismissed(true)}
+                    hasTariffChange={hasTariffChange}
+                    series={filteredSeries}
+                    onDismiss={() => setWarningsDismissed(true)}
                   />
                 )}
 
@@ -312,14 +310,6 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
                   kpis={kpis}
                   currency={payload?.meta.currency ?? 'EUR'}
                 />
-
-                {/* §3 — Tariff-change callout */}
-                {hasTariffChange && (
-                  <TariffChangeCallout
-                    series={filteredSeries}
-                    onDismiss={() => setTariffCalloutDismissed(true)}
-                  />
-                )}
 
                 {/* §4–§9 Charts */}
                 <ChartPlaceholders
@@ -489,68 +479,61 @@ function BillMetric({
 }
 
 // ---------------------------------------------------------------------------
-// §2a — Data completeness callout
+// §2a — Combined warnings callout
 // ---------------------------------------------------------------------------
 
-function DataCompletenessCallout({
+function WarningsCallout({
   missingDays,
   partialDays,
   coveredDays,
+  hasTariffChange,
+  series,
   onDismiss,
 }: {
   missingDays: number;
   partialDays: number;
   coveredDays: number;
+  hasTariffChange: boolean;
+  series: RangeSeriesDay[];
   onDismiss: () => void;
 }) {
   const totalDays = coveredDays + missingDays;
   const coveragePct = totalDays > 0 ? Math.round((coveredDays / totalDays) * 100) : 100;
+  const tariffVersionCount = new Set(series.map((d) => d.tariffVersionId).filter(Boolean)).size;
 
-  const parts: string[] = [];
+  const completenessParts: string[] = [];
   if (missingDays > 0)
-    parts.push(`${missingDays} day${missingDays !== 1 ? 's are' : ' is'} missing from this period`);
+    completenessParts.push(`${missingDays} day${missingDays !== 1 ? 's are' : ' is'} missing from this period`);
   if (partialDays > 0)
-    parts.push(`${partialDays} day${partialDays !== 1 ? 's' : ''} recorded < 90% expected data`);
+    completenessParts.push(`${partialDays} day${partialDays !== 1 ? 's' : ''} recorded < 90% expected data`);
+
+  const hasCompleteness = completenessParts.length > 0;
 
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/8 px-4 py-3">
-      <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-400" />
-      <p className="flex-1 text-sm text-amber-300/90">
-        <span className="font-semibold text-amber-200">{parts.join(', ')}</span>
-        {' — '}
-        Totals calculated from {coveragePct}% of possible recoverable data.
-      </p>
-      <button onClick={onDismiss} className="shrink-0 text-amber-500/50 hover:text-amber-400">
-        <X size={13} />
-      </button>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// §3 — Tariff-change callout
-// ---------------------------------------------------------------------------
-
-function TariffChangeCallout({
-  series,
-  onDismiss,
-}: {
-  series: RangeSeriesDay[];
-  onDismiss: () => void;
-}) {
-  const versionCount = new Set(series.map((d) => d.tariffVersionId).filter(Boolean)).size;
-  return (
-    <div className="flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/8 px-4 py-3">
-      <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-400" />
-      <p className="flex-1 text-sm text-amber-300/90">
-        <span className="font-semibold text-amber-200">Tariff changed during this period</span>
-        {' — '}
-        {versionCount} tariff version{versionCount !== 1 ? 's' : ''} applied.
-        Financial totals reflect each day's applicable rate.
-      </p>
-      <button onClick={onDismiss} className="shrink-0 text-amber-500/50 hover:text-amber-400">
-        <X size={13} />
-      </button>
+    <div className="rounded-2xl border border-amber-500/25 bg-amber-500/8 px-4 py-3">
+      <div className="flex items-start gap-3">
+        <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-400" />
+        <div className="flex-1 space-y-1.5">
+          {hasCompleteness && (
+            <p className="text-sm text-amber-300/90">
+              <span className="font-semibold text-amber-200">{completenessParts.join(', ')}</span>
+              {' — '}
+              Totals calculated from {coveragePct}% of possible recoverable data.
+            </p>
+          )}
+          {hasTariffChange && (
+            <p className="text-sm text-amber-300/90">
+              <span className="font-semibold text-amber-200">Tariff changed during this period</span>
+              {' — '}
+              {tariffVersionCount} tariff version{tariffVersionCount !== 1 ? 's' : ''} applied.
+              Financial totals reflect each day's applicable rate.
+            </p>
+          )}
+        </div>
+        <button onClick={onDismiss} className="shrink-0 text-amber-500/50 hover:text-amber-400">
+          <X size={13} />
+        </button>
+      </div>
     </div>
   );
 }
