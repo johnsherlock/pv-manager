@@ -843,10 +843,10 @@ function PeriodRepaymentCoverage({
   currency: string;
 }) {
   const isPositive = periodTotalSolarValue >= periodPayments;
-  const fillPct =
-    periodPayments > 0
-      ? Math.min(100, Math.round((periodTotalSolarValue / periodPayments) * 100))
-      : 100;
+  const coveragePct = periodPayments > 0
+    ? Math.round((periodTotalSolarValue / periodPayments) * 100)
+    : null;
+  const barPct = coveragePct != null ? Math.min(100, coveragePct) : 100;
   const netSolarPosition = Math.round((periodTotalSolarValue - periodPayments) * 100) / 100;
 
   return (
@@ -861,7 +861,7 @@ function PeriodRepaymentCoverage({
             'h-full rounded-full transition-all duration-500',
             isPositive ? 'bg-emerald-500' : 'bg-slate-600',
           ].join(' ')}
-          style={{ width: `${fillPct}%` }}
+          style={{ width: `${barPct}%` }}
         />
       </div>
       <div className="flex items-baseline justify-between">
@@ -885,7 +885,7 @@ function PeriodRepaymentCoverage({
             isPositive ? 'text-emerald-400' : 'text-slate-400',
           ].join(' ')}
         >
-          {fillPct}%
+          {coveragePct != null ? `${coveragePct}%` : '—'}
         </span>
       </div>
     </div>
