@@ -36,34 +36,34 @@ export function PeriodCostDonutChart({ totals, simplified, currency }: Props) {
       />
 
       {/* Offsets summary — shows what reduced the gross bill */}
-      {(hasExport || hasSavings || hasFreeImport) && (
-        <div className="border-t border-slate-800/60 pt-3 space-y-1.5 text-[11px]">
-          {hasExport && (
-            <div className="flex items-baseline justify-between">
-              <span className="text-slate-400">
-                Net bill <span className="text-slate-600">(after −{fmt(exportCredit)} export credit)</span>
-              </span>
-              <span className="font-mono text-slate-300">{fmt(netBill)}</span>
-            </div>
-          )}
-          {(hasSavings || hasFreeImport) && (
-            <div className="flex items-baseline justify-between">
-              <span className="text-slate-500">
-                Est. savings vs without solar
-                {hasSavings && <span className="ml-1 text-indigo-300/70">solar {fmt(savings)}</span>}
-                {hasFreeImport && (
-                  <span
-                    className="ml-1 text-teal-400/70"
-                    title={`${freeImportKwh.toFixed(2)} kWh at zero tariff rate, valued at avg. paid rate ${avgPaidRate.toFixed(4)}/kWh`}
-                  >
-                    free import ~{fmt(freeImportValue)}
-                  </span>
-                )}
-              </span>
-            </div>
-          )}
+      <div className="border-t border-slate-800/60 pt-3 space-y-1.5 text-[11px]">
+        <div className="flex items-baseline justify-between">
+          <span className="text-slate-400">Gross bill</span>
+          <span className="font-mono text-slate-300">{fmt(importCost + fixedCharges)}</span>
         </div>
-      )}
+        {hasExport && (
+          <div className="flex items-baseline justify-between">
+            <span className="text-slate-400">
+              Net bill <span className="text-slate-600">(after −{fmt(exportCredit)} export credit)</span>
+            </span>
+            <span className="font-mono text-slate-300">{fmt(netBill)}</span>
+          </div>
+        )}
+        {(hasSavings || hasFreeImport) && (
+          <div className="flex items-baseline gap-1.5 text-slate-500">
+            <span>Est. savings vs without solar</span>
+            {hasSavings && <span className="text-indigo-300/70">solar {fmt(savings)}</span>}
+            {hasFreeImport && (
+              <span className="text-teal-400/70">
+                free import ~{fmt(freeImportValue)}
+                <span className="ml-1 text-slate-600">
+                  ({freeImportKwh.toFixed(1)} kWh @ avg. {fmt(avgPaidRate)}/kWh)
+                </span>
+              </span>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

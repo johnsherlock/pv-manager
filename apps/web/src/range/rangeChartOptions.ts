@@ -702,19 +702,6 @@ export function buildPeriodCostDonutOption(totals: PeriodCostTotals, currency = 
 
   return {
     backgroundColor: 'transparent',
-    graphic: [{
-      type: 'text',
-      left: '35%',
-      top: '44%',
-      style: {
-        text: `Gross bill\n${fmt(grossBill)}`,
-        textAlign: 'center',
-        fill: '#64748b',
-        fontSize: 11,
-        lineHeight: 18,
-      },
-      z: 100,
-    }],
     tooltip: {
       ...TOOLTIP_BASE,
       trigger: 'item' as const,
