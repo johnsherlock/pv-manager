@@ -14,12 +14,24 @@ export type RangeFinanceContext = {
   repaymentSchedules: RepaymentSchedule[];
 };
 
-export type PayoffOutlook = {
-  remainingInvestment: number;
-  avgDailySavings: number;
-  estimatedDaysRemaining: number;
-  estimatedPayoffDate: string;
-};
+export type PayoffOutlook =
+  | {
+      status: 'in_progress';
+      remainingInvestment: number;
+      avgDailySavings: number;
+      observedDays: number;
+      basisDate: string;
+      estimatedDaysRemaining: number;
+      estimatedPayoffDate: string;
+    }
+  | {
+      status: 'recovered';
+      avgDailySavings: number;
+      observedDays: number;
+      basisDate: string;
+      estimatedDaysSinceRecovery: number;
+      estimatedRecoveredDate: string;
+    };
 
 const MIN_DAYS_FOR_ESTIMATE = 30;
 
@@ -68,24 +80,44 @@ export function computeRepaymentsInRange(
 
 export function computePayoffOutlook(
   ctx: RangeFinanceContext,
-  today: string,
+  basisDate: string,
 ): PayoffOutlook | null {
-  const remaining = ctx.totalSystemInvestment - ctx.allTimeSavings;
-  if (remaining <= 0) return null;
   if (ctx.allTimeCoveredDays < MIN_DAYS_FOR_ESTIMATE) return null;
 
   const avgDailySavings = ctx.allTimeSavings / ctx.allTimeCoveredDays;
   if (avgDailySavings <= 0) return null;
 
+  const remaining = ctx.totalSystemInvestment - ctx.allTimeSavings;
+  if (remaining <= 0) {
+    const estimatedDaysSinceRecovery = Math.max(
+      0,
+      Math.floor((ctx.allTimeSavings - ctx.totalSystemInvestment) / avgDailySavings),
+    );
+    const recoveredDate = new Date(`${basisDate}T12:00:00`);
+    recoveredDate.setDate(recoveredDate.getDate() - estimatedDaysSinceRecovery);
+
+    return {
+      status: 'recovered',
+      avgDailySavings: Math.round(avgDailySavings * 100) / 100,
+      observedDays: ctx.allTimeCoveredDays,
+      basisDate,
+      estimatedDaysSinceRecovery,
+      estimatedRecoveredDate: recoveredDate.toISOString().slice(0, 10),
+    };
+  }
+
   const estimatedDaysRemaining = Math.ceil(remaining / avgDailySavings);
 
-  const payoffDate = new Date(`${today}T12:00:00`);
+  const payoffDate = new Date(`${basisDate}T12:00:00`);
   payoffDate.setDate(payoffDate.getDate() + estimatedDaysRemaining);
   const estimatedPayoffDate = payoffDate.toISOString().slice(0, 10);
 
   return {
+    status: 'in_progress',
     remainingInvestment: Math.round(remaining * 100) / 100,
     avgDailySavings: Math.round(avgDailySavings * 100) / 100,
+    observedDays: ctx.allTimeCoveredDays,
+    basisDate,
     estimatedDaysRemaining,
     estimatedPayoffDate,
   };

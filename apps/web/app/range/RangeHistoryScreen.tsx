@@ -325,6 +325,7 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
                   periodTo={effectiveRange.to}
                   hasTariff={kpis.hasTariff}
                   earliestSummaryDate={payload?.meta.earliestDate ?? null}
+                  latestSummaryDate={lastCoveredDate}
                   today={today}
                   currency={payload?.meta.currency ?? 'EUR'}
                 />
@@ -731,6 +732,7 @@ function InvestmentInsightsPanel({
   periodTo,
   hasTariff,
   earliestSummaryDate,
+  latestSummaryDate,
   today,
   currency,
 }: {
@@ -740,6 +742,7 @@ function InvestmentInsightsPanel({
   periodTo: string;
   hasTariff: boolean;
   earliestSummaryDate: string | null;
+  latestSummaryDate: string | null;
   today: string;
   currency: string;
 }) {
@@ -762,7 +765,7 @@ function InvestmentInsightsPanel({
   }
 
   const { totalSystemInvestment, earliestAdditionDate, allTimeSavings, allTimeCoveredDays, repaymentSchedules } = financeContext;
-  const payoffOutlook = computePayoffOutlook(financeContext, today);
+  const payoffOutlook = computePayoffOutlook(financeContext, latestSummaryDate ?? today);
   const repaymentsInPeriod = computeRepaymentsInRange(repaymentSchedules, periodFrom, periodTo);
 
   const recoveryPct = totalSystemInvestment > 0
@@ -813,8 +816,8 @@ function InvestmentInsightsPanel({
         </div>
       </div>
 
-      {/* Period repayment coverage — only when the period has tariff data and scheduled repayments */}
-      {hasTariff && repaymentsInPeriod > 0 && (
+      {/* Period net solar position — shown whenever tariff-backed period value is available */}
+      {hasTariff && (
         <PeriodRepaymentCoverage
           periodTotalSolarValue={periodTotalSolarValue}
           periodPayments={repaymentsInPeriod}
@@ -840,7 +843,10 @@ function PeriodRepaymentCoverage({
   currency: string;
 }) {
   const isPositive = periodTotalSolarValue >= periodPayments;
-  const fillPct = Math.min(100, Math.round((periodTotalSolarValue / periodPayments) * 100));
+  const fillPct =
+    periodPayments > 0
+      ? Math.min(100, Math.round((periodTotalSolarValue / periodPayments) * 100))
+      : 100;
   const netSolarPosition = Math.round((periodTotalSolarValue - periodPayments) * 100) / 100;
 
   return (
@@ -864,7 +870,11 @@ function PeriodRepaymentCoverage({
           <span className={isPositive ? 'font-medium text-emerald-400' : 'font-medium text-slate-300'}>
             {formatCurrency(periodTotalSolarValue, currency)}
           </span>
-          {' '}— net position{' '}
+          . Repayments due{' '}
+          <span className="font-medium text-slate-300">
+            {formatCurrency(periodPayments, currency)}
+          </span>
+          . Net position{' '}
           <span className={isPositive ? 'font-medium text-emerald-400' : 'font-medium text-rose-400'}>
             {isPositive ? '+' : ''}{formatCurrency(netSolarPosition, currency)}
           </span>
@@ -889,6 +899,29 @@ function PayoffOutlookRow({
   outlook: NonNullable<ReturnType<typeof computePayoffOutlook>>;
   currency: string;
 }) {
+  if (outlook.status === 'recovered') {
+    const recoveredDate = formatDate(outlook.estimatedRecoveredDate);
+    return (
+      <div className="border-t border-slate-800/80 pt-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-medium text-slate-400">Approximate payoff outlook</p>
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              Investment was fully recovered around {recoveredDate} based on{' '}
+              {outlook.observedDays.toLocaleString()} day{outlook.observedDays !== 1 ? 's' : ''} of recorded data.
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-sm font-semibold text-emerald-400">Recovered</p>
+            <p className="text-[11px] text-slate-400">
+              {formatCurrency(outlook.avgDailySavings, currency)}/day avg
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const payoffDate = formatDate(outlook.estimatedPayoffDate);
   return (
     <div className="border-t border-slate-800/80 pt-4">
@@ -896,7 +929,8 @@ function PayoffOutlookRow({
         <div>
           <p className="text-xs font-medium text-slate-400">Approximate payoff outlook</p>
           <p className="mt-0.5 text-[11px] text-slate-400">
-            Based on {formatCurrency(outlook.avgDailySavings, currency)}/day average savings —
+            Based on {formatCurrency(outlook.avgDailySavings, currency)}/day average savings across{' '}
+            {outlook.observedDays.toLocaleString()} recorded day{outlook.observedDays !== 1 ? 's' : ''} —
             guidance only, will change as more data arrives
           </p>
         </div>
