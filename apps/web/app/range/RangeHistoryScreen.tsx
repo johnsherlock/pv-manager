@@ -846,24 +846,65 @@ function PeriodRepaymentCoverage({
   const coveragePct = periodPayments > 0
     ? Math.round((periodTotalSolarValue / periodPayments) * 100)
     : null;
-  const barPct = coveragePct != null ? Math.min(100, coveragePct) : 100;
   const netSolarPosition = Math.round((periodTotalSolarValue - periodPayments) * 100) / 100;
+
+  // For the positive over-100% case: grey fills to the repayment point, green fills the surplus.
+  // repaymentBarFrac = what fraction of the bar width represents "exactly 100% covered".
+  const hasGreenSurplus = coveragePct != null && coveragePct > 100;
+  const repaymentBarFrac = hasGreenSurplus ? (100 / coveragePct!) * 100 : null;
+  // Width of the grey portion of the bar.
+  const greyBarPct = repaymentBarFrac ?? Math.min(100, coveragePct ?? 0);
 
   return (
     <div className="border-t border-slate-800/80 pt-4">
-      <div className="mb-1.5 flex items-baseline justify-between">
+      <div className="mb-1 flex items-baseline justify-between">
         <span className="text-xs font-medium text-slate-400">Net solar position this period</span>
-        <span className="text-[11px] text-slate-400">{formatCurrency(periodPayments, currency)} repayments due</span>
+        {/* Repayments label stays in the header only for the negative/zero case */}
+        {!hasGreenSurplus && periodPayments > 0 && (
+          <span className="text-[11px] text-slate-400">
+            {formatCurrency(periodPayments, currency)} repayments due
+          </span>
+        )}
       </div>
-      <div className="mb-1.5 h-2.5 overflow-hidden rounded-full bg-slate-800">
+
+      {/* Label row — sits directly above the bar */}
+      <div className="relative h-5">
+        {/* Negative: solar-value label at the bar's right edge */}
+        {!isPositive && coveragePct != null && greyBarPct > 3 && (
+          <span
+            className="absolute bottom-0 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium text-slate-300"
+            style={{ left: `${greyBarPct}%` }}
+          >
+            {formatCurrency(periodTotalSolarValue, currency)}
+          </span>
+        )}
+        {/* Positive surplus: repayments label at the grey/green boundary */}
+        {repaymentBarFrac != null && (
+          <span
+            className="absolute bottom-0 -translate-x-1/2 whitespace-nowrap text-[10px] text-slate-400"
+            style={{ left: `${repaymentBarFrac}%` }}
+          >
+            {formatCurrency(periodPayments, currency)} due
+          </span>
+        )}
+      </div>
+
+      {/* Bar */}
+      <div className="mb-3 h-2.5 rounded-full bg-slate-800 relative overflow-hidden">
+        {/* Grey portion — always present */}
         <div
-          className={[
-            'h-full rounded-full transition-all duration-500',
-            isPositive ? 'bg-emerald-500' : 'bg-slate-600',
-          ].join(' ')}
-          style={{ width: `${barPct}%` }}
+          className="absolute left-0 top-0 h-full bg-slate-500 transition-all duration-500"
+          style={{ width: `${greyBarPct}%` }}
         />
+        {/* Green surplus — positive over-100% case only */}
+        {repaymentBarFrac != null && (
+          <div
+            className="absolute top-0 h-full bg-emerald-500 transition-all duration-500"
+            style={{ left: `${repaymentBarFrac}%`, right: 0 }}
+          />
+        )}
       </div>
+
       <div className="flex items-baseline justify-between">
         <p className="text-[11px] text-slate-400">
           Solar created{' '}
