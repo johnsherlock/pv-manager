@@ -109,6 +109,7 @@ type DayAccumulator = {
   selfConsumedSolarValue: number;
   exportCredit: number;
   withoutSolarImportCost: number;
+  freeImportKwh: number;
 };
 
 function emptyAccumulator(): DayAccumulator {
@@ -117,7 +118,7 @@ function emptyAccumulator(): DayAccumulator {
     consumedKwh: 0, immersionDivertedKwh: 0, immersionBoostedKwh: 0,
     totalReadingCount: 0, slotCount: 0,
     actualImportCost: 0, selfConsumedSolarValue: 0,
-    exportCredit: 0, withoutSolarImportCost: 0,
+    exportCredit: 0, withoutSolarImportCost: 0, freeImportKwh: 0,
   };
 }
 
@@ -246,6 +247,11 @@ export function computeRangeSummary(
           ? getScheduledRateForInterval(periods, schedule, localDateTime)
           : tariff.dayRate;
 
+        // Track kWh imported at zero rate — observed from data, not modelled in schema
+        if (slotRate === 0 && slot.importKwh > 0) {
+          acc.freeImportKwh += slot.importKwh;
+        }
+
         // Actual import cost for this slot
         acc.actualImportCost += slot.importKwh * slotRate * discount * vat;
 
@@ -307,7 +313,8 @@ export function computeRangeSummary(
         const withoutSolarNetCost = r2(withoutSolarImportCost + dayFixedCharges);
         const savings = r2(withoutSolarNetCost - actualNetCost);
         const selfConsumedSolarValue = r2(acc.selfConsumedSolarValue);
-        billing = { importCost, exportCredit, fixedCharges: dayFixedCharges, actualNetCost, savings, selfConsumedSolarValue };
+        const freeImportKwh = r6(acc.freeImportKwh);
+        billing = { importCost, exportCredit, fixedCharges: dayFixedCharges, actualNetCost, savings, selfConsumedSolarValue, freeImportKwh };
       } catch {
         // No tariff coverage for this day
       }

@@ -57,6 +57,8 @@ export type RangeSeriesDayBilling = {
   importCost: number;
   fixedCharges: number;
   selfConsumedSolarValue: number;
+  /** kWh imported during slots whose scheduled rate is exactly zero. Cost is €0 by definition. */
+  freeImportKwh: number;
 };
 
 export type RangeSeriesDay = {

@@ -666,34 +666,39 @@ export type PeriodCostTotals = {
   fixedCharges: number;
   exportCredit: number;
   savings: number;
+  /** kWh imported during zero-rate slots, observed from billing data. Omit or set 0 when none. */
+  freeImportKwh?: number;
 };
 
 const DONUT_IMPORT_COLOR = '#818cf8';   // indigo-400
 const DONUT_FIXED_COLOR = '#94a3b8';    // slate-400
 const DONUT_EXPORT_COLOR = '#34d399';   // emerald-400
 const DONUT_SAVINGS_COLOR = '#a5b4fc';  // indigo-300
-const DONUT_FREE_COLOR = '#1e293b';     // slate-800 (inactive placeholder)
+const DONUT_FREE_COLOR = '#5eead4';     // teal-300
 
 /**
  * Build an ECharts option for the period cost breakdown donut chart.
  */
 export function buildPeriodCostDonutOption(totals: PeriodCostTotals, currency = 'EUR') {
-  const { importCost, fixedCharges, exportCredit, savings } = totals;
+  const { importCost, fixedCharges, exportCredit, savings, freeImportKwh = 0 } = totals;
+  const hasFreeImport = freeImportKwh > 0;
 
   const fmt = (n: number) => new Intl.NumberFormat('en-IE', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  const fmtKwh = (n: number) => `${n.toFixed(2)} kWh`;
 
   const data = [
     { value: Math.max(0, importCost), name: 'Import cost', itemStyle: { color: DONUT_IMPORT_COLOR } },
     { value: Math.max(0, fixedCharges), name: 'Fixed charges', itemStyle: { color: DONUT_FIXED_COLOR } },
     { value: Math.max(0, exportCredit), name: 'Export credit', itemStyle: { color: DONUT_EXPORT_COLOR } },
     { value: Math.max(0, savings), name: 'Solar savings', itemStyle: { color: DONUT_SAVINGS_COLOR } },
-    {
-      value: 0.001, // near-zero so it renders as a thin slice placeholder
+    // Only include the free-import entry when actually observed in the data
+    ...(hasFreeImport ? [{
+      value: 0.001, // near-zero: cost is €0, shown as a tick so it registers in the legend
       name: 'Free import',
       itemStyle: { color: DONUT_FREE_COLOR },
       label: { show: false },
       emphasis: { disabled: true },
-    },
+    }] : []),
   ];
 
   return {
@@ -703,7 +708,8 @@ export function buildPeriodCostDonutOption(totals: PeriodCostTotals, currency = 
       trigger: 'item' as const,
       formatter(param: { name: string; value: number; percent: number; color: string }) {
         if (param.name === 'Free import') {
-          return `<div style="font-size:11px;color:#94a3b8">Free import<br><span style="color:#475569">Not active</span></div>`;
+          const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${DONUT_FREE_COLOR};margin-right:5px;"></span>`;
+          return `${dot}Free import: <b>${fmtKwh(freeImportKwh)}</b><br><span style="color:#94a3b8;font-size:10px">Imported at zero rate — no cost</span>`;
         }
         const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${param.color};margin-right:5px;"></span>`;
         return `${dot}${param.name}: <b>${fmt(param.value)}</b> (${param.percent}%)`;
@@ -718,7 +724,7 @@ export function buildPeriodCostDonutOption(totals: PeriodCostTotals, currency = 
       itemGap: 10,
       textStyle: { color: '#94a3b8', fontSize: 11 },
       formatter(name: string) {
-        if (name === 'Free import') return 'Free import (not active)';
+        if (name === 'Free import') return `Free import  ${fmtKwh(freeImportKwh)}`;
         const item = data.find((d) => d.name === name);
         if (!item || item.value < 0.01) return name;
         return `${name}  ${fmt(item.value)}`;
