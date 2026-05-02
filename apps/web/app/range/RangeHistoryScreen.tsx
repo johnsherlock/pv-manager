@@ -381,11 +381,16 @@ function FinancialSummaryPanel({ kpis, currency }: FinancialSummaryPanelProps) {
 }
 
 function SolarImpactPanel({ kpis, currency }: { kpis: ReturnType<typeof aggregateKpisFromSeries>; currency: string }) {
+  const hasMissing = kpis.missingDays > 0;
+  const hasPartial = kpis.partialDays > 0;
+
   const completenessParts: string[] = [];
-  if (kpis.missingDays > 0)
+  if (hasMissing)
     completenessParts.push(`${kpis.missingDays} day${kpis.missingDays !== 1 ? 's' : ''} missing`);
-  if (kpis.partialDays > 0)
+  if (hasPartial)
     completenessParts.push(`${kpis.partialDays} partial`);
+
+  const completenessSuffix = hasMissing ? 'excluded missing days from totals' : 'included in totals';
 
   return (
     <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-5">
@@ -393,7 +398,7 @@ function SolarImpactPanel({ kpis, currency }: { kpis: ReturnType<typeof aggregat
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-300">Solar impact estimate</p>
         {completenessParts.length > 0 && (
           <p className="text-right text-[11px] text-slate-500">
-            {completenessParts.join(' · ')} — excluded from totals
+            {completenessParts.join(' · ')} — {completenessSuffix}
           </p>
         )}
       </div>
