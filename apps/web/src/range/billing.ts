@@ -17,7 +17,7 @@ import {
   type ScheduledTariffVersion,
   type FixedChargeVersion,
 } from '../domain/billing';
-import { expectedMinutesForDay } from '../jobs/derive-summary';
+import { expectedMinutesForDay, isPartialDay } from '../jobs/derive-summary';
 import type {
   RangeSummarySection,
   RangeSeriesDay,
@@ -144,9 +144,8 @@ function deriveHealth(
     if (!day) {
       missingDayDates.push(date);
     } else {
-      const expectedSlots = Math.ceil(expectedMinutesForDay(date, timezone) / 30);
-      // Partial: missing whole slots OR any slot has fewer than 30 readings
-      if (day.slotCount < expectedSlots || day.totalReadingCount < day.slotCount * 30) {
+      const expectedMinutes = expectedMinutesForDay(date, timezone);
+      if (isPartialDay(day.totalReadingCount, expectedMinutes)) {
         partialDays++;
       }
     }
@@ -295,8 +294,8 @@ export function computeRangeSummary(
       };
     }
 
-    const expectedSlots = Math.ceil(expectedMinutesForDay(date, timezone) / 30);
-    const isPartial = acc.slotCount < expectedSlots || acc.totalReadingCount < acc.slotCount * 30;
+    const expectedMinutes = expectedMinutesForDay(date, timezone);
+    const isPartial = isPartialDay(acc.totalReadingCount, expectedMinutes);
 
     let billing: RangeSeriesDay['billing'] = null;
     let tariffVersionId: string | null = null;

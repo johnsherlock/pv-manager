@@ -406,20 +406,22 @@ describe('computeRangeSummary — per-day savings includes export credit', () =>
 // ---------------------------------------------------------------------------
 
 describe('computeRangeSummary — partial days', () => {
-  it('reports partial day count based on readingCount', () => {
+  it('reports partial day count when captured minutes fall below 90%', () => {
     const intervals = [
       ...makeDaySlots('2024-11-01T00:00:00Z', 48, STD, 30), // full
-      ...makeDaySlots('2024-11-02T00:00:00Z', 48, STD, 15), // partial (readingCount < 30)
-      ...makeDaySlots('2024-11-03T00:00:00Z', 48, STD, 15), // partial
+      ...makeDaySlots('2024-11-02T00:00:00Z', 48, STD, 27), // exactly 90% complete
+      ...makeDaySlots('2024-11-03T00:00:00Z', 48, STD, 26), // below 90%
     ];
     const allDates = allDatesInRange('2024-11-01', '2024-11-03');
-    const { health } = computeRangeSummary(intervals, allDates, TZ, [baseTariff], []);
-    expect(health.partialDays).toBe(2);
+    const { health, series } = computeRangeSummary(intervals, allDates, TZ, [baseTariff], []);
+    expect(health.partialDays).toBe(1);
+    expect(series.find((day) => day.date === '2024-11-02')!.isPartial).toBe(false);
+    expect(series.find((day) => day.date === '2024-11-03')!.isPartial).toBe(true);
   });
 
-  it('detects a partial day when whole slots are missing (fewer than 48 slots)', () => {
-    // 47 of 48 expected slots — all with full readingCount, but one entire slot is absent
-    const intervals = makeDaySlots('2024-11-01T00:00:00Z', 47, STD, 30);
+  it('detects a partial day when whole-slot gaps push coverage below 90%', () => {
+    // 43 of 48 expected slots = 89.6% coverage, so the day is partial
+    const intervals = makeDaySlots('2024-11-01T00:00:00Z', 43, STD, 30);
     const allDates = allDatesInRange('2024-11-01', '2024-11-01');
     const { health } = computeRangeSummary(intervals, allDates, TZ, [baseTariff], []);
     expect(health.partialDays).toBe(1);
