@@ -384,13 +384,18 @@ function SolarImpactPanel({ kpis, currency }: { kpis: ReturnType<typeof aggregat
   const hasMissing = kpis.missingDays > 0;
   const hasPartial = kpis.partialDays > 0;
 
+  const totalDays = kpis.coveredDays + kpis.missingDays;
+  const coveragePct = totalDays > 0 ? Math.round((kpis.coveredDays / totalDays) * 100) : 100;
+
   const completenessParts: string[] = [];
   if (hasMissing)
     completenessParts.push(`${kpis.missingDays} day${kpis.missingDays !== 1 ? 's' : ''} missing`);
   if (hasPartial)
-    completenessParts.push(`${kpis.partialDays} partial`);
+    completenessParts.push(`${kpis.partialDays} day${kpis.partialDays !== 1 ? 's' : ''} have < 90% expected data`);
 
-  const completenessSuffix = hasMissing ? 'excluded missing days from totals' : 'included in totals';
+  const completenessSuffix = hasMissing
+    ? `totals calculated from ${coveragePct}% of possible data for this period`
+    : 'partial days included in totals';
 
   return (
     <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-5">
