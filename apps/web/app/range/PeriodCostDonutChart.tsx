@@ -34,7 +34,7 @@ export function PeriodCostDonutChart({ totals, simplified, currency }: Props) {
       {/* Two-column layout: donut left, legend + summary right */}
       <div className="flex items-center gap-4">
         {/* Donut */}
-        <div className="shrink-0 w-[45%]">
+        <div className="shrink-0 w-[55%]">
           <EChart
             option={option}
             notMerge
