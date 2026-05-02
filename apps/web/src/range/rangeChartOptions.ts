@@ -682,6 +682,11 @@ const DONUT_EXPORT_COLOR = '#34d399';   // emerald-400
 const DONUT_SAVINGS_COLOR = '#a5b4fc';  // indigo-300
 const DONUT_FREE_COLOR = '#5eead4';     // teal-300
 
+export const PERIOD_COST_COLORS = {
+  importCost: DONUT_IMPORT_COLOR,
+  fixedCharges: DONUT_FIXED_COLOR,
+} as const;
+
 /**
  * Build an ECharts option for the period cost breakdown donut chart.
  *
@@ -710,25 +715,12 @@ export function buildPeriodCostDonutOption(totals: PeriodCostTotals, currency = 
         return `${dot}${param.name}: <b>${fmt(param.value)}</b> (${param.percent}% of gross bill)`;
       },
     },
-    legend: {
-      orient: 'vertical' as const,
-      right: 0,
-      top: 'middle',
-      itemWidth: 10,
-      itemHeight: 10,
-      itemGap: 10,
-      textStyle: { color: '#94a3b8', fontSize: 11 },
-      formatter(name: string) {
-        const item = data.find((d) => d.name === name);
-        if (!item) return name;
-        return `${name}  ${fmt(item.value)}`;
-      },
-    },
+    legend: { show: false },
     series: [
       {
         type: 'pie',
         radius: ['42%', '70%'],
-        center: ['35%', '50%'],
+        center: ['50%', '50%'],
         avoidLabelOverlap: true,
         label: { show: false },
         emphasis: {

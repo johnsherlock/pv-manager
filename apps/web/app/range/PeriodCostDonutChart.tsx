@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { EChart } from '@/src/live/EChartsWrapper';
-import { buildPeriodCostDonutOption, type PeriodCostTotals } from '@/src/range/rangeChartOptions';
+import { buildPeriodCostDonutOption, PERIOD_COST_COLORS, type PeriodCostTotals } from '@/src/range/rangeChartOptions';
 
 type Props = {
   totals: PeriodCostTotals;
@@ -17,7 +17,8 @@ export function PeriodCostDonutChart({ totals, simplified, currency }: Props) {
     new Intl.NumberFormat('en-IE', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
   const { importCost, fixedCharges, exportCredit = 0, savings = 0, freeImportValue = 0, freeImportKwh = 0, avgPaidRate = 0 } = totals;
-  const netBill = importCost + fixedCharges - exportCredit;
+  const grossBill = importCost + fixedCharges;
+  const netBill = grossBill - exportCredit;
   const hasExport = exportCredit > 0;
   const hasSavings = savings > 0;
   const hasFreeImport = freeImportValue > 0;
@@ -29,40 +30,57 @@ export function PeriodCostDonutChart({ totals, simplified, currency }: Props) {
           Import costs estimated at day rate (time-of-use data not available for this period)
         </p>
       )}
-      <EChart
-        option={option}
-        notMerge
-        style={{ width: '100%', height: 'clamp(200px, 26vw, 260px)' }}
-      />
 
-      {/* Offsets summary — shows what reduced the gross bill */}
-      <div className="border-t border-slate-800/60 pt-3 space-y-1.5 text-[11px]">
-        <div className="flex items-baseline justify-between">
-          <span className="text-slate-400">Gross bill</span>
-          <span className="font-mono text-slate-300">{fmt(importCost + fixedCharges)}</span>
+      {/* Two-column layout: donut left, legend + summary right */}
+      <div className="flex items-center gap-4">
+        {/* Donut */}
+        <div className="shrink-0 w-[45%]">
+          <EChart
+            option={option}
+            notMerge
+            style={{ width: '100%', height: '170px' }}
+          />
         </div>
-        {hasExport && (
-          <div className="flex items-baseline justify-between">
-            <span className="text-slate-400">
-              Net bill <span className="text-slate-600">(after −{fmt(exportCredit)} export credit)</span>
-            </span>
-            <span className="font-mono text-slate-300">{fmt(netBill)}</span>
+
+        {/* Right panel: legend + summary */}
+        <div className="flex-1 min-w-0 space-y-3">
+          {/* HTML legend */}
+          <div className="space-y-1.5">
+            {([
+              { color: PERIOD_COST_COLORS.importCost, label: 'Import cost', value: importCost },
+              { color: PERIOD_COST_COLORS.fixedCharges, label: 'Fixed charges', value: fixedCharges },
+            ] as const).map(({ color, label, value }) => (
+              <div key={label} className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 shrink-0 rounded-sm" style={{ background: color }} />
+                <span className="text-[11px] text-slate-400 flex-1">{label}</span>
+                <span className="text-[11px] font-mono text-slate-300">{fmt(value)}</span>
+              </div>
+            ))}
           </div>
-        )}
-        {(hasSavings || hasFreeImport) && (
-          <div className="flex items-baseline gap-1.5 text-slate-500">
-            <span>Est. savings vs without solar</span>
-            {hasSavings && <span className="text-indigo-300/70">solar {fmt(savings)}</span>}
+
+          {/* Summary */}
+          <div className="space-y-1 border-t border-slate-800/60 pt-2 text-[11px]">
+            <div className="flex justify-between">
+              <span className="text-slate-400">Gross bill</span>
+              <span className="font-mono text-slate-300">{fmt(grossBill)}</span>
+            </div>
+            {hasExport && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Net bill <span className="text-slate-600">−{fmt(exportCredit)} export</span></span>
+                <span className="font-mono text-slate-300">{fmt(netBill)}</span>
+              </div>
+            )}
+            {hasSavings && (
+              <p className="text-slate-600">solar savings {fmt(savings)} est.</p>
+            )}
             {hasFreeImport && (
-              <span className="text-teal-400/70">
-                free import ~{fmt(freeImportValue)}
-                <span className="ml-1 text-slate-600">
-                  ({freeImportKwh.toFixed(1)} kWh @ avg. {fmt(avgPaidRate)}/kWh)
-                </span>
-              </span>
+              <p className="text-slate-600">
+                free import ~{fmt(freeImportValue)} est.
+                <span className="ml-1">({freeImportKwh.toFixed(1)} kWh @ avg. {fmt(avgPaidRate)}/kWh)</span>
+              </p>
             )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
