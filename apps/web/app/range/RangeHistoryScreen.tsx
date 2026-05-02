@@ -93,6 +93,7 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
   });
   const [pickerOpen, setPickerOpen] = useState(false);
   const [tariffCalloutDismissed, setTariffCalloutDismissed] = useState(false);
+  const [completenessCalloutDismissed, setCompletenessCalloutDismissed] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Effective range clamped to what's loaded server-side
@@ -296,6 +297,16 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
 
             {kpis && kpis.coveredDays > 0 && (
               <>
+                {/* §2a — Data completeness callout */}
+                {(kpis.missingDays > 0 || kpis.partialDays > 0) && !completenessCalloutDismissed && (
+                  <DataCompletenessCallout
+                    missingDays={kpis.missingDays}
+                    partialDays={kpis.partialDays}
+                    coveredDays={kpis.coveredDays}
+                    onDismiss={() => setCompletenessCalloutDismissed(true)}
+                  />
+                )}
+
                 {/* §2 — Financial summary */}
                 <FinancialSummaryPanel
                   kpis={kpis}
@@ -381,31 +392,10 @@ function FinancialSummaryPanel({ kpis, currency }: FinancialSummaryPanelProps) {
 }
 
 function SolarImpactPanel({ kpis, currency }: { kpis: ReturnType<typeof aggregateKpisFromSeries>; currency: string }) {
-  const hasMissing = kpis.missingDays > 0;
-  const hasPartial = kpis.partialDays > 0;
-
-  const totalDays = kpis.coveredDays + kpis.missingDays;
-  const coveragePct = totalDays > 0 ? Math.round((kpis.coveredDays / totalDays) * 100) : 100;
-
-  const completenessParts: string[] = [];
-  if (hasMissing)
-    completenessParts.push(`${kpis.missingDays} day${kpis.missingDays !== 1 ? 's' : ''} missing`);
-  if (hasPartial)
-    completenessParts.push(`${kpis.partialDays} day${kpis.partialDays !== 1 ? 's' : ''} have < 90% expected data`);
-
-  const completenessSuffix = hasMissing
-    ? `totals calculated from ${coveragePct}% of possible data for this period`
-    : 'partial days included in totals';
-
   return (
     <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-5">
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-300">Solar impact estimate</p>
-        {completenessParts.length > 0 && (
-          <p className="text-right text-[11px] text-slate-500">
-            {completenessParts.join(' · ')} — {completenessSuffix}
-          </p>
-        )}
       </div>
 
       {/* Solar value metrics */}
@@ -494,6 +484,45 @@ function BillMetric({
         {value}
       </p>
       <p className="mt-0.5 text-[10px] text-slate-400">{note}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// §2a — Data completeness callout
+// ---------------------------------------------------------------------------
+
+function DataCompletenessCallout({
+  missingDays,
+  partialDays,
+  coveredDays,
+  onDismiss,
+}: {
+  missingDays: number;
+  partialDays: number;
+  coveredDays: number;
+  onDismiss: () => void;
+}) {
+  const totalDays = coveredDays + missingDays;
+  const coveragePct = totalDays > 0 ? Math.round((coveredDays / totalDays) * 100) : 100;
+
+  const parts: string[] = [];
+  if (missingDays > 0)
+    parts.push(`${missingDays} day${missingDays !== 1 ? 's are' : ' is'} missing from this period`);
+  if (partialDays > 0)
+    parts.push(`${partialDays} day${partialDays !== 1 ? 's' : ''} recorded < 90% expected data`);
+
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/8 px-4 py-3">
+      <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-400" />
+      <p className="flex-1 text-sm text-amber-300/90">
+        <span className="font-semibold text-amber-200">{parts.join(', ')}</span>
+        {' — '}
+        Totals calculated from {coveragePct}% of possible recoverable data.
+      </p>
+      <button onClick={onDismiss} className="shrink-0 text-amber-500/50 hover:text-amber-400">
+        <X size={13} />
+      </button>
     </div>
   );
 }
