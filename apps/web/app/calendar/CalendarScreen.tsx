@@ -11,6 +11,7 @@ import {
   Home,
   RefreshCw,
   Settings,
+  X,
 } from 'lucide-react';
 import type { RangeSummaryPayload, RangeSeriesDay } from '@/src/range/types';
 import type { RepaymentSchedule } from '@/src/range/recovery';
@@ -93,6 +94,7 @@ export function CalendarScreen({
   const [activeMetric, setActiveMetric] = useState<CalendarMetric>('generation_kwh');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialPayload === null);
+  const [warningsDismissed, setWarningsDismissed] = useState(false);
 
   const [tooltip, setTooltip] = useState<{
     date: string;
@@ -144,6 +146,9 @@ export function CalendarScreen({
     [activeYear],
   );
 
+  // Reset warnings banner when year changes.
+  useEffect(() => { setWarningsDismissed(false); }, [activeYear]);
+
   // Also pre-warm the adjacent year when idle.
   useEffect(() => {
     const nextYear = activeYear + 1;
@@ -155,6 +160,19 @@ export function CalendarScreen({
       fetchOrGetYear(String(prevYear)).catch(() => {});
     }
   }, [activeYear, currentYear, earliestYear]);
+
+  // ---------------------------------------------------------------------------
+  // Data quality
+  // ---------------------------------------------------------------------------
+
+  const dataQuality = useMemo(() => {
+    const past = activeSeries.filter((d) => d.date <= today);
+    const coveredDays = past.filter((d) => d.hasSummary).length;
+    const missingDays = past.filter((d) => !d.hasSummary).length;
+    const partialDays = past.filter((d) => d.isPartial).length;
+    const hasTariffChange = new Set(past.map((d) => d.tariffVersionId).filter(Boolean)).size > 1;
+    return { coveredDays, missingDays, partialDays, hasTariffChange };
+  }, [activeSeries, today]);
 
   // ---------------------------------------------------------------------------
   // Normalization
@@ -356,6 +374,18 @@ export function CalendarScreen({
 
         {!error && (
           <>
+            {/* Data quality warnings */}
+            {(dataQuality.missingDays > 0 || dataQuality.partialDays > 0 || dataQuality.hasTariffChange) && !warningsDismissed && (
+              <WarningsCallout
+                missingDays={dataQuality.missingDays}
+                partialDays={dataQuality.partialDays}
+                coveredDays={dataQuality.coveredDays}
+                hasTariffChange={dataQuality.hasTariffChange}
+                series={activeSeries}
+                onDismiss={() => setWarningsDismissed(true)}
+              />
+            )}
+
             {/* Metric strip */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {CALENDAR_METRICS.map((m) => (
@@ -650,6 +680,66 @@ function HardErrorCard({ onRetry }: { onRetry: () => void }) {
         <RefreshCw size={12} />
         Try again
       </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Warnings callout
+// ---------------------------------------------------------------------------
+
+function WarningsCallout({
+  missingDays,
+  partialDays,
+  coveredDays,
+  hasTariffChange,
+  series,
+  onDismiss,
+}: {
+  missingDays: number;
+  partialDays: number;
+  coveredDays: number;
+  hasTariffChange: boolean;
+  series: RangeSeriesDay[];
+  onDismiss: () => void;
+}) {
+  const totalDays = coveredDays + missingDays;
+  const coveragePct = totalDays > 0 ? Math.round((coveredDays / totalDays) * 100) : 100;
+  const tariffVersionCount = new Set(series.map((d) => d.tariffVersionId).filter(Boolean)).size;
+
+  const completenessParts: string[] = [];
+  if (missingDays > 0)
+    completenessParts.push(`${missingDays} day${missingDays !== 1 ? 's are' : ' is'} missing from this period`);
+  if (partialDays > 0)
+    completenessParts.push(`${partialDays} day${partialDays !== 1 ? 's' : ''} recorded < 90% expected data`);
+
+  const hasCompleteness = completenessParts.length > 0;
+
+  return (
+    <div className="rounded-2xl border border-amber-500/25 bg-amber-500/8 px-4 py-3">
+      <div className="flex items-start gap-3">
+        <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-400" />
+        <div className="flex-1 space-y-1.5">
+          {hasCompleteness && (
+            <p className="text-sm text-amber-300/90">
+              <span className="font-semibold text-amber-200">{completenessParts.join(', ')}</span>
+              {' — '}
+              Totals calculated from {coveragePct}% of possible recoverable data.
+            </p>
+          )}
+          {hasTariffChange && (
+            <p className="text-sm text-amber-300/90">
+              <span className="font-semibold text-amber-200">Tariff changed during this period</span>
+              {' — '}
+              {tariffVersionCount} tariff version{tariffVersionCount !== 1 ? 's' : ''} applied.
+              Financial totals reflect each day's applicable rate.
+            </p>
+          )}
+        </div>
+        <button onClick={onDismiss} className="shrink-0 text-amber-500/50 hover:text-amber-400">
+          <X size={13} />
+        </button>
+      </div>
     </div>
   );
 }
