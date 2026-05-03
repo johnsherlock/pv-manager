@@ -266,23 +266,15 @@ export type IntervalRow = {
  */
 export async function loadEarliestIntervalDate(
   installationId: string,
-  timezone: string,
+  _timezone: string,
 ): Promise<string | null> {
-  const { db, intervalReadings } = await getDbDeps();
+  const { db, dailyPricedRollups } = await getDbDeps();
   const rows = await db
-    .select({ earliest: min(intervalReadings.intervalStart) })
-    .from(intervalReadings)
-    .where(eq(intervalReadings.installationId, installationId));
+    .select({ earliest: min(dailyPricedRollups.localDate) })
+    .from(dailyPricedRollups)
+    .where(eq(dailyPricedRollups.installationId, installationId));
 
-  const earliest = rows[0]?.earliest;
-  if (!earliest) return null;
-
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(earliest);
+  return rows[0]?.earliest ?? null;
 }
 
 /**
