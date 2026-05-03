@@ -177,11 +177,14 @@ async function summariseInstallation(
   await upsertIntervalReadings(inst.installationId, slots);
 
   // Build the priced rollup from the just-written intervals. Non-fatal: if
-  // this fails the interval data is intact and the catch-up job will retry.
+  // this fails the interval data is intact and job:build-rollups can recover it.
   try {
     await buildAndPersistRollupForDate(inst.installationId, targetDate, inst.timezone);
-  } catch {
-    // Rollup failure does not fail the ingestion step
+  } catch (err) {
+    console.error(
+      `[daily-summary] rollup build failed for ${inst.installationId} on ${targetDate}:`,
+      err,
+    );
   }
 
   const totalReadingCount = slots.reduce((s, slot) => s + slot.readingCount, 0);

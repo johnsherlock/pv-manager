@@ -314,7 +314,7 @@ export async function buildAndPersistRollupForDate(
 
   const utcFrom = new Date(utcStartOfLocalDate(localDate, timezone));
   const expectedMinutes = expectedMinutesForDay(localDate, timezone);
-  const utcTo = new Date(utcFrom.getTime() + expectedMinutes * 60 * 1000 + 60 * 60 * 1000);
+  const utcTo = new Date(utcFrom.getTime() + expectedMinutes * 60 * 1000);
 
   const [rawSlots, tariffVersions, fixedCharges] = await Promise.all([
     db
