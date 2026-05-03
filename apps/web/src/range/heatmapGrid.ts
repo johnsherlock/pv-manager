@@ -31,6 +31,14 @@ export type HeatMapCell = {
   row: number;
 };
 
+/** Formats a Date as YYYY-MM-DD using local calendar fields, avoiding UTC shift. */
+function localISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 /**
  * Returns the ISO day-of-week (0=Mon … 6=Sun) for a given date string.
  * JS getDay() returns 0=Sun, so we rotate.
@@ -55,7 +63,7 @@ export function buildHeatMapCells(year: number): HeatMapCell[] {
   const startDate = new Date(`${jan1}T12:00:00`);
 
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    const iso = d.toISOString().slice(0, 10);
+    const iso = localISODate(d);
     const daysSinceJan1 = Math.round((d.getTime() - startDate.getTime()) / 86_400_000);
     const daysSinceWeekAnchor = daysSinceJan1 + jan1Dow;
     cells.push({
@@ -117,4 +125,18 @@ export function totalColumns(year: number): number {
   const endDate = new Date(`${dec31}T12:00:00`);
   const daysSinceJan1 = Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000);
   return Math.floor((daysSinceJan1 + jan1Dow) / 7) + 1;
+}
+
+// ---------------------------------------------------------------------------
+// Navigation URL builders — pure functions so they can be unit-tested
+// ---------------------------------------------------------------------------
+
+/** URL for the Historical Day screen for a given date. */
+export function buildHistoryDayUrl(date: string): string {
+  return `/history/${date}`;
+}
+
+/** URL for the Calendar View for a given year. */
+export function buildCalendarYearUrl(year: number): string {
+  return `/calendar?year=${year}`;
 }

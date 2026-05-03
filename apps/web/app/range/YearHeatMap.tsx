@@ -17,7 +17,7 @@ import {
   type NormalizedDay,
 } from '@/src/calendar/metrics';
 import type { CalendarMetric } from '@/src/calendar/types';
-import { buildHeatMapCells, buildMonthLabels, totalColumns } from '@/src/range/heatmapGrid';
+import { buildHeatMapCells, buildMonthLabels, totalColumns, buildHistoryDayUrl, buildCalendarYearUrl } from '@/src/range/heatmapGrid';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -201,7 +201,7 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
   const handleCellClick = useCallback(
     (date: string, isFuture: boolean) => {
       if (isFuture) return;
-      router.push(`/history/${date}`);
+      router.push(buildHistoryDayUrl(date));
     },
     [router],
   );
@@ -366,7 +366,7 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
       <div className="mt-3 flex items-center justify-between gap-4">
         <ColorLegend metricHue={metricHue} />
         <Link
-          href={`/calendar?year=${year}`}
+          href={buildCalendarYearUrl(year)}
           className="shrink-0 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors hover:underline"
           onClick={(e) => e.stopPropagation()}
         >

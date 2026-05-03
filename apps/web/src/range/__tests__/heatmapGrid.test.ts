@@ -4,6 +4,8 @@ import {
   buildHeatMapCells,
   buildMonthLabels,
   totalColumns,
+  buildHistoryDayUrl,
+  buildCalendarYearUrl,
 } from '../heatmapGrid';
 
 // ---------------------------------------------------------------------------
@@ -154,5 +156,54 @@ describe('totalColumns', () => {
   it('returns 53 for 2025 (starts Wednesday)', () => {
     // 365 days, 2-day offset → 367 / 7 = 52.4 → 53 columns
     expect(totalColumns(2025)).toBe(53);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Navigation URL builders
+// ---------------------------------------------------------------------------
+
+describe('buildHistoryDayUrl', () => {
+  it('builds the expected history day path', () => {
+    expect(buildHistoryDayUrl('2024-08-07')).toBe('/history/2024-08-07');
+  });
+
+  it('preserves the date string exactly', () => {
+    expect(buildHistoryDayUrl('2023-01-01')).toBe('/history/2023-01-01');
+  });
+});
+
+describe('buildCalendarYearUrl', () => {
+  it('builds the expected calendar year URL', () => {
+    expect(buildCalendarYearUrl(2024)).toBe('/calendar?year=2024');
+  });
+
+  it('targets the correct year for a partial current year', () => {
+    expect(buildCalendarYearUrl(2026)).toBe('/calendar?year=2026');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Timezone safety — cell dates must be local calendar dates
+// ---------------------------------------------------------------------------
+
+describe('buildHeatMapCells timezone safety', () => {
+  it('emits only dates within the requested year', () => {
+    const cells = buildHeatMapCells(2024);
+    for (const { date } of cells) {
+      expect(date.slice(0, 4)).toBe('2024');
+    }
+  });
+
+  it('first cell date is Jan 1 and last is Dec 31', () => {
+    const cells = buildHeatMapCells(2024);
+    expect(cells[0].date).toBe('2024-01-01');
+    expect(cells[cells.length - 1].date).toBe('2024-12-31');
+  });
+
+  it('no duplicate dates', () => {
+    const cells = buildHeatMapCells(2024);
+    const dates = cells.map((c) => c.date);
+    expect(new Set(dates).size).toBe(dates.length);
   });
 });
