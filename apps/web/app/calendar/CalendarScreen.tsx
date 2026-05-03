@@ -406,10 +406,10 @@ function CalendarGrid({
   return (
     <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-4 sm:p-6">
       {/* Day header row */}
-      <div className="mb-1 flex">
+      <div className="mb-2 flex">
         {/* Month label spacer */}
         <div className="w-9 shrink-0 sm:w-11" />
-        <div className="flex flex-1 gap-px">
+        <div className="flex flex-1 gap-0.5">
           {DAY_NUMBERS.map((d) => (
             <div
               key={d}
@@ -422,13 +422,13 @@ function CalendarGrid({
       </div>
 
       {/* Month rows */}
-      <div className="flex flex-col gap-px">
+      <div className="flex flex-col gap-1.5">
         {MONTH_NAMES.map((monthName, monthIdx) => {
           const month = monthIdx + 1;
           const monthRangeUrl = buildMonthRangeUrl(year, month);
 
           return (
-            <div key={month} className="flex items-end gap-px">
+            <div key={month} className="flex items-end gap-0.5">
               {/* Month label */}
               <Link
                 href={monthRangeUrl}
@@ -438,7 +438,7 @@ function CalendarGrid({
               </Link>
 
               {/* Day cells */}
-              <div className="flex flex-1 gap-px">
+              <div className="flex flex-1 gap-0.5">
                 {DAY_NUMBERS.map((day) => {
                   const dateStr = isoDate(year, month, day);
 
@@ -454,17 +454,17 @@ function CalendarGrid({
 
                   if (isFuture) {
                     return (
-                      <div key={day} className="flex-1 h-8 flex items-end">
-                        <div className="w-full h-px bg-slate-800/50 rounded-full" />
+                      <div key={day} className="flex-1 h-16 flex items-end">
+                        <div className="w-full h-px bg-slate-800/50" />
                       </div>
                     );
                   }
 
                   const cellContent = (
-                    <div className="w-full h-8 relative flex items-end">
+                    <div className="w-full h-16 relative flex items-end">
                       <div
                         className={[
-                          'w-full rounded-sm transition-all duration-300',
+                          'w-full rounded-t-sm transition-all duration-300',
                           hasData ? barColor : 'bg-slate-800/40',
                         ].join(' ')}
                         style={{ height: hasData ? `${Math.max(2, height * 100)}%` : '2px' }}
