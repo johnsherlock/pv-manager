@@ -221,20 +221,18 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
       {/* Year summary headline */}
       {yearSummary && (
         <div className="mb-4 flex items-baseline gap-2 flex-wrap">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-            {yearSummary.label}
-          </span>
-          <span className="font-mono text-lg font-semibold text-slate-100">{yearSummary.value}</span>
+          <span className="text-xs font-medium text-slate-400">{yearSummary.label}</span>
+          <span className="text-sm font-semibold tabular-nums text-slate-100">{yearSummary.value}</span>
           {yearSummary.secondaryValue && (
             <>
               <span className="text-slate-600">|</span>
-              <span className="font-mono text-lg font-semibold text-slate-100">{yearSummary.secondaryValue}</span>
+              <span className="text-sm font-semibold tabular-nums text-slate-100">{yearSummary.secondaryValue}</span>
             </>
           )}
           {bestDayLabel && (
             <>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">· Best day</span>
-              <span className="font-mono text-lg font-semibold text-slate-100">{bestDayLabel}</span>
+              <span className="text-xs font-medium text-slate-400">· Best day</span>
+              <span className="text-sm font-semibold tabular-nums text-slate-100">{bestDayLabel}</span>
             </>
           )}
         </div>
