@@ -210,8 +210,19 @@ export function CalendarScreen({
     const firstBestDate = [...bestDates].sort()[0];
     const normalized = normalizedMap.get(firstBestDate);
     if (!normalized || normalized.rawValue === null) return null;
-    return `${formatDayMD(firstBestDate)} (${formatDayValue(normalized.rawValue, activeMetric, currency)})`;
-  }, [bestDates, normalizedMap, activeMetric, currency]);
+    const primary = formatDayValue(normalized.rawValue, activeMetric, currency);
+    if (activeMetric === 'export_kwh') {
+      const day = activeSeries.find((d) => d.date === firstBestDate);
+      const credit = day ? extractExportCredit(day) : null;
+      if (credit !== null) {
+        const creditFormatted = new Intl.NumberFormat('en-IE', {
+          style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2,
+        }).format(credit);
+        return `${formatDayMD(firstBestDate)} (${primary} | ${creditFormatted})`;
+      }
+    }
+    return `${formatDayMD(firstBestDate)} (${primary})`;
+  }, [bestDates, normalizedMap, activeMetric, currency, activeSeries]);
 
   // ---------------------------------------------------------------------------
   // Year total
