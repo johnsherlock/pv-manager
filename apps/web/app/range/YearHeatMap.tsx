@@ -10,6 +10,7 @@ import {
   normalizeSeries,
   formatDayValue,
   extractExportCredit,
+  findBestDates,
   getMetricHue,
   interpolateBarColor,
   type NormalizedDay,
@@ -69,6 +70,68 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
   const numCols = useMemo(() => totalColumns(year), [year]);
 
   const metricHue = getMetricHue(activeMetric);
+
+  const bestDates = useMemo(
+    () => findBestDates([...normalizedMap.values()], activeMetric),
+    [normalizedMap, activeMetric],
+  );
+
+  const bestDayLabel = useMemo(() => {
+    if (activeMetric === 'prorata_coverage' || bestDates.size === 0) return null;
+    const firstBestDate = [...bestDates].sort()[0];
+    const normalized = normalizedMap.get(firstBestDate);
+    if (!normalized || normalized.rawValue === null) return null;
+    return `${formatDayMD(firstBestDate)} (${formatDayValue(normalized.rawValue, activeMetric, currency)})`;
+  }, [bestDates, normalizedMap, activeMetric, currency]);
+
+  const yearSummary = useMemo((): { value: string; secondaryValue?: string; label: string } | null => {
+    const metricLabel = CALENDAR_METRICS.find((m) => m.id === activeMetric)?.label ?? '';
+    const baseLabel = `${metricLabel} — ${year} total`;
+
+    if (activeMetric === 'solar_coverage') {
+      let sum = 0; let count = 0;
+      for (const d of normalizedMap.values()) {
+        if (d.rawValue !== null && d.rawValue >= 0) { sum += d.rawValue; count++; }
+      }
+      if (count === 0) return null;
+      return { value: formatDayValue(sum / count, 'solar_coverage', currency), label: `${metricLabel} — ${year} average` };
+    }
+
+    if (activeMetric === 'prorata_coverage') {
+      let count = 0; let evaluable = 0;
+      for (const d of normalizedMap.values()) {
+        if (d.rawValue !== null) {
+          evaluable++;
+          if (d.rawValue >= 1.0) count++;
+        }
+      }
+      const pct = evaluable > 0 ? Math.round((count / evaluable) * 100) : 0;
+      const value = evaluable > 0
+        ? `${count} day${count !== 1 ? 's' : ''}, ${pct}%`
+        : `${count} day${count !== 1 ? 's' : ''}`;
+      return { value, label: 'Days that covered pro-rata payments' };
+    }
+
+    let sum = 0; let hasAny = false;
+    for (const d of normalizedMap.values()) {
+      if (d.rawValue !== null && d.rawValue >= 0) { sum += d.rawValue; hasAny = true; }
+    }
+    if (!hasAny) return null;
+
+    if (activeMetric === 'export_kwh') {
+      let creditSum = 0;
+      for (const day of series) {
+        const c = extractExportCredit(day);
+        if (c !== null) creditSum += c;
+      }
+      const creditFormatted = new Intl.NumberFormat('en-IE', {
+        style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2,
+      }).format(creditSum);
+      return { value: formatDayValue(sum, activeMetric, currency), secondaryValue: creditFormatted, label: baseLabel };
+    }
+
+    return { value: formatDayValue(sum, activeMetric, currency), label: baseLabel };
+  }, [normalizedMap, series, activeMetric, currency, year]);
 
   const handleCellEnter = useCallback(
     (e: React.MouseEvent, date: string) => {
@@ -154,6 +217,28 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
           </button>
         ))}
       </div>
+
+      {/* Year summary headline */}
+      {yearSummary && (
+        <div className="mb-4 flex items-baseline gap-2 flex-wrap">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            {yearSummary.label}
+          </span>
+          <span className="font-mono text-lg font-semibold text-slate-100">{yearSummary.value}</span>
+          {yearSummary.secondaryValue && (
+            <>
+              <span className="text-slate-600">|</span>
+              <span className="font-mono text-lg font-semibold text-slate-100">{yearSummary.secondaryValue}</span>
+            </>
+          )}
+          {bestDayLabel && (
+            <>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">· Best day</span>
+              <span className="font-mono text-lg font-semibold text-slate-100">{bestDayLabel}</span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Grid */}
       <div className="overflow-x-auto pb-2">
@@ -360,4 +445,9 @@ function formatDateLabel(iso: string): string {
     month: 'short',
     year: 'numeric',
   }).format(new Date(`${iso}T12:00:00`));
+}
+
+function formatDayMD(iso: string): string {
+  const [, m, d] = iso.split('-');
+  return `${d}/${m}`;
 }
