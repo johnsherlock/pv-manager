@@ -133,7 +133,7 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
         <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-          Year overview — {year}
+          {year} Heatmap
         </span>
       </div>
 
@@ -250,11 +250,12 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="mt-3 flex items-center justify-end">
+      {/* Footer: legend + calendar link */}
+      <div className="mt-3 flex items-center justify-between gap-4">
+        <ColorLegend metricHue={metricHue} />
         <Link
           href={`/calendar?year=${year}`}
-          className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors hover:underline"
+          className="shrink-0 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors hover:underline"
           onClick={(e) => e.stopPropagation()}
         >
           View detailed calendar view for {year}
@@ -274,6 +275,32 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
           y={tooltip.y}
         />
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Legend
+// ---------------------------------------------------------------------------
+
+const LEGEND_STEPS = [0, 0.25, 0.5, 0.75, 1];
+
+function ColorLegend({ metricHue }: { metricHue: number }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] text-slate-500">Less</span>
+      {LEGEND_STEPS.map((t) => (
+        <div
+          key={t}
+          style={{
+            width: CELL_SIZE,
+            height: CELL_SIZE,
+            borderRadius: 2,
+            backgroundColor: t === 0 ? 'rgba(30, 41, 59, 0.5)' : interpolateBarColor(metricHue, t),
+          }}
+        />
+      ))}
+      <span className="text-[10px] text-slate-500">More</span>
     </div>
   );
 }
