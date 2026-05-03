@@ -5,9 +5,10 @@
  * resolving the correct installationId before calling these functions.
  */
 
-import { and, asc, eq, gte, inArray, lt, min } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lt, lte, min } from 'drizzle-orm';
 import type { TariffPricePeriod, ScheduledTariffVersion, FixedChargeVersion } from '../domain/billing';
 import { utcStartOfLocalDate } from '../jobs/derive-summary';
+import type { DailyRollupData } from './rollup-service';
 
 type RangeLoaderDbModule = typeof import('../db/client');
 type RangeLoaderSchemaModule = typeof import('../db/schema');
@@ -21,6 +22,7 @@ let _dbDeps:
       tariffPricePeriods: RangeLoaderSchemaModule['tariffPricePeriods'];
       tariffFixedChargeVersions: RangeLoaderSchemaModule['tariffFixedChargeVersions'];
       intervalReadings: RangeLoaderSchemaModule['intervalReadings'];
+      dailyPricedRollups: RangeLoaderSchemaModule['dailyPricedRollups'];
       systemAdditions: RangeLoaderSchemaModule['systemAdditions'];
     }>
   | null = null;
@@ -36,6 +38,7 @@ async function getDbDeps() {
         tariffPricePeriods: schema.tariffPricePeriods,
         tariffFixedChargeVersions: schema.tariffFixedChargeVersions,
         intervalReadings: schema.intervalReadings,
+        dailyPricedRollups: schema.dailyPricedRollups,
         systemAdditions: schema.systemAdditions,
       }),
     );
@@ -325,5 +328,55 @@ export async function loadIntervalReadingsForRange(
     immersionBoostedKwh: Number(r.immersionBoostedKwh),
     consumedKwh: Number(r.consumedKwh),
     readingCount: r.readingCount,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Daily priced rollup loader
+// ---------------------------------------------------------------------------
+
+export type DailyPricedRollupRow = DailyRollupData & { localDate: string };
+
+/**
+ * Load persisted daily priced rollups for an installation within an inclusive
+ * local date range. Returns one row per covered date; dates without a rollup
+ * row are absent from the result.
+ */
+export async function loadDailyPricedRollupsForRange(
+  installationId: string,
+  from: string,
+  to: string,
+): Promise<DailyPricedRollupRow[]> {
+  const { db, dailyPricedRollups } = await getDbDeps();
+
+  const rows = await db
+    .select()
+    .from(dailyPricedRollups)
+    .where(
+      and(
+        eq(dailyPricedRollups.installationId, installationId),
+        gte(dailyPricedRollups.localDate, from),
+        lte(dailyPricedRollups.localDate, to),
+      ),
+    )
+    .orderBy(asc(dailyPricedRollups.localDate));
+
+  return rows.map((r) => ({
+    localDate: r.localDate,
+    tariffVersionId: r.tariffVersionId ?? null,
+    generatedKwh: Number(r.generatedKwh),
+    importKwh: Number(r.importKwh),
+    exportKwh: Number(r.exportKwh),
+    consumedKwh: Number(r.consumedKwh),
+    immersionDivertedKwh: Number(r.immersionDivertedKwh),
+    totalReadingCount: r.totalReadingCount,
+    slotCount: r.slotCount,
+    isPartial: r.isPartial,
+    importCost: r.importCost != null ? Number(r.importCost) : null,
+    exportCredit: r.exportCredit != null ? Number(r.exportCredit) : null,
+    selfConsumedSolarValue: r.selfConsumedSolarValue != null ? Number(r.selfConsumedSolarValue) : null,
+    withoutSolarImportCost: r.withoutSolarImportCost != null ? Number(r.withoutSolarImportCost) : null,
+    fixedCharges: r.fixedCharges != null ? Number(r.fixedCharges) : null,
+    freeImportKwh: r.freeImportKwh != null ? Number(r.freeImportKwh) : null,
   }));
 }
