@@ -447,14 +447,15 @@ function CalendarGrid({
                 {monthName}
               </Link>
 
-              {/* Day cells */}
-              <div className="flex flex-1 gap-1">
+              {/* Day cells — lines span the full row width via the relative wrapper */}
+              <div className="relative flex flex-1 gap-1">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-slate-500" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-slate-500" />
                 {DAY_NUMBERS.map((day) => {
                   const dateStr = isoDate(year, month, day);
 
                   if (!dateStr) {
-                    // Invalid date for this month
-                    return <div key={day} className="flex-1" />;
+                    return <div key={day} className="flex-1 h-16" />;
                   }
 
                   const isFuture = dateStr > today;
@@ -463,18 +464,11 @@ function CalendarGrid({
                   const height = hasData ? normalized.normalizedHeight! : 0;
 
                   if (isFuture) {
-                    return (
-                      <div key={day} className="flex-1 h-16 relative flex items-end">
-                        <div className="absolute inset-x-0 top-0 h-px bg-slate-600/40" />
-                        <div className="w-full h-px bg-slate-600/40" />
-                      </div>
-                    );
+                    return <div key={day} className="flex-1 h-16" />;
                   }
 
                   const cellContent = (
-                    <div className="w-full h-16 relative flex items-end">
-                      <div className="absolute inset-x-0 top-0 h-px bg-slate-600/40" />
-                      <div className="absolute inset-x-0 bottom-0 h-px bg-slate-600/40" />
+                    <div className="w-full h-16 flex items-end">
                       <div
                         className={[
                           'w-full rounded-t-sm transition-all duration-300',
