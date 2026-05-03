@@ -54,7 +54,6 @@ import { ExportRatioChart } from './ExportRatioChart';
 import { StaleTariffBanner } from '@/src/components/StaleTariffBanner';
 import type { StaleTariffWarning } from '@/src/tariffs/stale-check';
 import { setCachedYear } from '@/src/calendar/yearCache';
-import { isFullCalendarYear } from '@/src/range/heatmapGrid';
 import { YearHeatMap } from './YearHeatMap';
 
 // ---------------------------------------------------------------------------
@@ -356,7 +355,7 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
                 />
 
                 {/* §9a — Yearly heat map (full calendar year only) */}
-                {isFullCalendarYear(effectiveRange.from, effectiveRange.to) && (
+                {activeRange.mode === 'years' && (
                   <YearHeatMap
                     series={filteredSeries}
                     year={parseInt(effectiveRange.from.slice(0, 4), 10)}
