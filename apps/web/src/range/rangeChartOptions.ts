@@ -719,7 +719,7 @@ export function buildPeriodCostDonutOption(totals: PeriodCostTotals, currency = 
     series: [
       {
         type: 'pie',
-        radius: ['42%', '70%'],
+        radius: ['42%', '80%'],
         center: ['50%', '50%'],
         avoidLabelOverlap: true,
         label: { show: false },
