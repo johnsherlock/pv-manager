@@ -27,9 +27,9 @@ const ROW_LABELS: { row: number; label: string }[] = [
   { row: 4, label: 'Fri' },
 ];
 
-const CELL_SIZE = 12; // px
-const CELL_GAP = 2;  // px
-const ROW_LABEL_WIDTH = 28; // px
+const CELL_SIZE = 15; // px
+const CELL_GAP = 3;  // px
+const ROW_LABEL_WIDTH = 32; // px
 
 // ---------------------------------------------------------------------------
 // Props
@@ -157,6 +157,7 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
 
       {/* Grid */}
       <div className="overflow-x-auto pb-2">
+        <div className="flex justify-center">
         <div style={{ minWidth: ROW_LABEL_WIDTH + totalWidth }}>
           {/* Month label row */}
           <div className="flex mb-1" style={{ paddingLeft: ROW_LABEL_WIDTH }}>
@@ -245,6 +246,7 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
               })}
             </div>
           </div>
+        </div>
         </div>
       </div>
 
