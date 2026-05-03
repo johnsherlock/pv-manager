@@ -458,12 +458,64 @@ export async function runCatchUp(options: RunCatchUpOptions = {}): Promise<void>
     `[catch-up] Done. success=${totalSuccess} skipped=${totalSkipped} failed=${totalFailed}`,
   );
 
-  // Second pass: build priced rollups for any installation-date pair that has
-  // interval_readings but no daily_priced_rollups row.
-  console.log('[catch-up] Building missing priced rollups…');
-  let rollupBuilt = 0;
-  let rollupSkipped = 0;
-  let rollupFailed = 0;
+  await runRollupCatchUp({ fromDate: fromDate, userEmail: options.userEmail, now });
+}
+
+// ---------------------------------------------------------------------------
+// Rollup catch-up: build missing daily_priced_rollups from existing interval data
+// ---------------------------------------------------------------------------
+
+export type RunRollupCatchUpOptions = {
+  fromDate?: string;
+  userEmail?: string;
+  now?: Date;
+};
+
+/**
+ * Build daily_priced_rollups for every installation-date pair that has
+ * interval_readings but no rollup row yet. Does not touch the provider API.
+ */
+export async function runRollupCatchUp(options: RunRollupCatchUpOptions = {}): Promise<void> {
+  const now = options.now ?? new Date();
+
+  if (options.userEmail) {
+    console.log(`[rollup-catchup] Filtering to user: ${options.userEmail}`);
+  }
+
+  const activeInstallations = await loadActiveInstallations(options.userEmail);
+  if (activeInstallations.length === 0) {
+    console.log('[rollup-catchup] No active installations found.');
+    return;
+  }
+
+  let fromDate = options.fromDate;
+  if (!fromDate) {
+    const d = new Date(now);
+    d.setUTCDate(d.getUTCDate() - 30);
+    fromDate = d.toISOString().slice(0, 10);
+  }
+
+  const yesterday = getPreviousLocalDate('Europe/Dublin', now);
+  const datesToProcess: string[] = [];
+  {
+    const cur = new Date(`${fromDate}T00:00:00Z`);
+    const end = new Date(`${yesterday}T00:00:00Z`);
+    while (cur <= end) {
+      datesToProcess.push(cur.toISOString().slice(0, 10));
+      cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+  }
+
+  if (datesToProcess.length === 0) {
+    console.log('[rollup-catchup] No dates to process.');
+    return;
+  }
+
+  console.log(`[rollup-catchup] Processing ${datesToProcess.length} dates from ${fromDate} to ${yesterday}…`);
+
+  let built = 0;
+  let skipped = 0;
+  let failed = 0;
 
   for (const inst of activeInstallations) {
     for (const date of datesToProcess) {
@@ -471,7 +523,6 @@ export async function runCatchUp(options: RunCatchUpOptions = {}): Promise<void>
       const expectedMinutes = expectedMinutesForDay(date, inst.timezone);
       const utcEnd = new Date(utcStart.getTime() + expectedMinutes * 60 * 1000);
 
-      // Check if there are any interval readings for this date
       const intervalCountRows = await db
         .select({ c: count() })
         .from(intervalReadings)
@@ -483,11 +534,10 @@ export async function runCatchUp(options: RunCatchUpOptions = {}): Promise<void>
           ),
         );
       if ((intervalCountRows[0]?.c ?? 0) === 0) {
-        rollupSkipped++;
+        skipped++;
         continue;
       }
 
-      // Check if a rollup already exists for this date
       const rollupCountRows = await db
         .select({ c: count() })
         .from(dailyPricedRollups)
@@ -498,23 +548,21 @@ export async function runCatchUp(options: RunCatchUpOptions = {}): Promise<void>
           ),
         );
       if ((rollupCountRows[0]?.c ?? 0) > 0) {
-        rollupSkipped++;
+        skipped++;
         continue;
       }
 
       try {
         await buildAndPersistRollupForDate(inst.installationId, date, inst.timezone);
-        rollupBuilt++;
-        console.log(`[catch-up]   ✓ rollup ${inst.installationId} ${date}`);
+        built++;
+        console.log(`[rollup-catchup]   ✓ ${inst.installationId} ${date}`);
       } catch (err) {
-        rollupFailed++;
+        failed++;
         const msg = err instanceof Error ? err.message : String(err);
-        console.log(`[catch-up]   ✗ rollup ${inst.installationId} ${date} — ${msg}`);
+        console.log(`[rollup-catchup]   ✗ ${inst.installationId} ${date} — ${msg}`);
       }
     }
   }
 
-  console.log(
-    `[catch-up] Rollups done. built=${rollupBuilt} skipped=${rollupSkipped} failed=${rollupFailed}`,
-  );
+  console.log(`[rollup-catchup] Done. built=${built} skipped=${skipped} failed=${failed}`);
 }
