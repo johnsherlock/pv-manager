@@ -205,6 +205,17 @@ export function CalendarScreen({
     const metricLabel = CALENDAR_METRICS.find((m) => m.id === activeMetric)?.label ?? '';
     const baseLabel = `${metricLabel} — ${activeYear} total`;
 
+    if (activeMetric === 'solar_coverage') {
+      let sum = 0;
+      let count = 0;
+      for (const d of normalizedMap.values()) {
+        if (d.rawValue !== null && d.rawValue >= 0) { sum += d.rawValue; count++; }
+      }
+      if (count === 0) return null;
+      const avg = sum / count;
+      return { value: formatDayValue(avg, 'solar_coverage', currency), label: `${metricLabel} — ${activeYear} average` };
+    }
+
     if (activeMetric === 'prorata_coverage') {
       let count = 0;
       let evaluable = 0;
