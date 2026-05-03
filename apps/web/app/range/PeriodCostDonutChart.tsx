@@ -32,9 +32,9 @@ export function PeriodCostDonutChart({ totals, simplified, currency }: Props) {
       )}
 
       {/* Two-column layout: donut left, legend + summary right */}
-      <div className="flex items-stretch gap-4">
-        {/* Donut — minHeight gives EChart a concrete px anchor so height:100% works */}
-        <div className="shrink-0 w-[55%]" style={{ minHeight: '220px' }}>
+      {/* h-[220px] gives EChart a concrete ancestor height so height:100% works without inflating the card */}
+      <div className="flex items-stretch gap-4 h-[220px]">
+        <div className="shrink-0 w-[55%]">
           <EChart
             option={option}
             notMerge
