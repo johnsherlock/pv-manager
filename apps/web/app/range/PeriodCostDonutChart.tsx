@@ -32,18 +32,18 @@ export function PeriodCostDonutChart({ totals, simplified, currency }: Props) {
       )}
 
       {/* Two-column layout: donut left, legend + summary right */}
-      <div className="flex items-center gap-4">
-        {/* Donut */}
-        <div className="shrink-0 w-[55%]">
+      <div className="flex items-stretch gap-4">
+        {/* Donut — minHeight gives EChart a concrete px anchor so height:100% works */}
+        <div className="shrink-0 w-[55%]" style={{ minHeight: '220px' }}>
           <EChart
             option={option}
             notMerge
-            style={{ width: '100%', height: '170px' }}
+            style={{ width: '100%', height: '100%' }}
           />
         </div>
 
-        {/* Right panel: legend + summary */}
-        <div className="flex-1 min-w-0 space-y-3">
+        {/* Right panel: legend + summary, centred vertically */}
+        <div className="flex-1 min-w-0 flex flex-col justify-center space-y-3">
           {/* HTML legend */}
           <div className="space-y-1.5">
             {([

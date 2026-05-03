@@ -636,20 +636,29 @@ function ChartPlaceholders({
     let exportCredit = 0;
     let savings = 0;
     let freeImportKwh = 0;
+    let totalImportKwh = 0;
     for (const d of series) {
-      if (!d.hasSummary || !d.billing) continue;
+      if (!d.hasSummary) continue;
+      totalImportKwh += d.importKwh;
+      if (!d.billing) continue;
       importCost += d.billing.importCost;
       fixedCharges += d.billing.fixedCharges;
       exportCredit += d.billing.exportCredit;
       savings += d.billing.savings;
       freeImportKwh += d.billing.freeImportKwh;
     }
+    // Value free import at the average rate paid for metered (non-free) imports.
+    const paidImportKwh = totalImportKwh - freeImportKwh;
+    const avgPaidRate = paidImportKwh > 0 ? importCost / paidImportKwh : 0;
+    const freeImportValue = Math.round(freeImportKwh * avgPaidRate * 100) / 100;
     return {
       importCost: Math.round(importCost * 100) / 100,
       fixedCharges: Math.round(fixedCharges * 100) / 100,
       exportCredit: Math.round(exportCredit * 100) / 100,
       savings: Math.round(savings * 100) / 100,
       freeImportKwh: Math.round(freeImportKwh * 100) / 100,
+      freeImportValue,
+      avgPaidRate: Math.round(avgPaidRate * 10000) / 10000,
     };
   }, [series]);
 
