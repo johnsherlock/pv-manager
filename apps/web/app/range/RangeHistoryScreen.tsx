@@ -51,6 +51,7 @@ import { SolarCoverageChart } from './SolarCoverageChart';
 import { ExportRatioChart } from './ExportRatioChart';
 import { StaleTariffBanner } from '@/src/components/StaleTariffBanner';
 import type { StaleTariffWarning } from '@/src/tariffs/stale-check';
+import { setCachedYear } from '@/src/calendar/yearCache';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -99,6 +100,25 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
     if (!hasMounted.current) { hasMounted.current = true; return; }
     window.history.replaceState(null, '', buildRangeUrl(activeRange));
   }, [activeRange]);
+
+  // Warm the shared year cache when viewing a full calendar year in Range History.
+  useEffect(() => {
+    if (activeRange.mode !== 'years' || !payload) return;
+    const year = activeRange.from.slice(0, 4);
+    const yearFrom = `${year}-01-01`;
+    const yearTo = `${year}-12-31`;
+    if (payload.meta.from <= yearFrom && (payload.meta.to >= yearTo || payload.meta.to === today)) {
+      setCachedYear(year, {
+        ...payload,
+        meta: {
+          ...payload.meta,
+          from: yearFrom,
+          to: payload.meta.to >= yearTo ? yearTo : payload.meta.to,
+        },
+        series: payload.series.filter((d) => d.date >= yearFrom && d.date <= yearTo),
+      });
+    }
+  }, [activeRange, payload, today]);
 
   // ---------------------------------------------------------------------------
   // Effective range clamped to what's loaded server-side
