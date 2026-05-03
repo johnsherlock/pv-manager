@@ -19,6 +19,7 @@ import {
   CALENDAR_METRICS,
   normalizeSeries,
   formatDayValue,
+  extractExportCredit,
   getMetricHue,
   interpolateBarColor,
   type NormalizedDay,
@@ -95,6 +96,7 @@ export function CalendarScreen({
   const [tooltip, setTooltip] = useState<{
     date: string;
     rawValue: number | null;
+    secondaryFormatted?: string;
     message?: string;
     x: number;
     y: number;
@@ -166,29 +168,39 @@ export function CalendarScreen({
   // Year total
   // ---------------------------------------------------------------------------
 
-  const yearSummary = useMemo((): { value: string; label: string } | null => {
+  const yearSummary = useMemo((): { value: string; secondaryValue?: string; label: string } | null => {
+    const metricLabel = CALENDAR_METRICS.find((m) => m.id === activeMetric)?.label ?? '';
+    const baseLabel = `${metricLabel} — ${activeYear} total`;
+
     if (activeMetric === 'prorata_coverage') {
       let count = 0;
       for (const d of normalizedMap.values()) {
         if (d.rawValue !== null && d.rawValue >= 1.0) count++;
       }
-      return {
-        value: `${count} day${count !== 1 ? 's' : ''}`,
-        label: 'Days that covered pro-rata payments',
-      };
+      return { value: `${count} day${count !== 1 ? 's' : ''}`, label: 'Days that covered pro-rata payments' };
     }
+
     let sum = 0;
     let hasAny = false;
     for (const d of normalizedMap.values()) {
-      if (d.rawValue !== null && d.rawValue >= 0) {
-        sum += d.rawValue;
-        hasAny = true;
-      }
+      if (d.rawValue !== null && d.rawValue >= 0) { sum += d.rawValue; hasAny = true; }
     }
     if (!hasAny) return null;
-    const metricLabel = CALENDAR_METRICS.find((m) => m.id === activeMetric)?.label ?? '';
-    return { value: formatDayValue(sum, activeMetric, currency), label: `${metricLabel} — ${activeYear} total` };
-  }, [normalizedMap, activeMetric, currency, activeYear]);
+
+    if (activeMetric === 'export_kwh') {
+      let creditSum = 0;
+      for (const day of activeSeries) {
+        const c = extractExportCredit(day);
+        if (c !== null) creditSum += c;
+      }
+      const creditFormatted = new Intl.NumberFormat('en-IE', {
+        style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2,
+      }).format(creditSum);
+      return { value: formatDayValue(sum, activeMetric, currency), secondaryValue: creditFormatted, label: baseLabel };
+    }
+
+    return { value: formatDayValue(sum, activeMetric, currency), label: baseLabel };
+  }, [normalizedMap, activeSeries, activeMetric, currency, activeYear]);
 
   // ---------------------------------------------------------------------------
   // Tooltip handlers
@@ -214,9 +226,19 @@ export function CalendarScreen({
         return;
       }
 
-      setTooltip({ date, rawValue: normalized.rawValue, x, y });
+      let secondaryFormatted: string | undefined;
+      if (activeMetric === 'export_kwh') {
+        const day = activeSeries.find((d) => d.date === date);
+        const credit = day ? extractExportCredit(day) : null;
+        if (credit !== null) {
+          secondaryFormatted = new Intl.NumberFormat('en-IE', {
+            style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2,
+          }).format(credit);
+        }
+      }
+      setTooltip({ date, rawValue: normalized.rawValue, secondaryFormatted, x, y });
     },
-    [activeMetric, activeSeries, repaymentSchedules],
+    [activeMetric, activeSeries, repaymentSchedules, currency],
   );
 
   const handleCellLeave = useCallback(() => setTooltip(null), []);
@@ -340,11 +362,17 @@ export function CalendarScreen({
 
             {/* Year summary */}
             {yearSummary && (
-              <div className="flex items-baseline gap-2">
+              <div className="flex items-baseline gap-2 flex-wrap">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                   {yearSummary.label}
                 </span>
                 <span className="font-mono text-lg font-semibold text-slate-100">{yearSummary.value}</span>
+                {yearSummary.secondaryValue && (
+                  <>
+                    <span className="text-slate-600">|</span>
+                    <span className="font-mono text-lg font-semibold text-slate-100">{yearSummary.secondaryValue}</span>
+                  </>
+                )}
               </div>
             )}
 
@@ -375,6 +403,7 @@ export function CalendarScreen({
         <TooltipPopup
           date={tooltip.date}
           rawValue={tooltip.rawValue}
+          secondaryFormatted={tooltip.secondaryFormatted}
           message={tooltip.message}
           metric={activeMetric}
           currency={currency}
@@ -521,6 +550,7 @@ function CalendarGrid({
 function TooltipPopup({
   date,
   rawValue,
+  secondaryFormatted,
   message,
   metric,
   currency,
@@ -529,6 +559,7 @@ function TooltipPopup({
 }: {
   date: string;
   rawValue: number | null;
+  secondaryFormatted?: string;
   message?: string;
   metric: CalendarMetric;
   currency: string;
@@ -536,7 +567,6 @@ function TooltipPopup({
   y: number;
 }) {
   const formatted = rawValue !== null ? formatDayValue(rawValue, metric, currency) : null;
-  // Keep tooltip within the right edge of the viewport.
   const safeX = typeof window !== 'undefined' ? Math.min(x, window.innerWidth - 184) : x;
 
   return (
@@ -547,6 +577,10 @@ function TooltipPopup({
       <p className="font-medium text-slate-300">{formatDateLabel(date)}</p>
       {message ? (
         <p className="mt-0.5 text-slate-500">{message}</p>
+      ) : secondaryFormatted ? (
+        <p className="mt-0.5 font-mono font-semibold text-slate-100">
+          {formatted} <span className="text-slate-500">|</span> {secondaryFormatted}
+        </p>
       ) : (
         <p className="mt-0.5 font-mono font-semibold text-slate-100">{formatted}</p>
       )}

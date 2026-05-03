@@ -21,7 +21,6 @@ export const CALENDAR_METRICS: CalendarMetricDescriptor[] = [
   { id: 'import_kwh',           label: 'Import',               requiresTariff: false, requiresFinance: false },
   { id: 'import_cost',          label: 'Import cost',          requiresTariff: true,  requiresFinance: false },
   { id: 'export_kwh',           label: 'Export',               requiresTariff: false, requiresFinance: false },
-  { id: 'export_value',         label: 'Export value',         requiresTariff: true,  requiresFinance: false },
   { id: 'immersion_kwh',        label: 'Immersion',            requiresTariff: false, requiresFinance: false },
   { id: 'net_solar_position',   label: 'Net solar position',   requiresTariff: true,  requiresFinance: false },
   { id: 'prorata_coverage',     label: 'Repayment coverage',   requiresTariff: true,  requiresFinance: true  },
@@ -73,9 +72,6 @@ export function extractDayValue(
     case 'export_kwh':
       return day.exportKwh;
 
-    case 'export_value':
-      return day.billing?.exportCredit ?? null;
-
     case 'immersion_kwh':
       return day.immersionDivertedKwh ?? null;
 
@@ -90,6 +86,15 @@ export function extractDayValue(
       return day.billing.savings / dailyRepayment;
     }
   }
+}
+
+/**
+ * Secondary value for the combined Export metric — the € credit earned.
+ * Used alongside the primary kWh value in year totals and tooltips.
+ */
+export function extractExportCredit(day: RangeSeriesDay): number | null {
+  if (!day.hasSummary) return null;
+  return day.billing?.exportCredit ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -155,7 +160,6 @@ export function formatDayValue(
 
     case 'self_consumed_value':
     case 'import_cost':
-    case 'export_value':
     case 'net_solar_position':
       return new Intl.NumberFormat('en-IE', {
         style: 'currency',
@@ -182,8 +186,7 @@ export function getMetricHue(metric: CalendarMetric): number {
     case 'import_kwh':          return 215;  // blue
     case 'import_cost':         return 350;  // rose / red
     case 'export_kwh':          return 198;  // sky
-    case 'export_value':        return 200;  // sky
-    case 'immersion_kwh':       return 270;  // violet
+    case 'immersion_kwh':       return 330;  // pink
     case 'net_solar_position':  return 152;  // emerald
     case 'prorata_coverage':    return 145;  // green
   }

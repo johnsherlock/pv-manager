@@ -91,10 +91,6 @@ describe('extractDayValue', () => {
     expect(extractDayValue(makeDay(), 'export_kwh', noSchedules)).toBe(3);
   });
 
-  it('export_value returns billing.exportCredit', () => {
-    expect(extractDayValue(makeDay(), 'export_value', noSchedules)).toBe(0.9);
-  });
-
   it('immersion_kwh returns immersionDivertedKwh', () => {
     expect(extractDayValue(makeDay(), 'immersion_kwh', noSchedules)).toBe(2);
   });
