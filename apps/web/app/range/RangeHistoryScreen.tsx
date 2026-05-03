@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   BarChart3,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Home,
@@ -226,6 +227,13 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/calendar"
+              title="Calendar"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200 transition-colors"
+            >
+              <CalendarDays size={14} />
+            </Link>
             <Link
               href="/settings"
               title="Settings"
