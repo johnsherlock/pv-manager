@@ -174,6 +174,37 @@ export function formatDayValue(
 }
 
 // ---------------------------------------------------------------------------
+// Best-day detection
+// ---------------------------------------------------------------------------
+
+/** True for metrics where a lower value is better (import kWh / cost). */
+export function isLowerBetter(metric: CalendarMetric): boolean {
+  return metric === 'import_kwh' || metric === 'import_cost';
+}
+
+/**
+ * Returns the set of dates that share the best value for the metric.
+ * Returns an empty set for prorata_coverage (no single "best day" concept).
+ * For lower-is-better metrics the best day has the minimum raw value.
+ * For all others the best day has the maximum raw value (> 0).
+ */
+export function findBestDates(days: NormalizedDay[], metric: CalendarMetric): Set<string> {
+  if (metric === 'prorata_coverage') return new Set();
+
+  const withData = days.filter((d) => d.rawValue !== null);
+  if (withData.length === 0) return new Set();
+
+  if (isLowerBetter(metric)) {
+    const min = Math.min(...withData.map((d) => d.rawValue!));
+    return new Set(withData.filter((d) => d.rawValue === min).map((d) => d.date));
+  }
+
+  const max = Math.max(...withData.map((d) => d.rawValue!));
+  if (max <= 0) return new Set();
+  return new Set(withData.filter((d) => d.rawValue === max).map((d) => d.date));
+}
+
+// ---------------------------------------------------------------------------
 // Heat-map bar colour
 // ---------------------------------------------------------------------------
 

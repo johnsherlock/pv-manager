@@ -6,7 +6,9 @@ import {
   normalizeSeries,
   formatDayValue,
   getDailyRepayment,
+  findBestDates,
 } from '../metrics';
+import type { NormalizedDay } from '../metrics';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -228,5 +230,60 @@ describe('formatDayValue', () => {
   it('formats prorata_coverage as percentage', () => {
     expect(formatDayValue(0.75, 'prorata_coverage', 'EUR')).toBe('75%');
     expect(formatDayValue(1.2, 'prorata_coverage', 'EUR')).toBe('120%');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// findBestDates
+// ---------------------------------------------------------------------------
+
+function makeNormalized(date: string, rawValue: number | null): NormalizedDay {
+  return { date, normalizedHeight: rawValue !== null ? rawValue : null, rawValue };
+}
+
+describe('findBestDates', () => {
+  it('returns the date with the highest value for higher-is-better metrics', () => {
+    const days = [
+      makeNormalized('2025-01-01', 10),
+      makeNormalized('2025-01-02', 5),
+      makeNormalized('2025-01-03', 8),
+    ];
+    expect(findBestDates(days, 'generation_kwh')).toEqual(new Set(['2025-01-01']));
+  });
+
+  it('returns all tied dates when multiple days share the peak', () => {
+    const days = [
+      makeNormalized('2025-01-01', 10),
+      makeNormalized('2025-01-02', 10),
+      makeNormalized('2025-01-03', 7),
+    ];
+    expect(findBestDates(days, 'generation_kwh')).toEqual(new Set(['2025-01-01', '2025-01-02']));
+  });
+
+  it('returns the date with the lowest value for lower-is-better metrics', () => {
+    const days = [
+      makeNormalized('2025-01-01', 10),
+      makeNormalized('2025-01-02', 3),
+      makeNormalized('2025-01-03', 7),
+    ];
+    expect(findBestDates(days, 'import_kwh')).toEqual(new Set(['2025-01-02']));
+  });
+
+  it('excludes days with null values', () => {
+    const days = [
+      makeNormalized('2025-01-01', null),
+      makeNormalized('2025-01-02', 5),
+    ];
+    expect(findBestDates(days, 'generation_kwh')).toEqual(new Set(['2025-01-02']));
+  });
+
+  it('returns empty set for prorata_coverage', () => {
+    const days = [makeNormalized('2025-01-01', 1.2)];
+    expect(findBestDates(days, 'prorata_coverage')).toEqual(new Set());
+  });
+
+  it('returns empty set when all values are zero or negative for higher-is-better', () => {
+    const days = [makeNormalized('2025-01-01', 0), makeNormalized('2025-01-02', 0)];
+    expect(findBestDates(days, 'generation_kwh')).toEqual(new Set());
   });
 });

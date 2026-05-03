@@ -20,6 +20,7 @@ import {
   normalizeSeries,
   formatDayValue,
   extractExportCredit,
+  findBestDates,
   getMetricHue,
   interpolateBarColor,
   type NormalizedDay,
@@ -163,6 +164,11 @@ export function CalendarScreen({
     const normalized = normalizeSeries(activeSeries, activeMetric, repaymentSchedules);
     return new Map(normalized.map((d) => [d.date, d]));
   }, [activeSeries, activeMetric, repaymentSchedules]);
+
+  const bestDates = useMemo(
+    () => findBestDates([...normalizedMap.values()], activeMetric),
+    [normalizedMap, activeMetric],
+  );
 
   // ---------------------------------------------------------------------------
   // Year total
@@ -384,6 +390,7 @@ export function CalendarScreen({
                 year={activeYear}
                 today={today}
                 normalizedMap={normalizedMap}
+                bestDates={bestDates}
                 activeMetric={activeMetric}
                 currency={currency}
                 repaymentSchedules={repaymentSchedules}
@@ -423,6 +430,7 @@ type CalendarGridProps = {
   year: number;
   today: string;
   normalizedMap: Map<string, NormalizedDay>;
+  bestDates: Set<string>;
   activeMetric: CalendarMetric;
   currency: string;
   repaymentSchedules: RepaymentSchedule[];
@@ -435,6 +443,7 @@ function CalendarGrid({
   year,
   today,
   normalizedMap,
+  bestDates,
   activeMetric,
   onCellEnter,
   onCellLeave,
@@ -494,8 +503,15 @@ function CalendarGrid({
                     return <div key={day} className="flex-1 h-16" />;
                   }
 
+                  const isBestDay = dateStr !== null && bestDates.has(dateStr);
+
                   const cellContent = (
-                    <div className="w-full h-16 flex items-end">
+                    <div className="w-full h-16 relative flex items-end">
+                      {isBestDay && (
+                        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
+                          <span className="text-[9px] leading-none select-none">🏆</span>
+                        </div>
+                      )}
                       <div
                         className="w-full rounded-t-sm transition-all duration-300"
                         style={{
