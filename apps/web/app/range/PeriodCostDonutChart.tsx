@@ -33,8 +33,9 @@ export function PeriodCostDonutChart({ totals, simplified, currency }: Props) {
 
       {/* Two-column layout: donut left, legend + summary right */}
       {/* h-[220px] gives EChart a concrete ancestor height so height:100% works without inflating the card */}
-      <div className="flex items-stretch gap-4 h-[220px]">
-        <div className="shrink-0 w-[55%]">
+      <div className="flex items-stretch gap-4">
+        {/* Donut — minHeight gives EChart a concrete px anchor so height:100% works */}
+        <div className="shrink-0 w-[55%]" style={{ minHeight: '280px' }}>
           <EChart
             option={option}
             notMerge
@@ -66,17 +67,17 @@ export function PeriodCostDonutChart({ totals, simplified, currency }: Props) {
             </div>
             {hasExport && (
               <div className="flex justify-between">
-                <span className="text-slate-500">Net bill <span className="text-slate-600">−{fmt(exportCredit)} export</span></span>
+                <span className="text-slate-400">Net bill <span className="text-slate-500">−{fmt(exportCredit)} export</span></span>
                 <span className="font-mono text-slate-300">{fmt(netBill)}</span>
               </div>
             )}
             {hasSavings && (
-              <p className="text-slate-600">solar savings {fmt(savings)} est.</p>
+              <p className="text-slate-500">solar savings <span className="text-slate-400">{fmt(savings)}</span> est.</p>
             )}
             {hasFreeImport && (
-              <p className="text-slate-600">
-                free import ~{fmt(freeImportValue)} est.
-                <span className="ml-1">({freeImportKwh.toFixed(1)} kWh @ avg. {fmt(avgPaidRate)}/kWh)</span>
+              <p className="text-slate-500">
+                free import <span className="text-slate-400">~{fmt(freeImportValue)}</span> est.
+                <span className="ml-1 text-slate-600">({freeImportKwh.toFixed(1)} kWh @ avg. {fmt(avgPaidRate)}/kWh)</span>
               </p>
             )}
           </div>
