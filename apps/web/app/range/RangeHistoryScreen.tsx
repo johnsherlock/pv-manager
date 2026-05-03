@@ -54,6 +54,8 @@ import { ExportRatioChart } from './ExportRatioChart';
 import { StaleTariffBanner } from '@/src/components/StaleTariffBanner';
 import type { StaleTariffWarning } from '@/src/tariffs/stale-check';
 import { setCachedYear } from '@/src/calendar/yearCache';
+import { isFullCalendarYear } from '@/src/range/heatmapGrid';
+import { YearHeatMap } from './YearHeatMap';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -352,6 +354,17 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
                   series={filteredSeries}
                   currency={payload?.meta.currency ?? 'EUR'}
                 />
+
+                {/* §9a — Yearly heat map (full calendar year only) */}
+                {isFullCalendarYear(effectiveRange.from, effectiveRange.to) && (
+                  <YearHeatMap
+                    series={filteredSeries}
+                    year={parseInt(effectiveRange.from.slice(0, 4), 10)}
+                    today={today}
+                    repaymentSchedules={financeContext?.repaymentSchedules ?? []}
+                    currency={payload?.meta.currency ?? 'EUR'}
+                  />
+                )}
 
                 {/* §10 — Investment insights (recovery, repayment coverage, payoff outlook) */}
                 <InvestmentInsightsPanel
