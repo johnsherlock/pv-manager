@@ -388,7 +388,10 @@ export function CalendarScreen({
                   </>
                 )}
                 {bestDayLabel && (
-                  <span className="text-[11px] text-slate-400">· Best day: {bestDayLabel}</span>
+                  <>
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">· Best day</span>
+                    <span className="font-mono text-lg font-semibold text-slate-100">{bestDayLabel}</span>
+                  </>
                 )}
               </div>
             )}
@@ -519,8 +522,8 @@ function CalendarGrid({
                   const cellContent = (
                     <div className="w-full h-16 relative flex items-end">
                       {isBestDay && (
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center z-10">
-                          <span className="text-sm leading-none select-none">🏆</span>
+                        <div className="pointer-events-none absolute inset-x-0 bottom-1 flex justify-center z-10">
+                          <span className="text-2xl leading-none select-none">🏆</span>
                         </div>
                       )}
                       <div
