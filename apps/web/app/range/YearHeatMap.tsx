@@ -341,6 +341,14 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
                   transition: 'background-color 300ms ease',
                 };
 
+                const isBestDay = hasData && bestDates.has(date);
+                if (isBestDay) {
+                  cellStyle.outline = '2px solid rgba(255, 255, 255, 0.85)';
+                  cellStyle.outlineOffset = '2px';
+                  cellStyle.boxShadow = '0 0 6px rgba(255, 255, 255, 0.35)';
+                  cellStyle.zIndex = 1;
+                }
+
                 if (isFuture) {
                   return <div key={date} style={cellStyle} />;
                 }
