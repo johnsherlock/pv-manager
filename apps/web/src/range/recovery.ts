@@ -78,6 +78,51 @@ export function computeRepaymentsInRange(
   return Math.round(total * 100) / 100;
 }
 
+/**
+ * Returns repayments for the period.
+ *
+ * When `calendarAligned` is true (user picked a whole month or year), the exact
+ * payment-date count is used — the payment date will naturally fall inside the window.
+ *
+ * For all other range types (weeks, custom, etc.) a daily-rate pro-rata is used:
+ *   dailyRate = monthlyRepayment × 12 / 365
+ *   amount    = dailyRate × periodDays
+ *
+ * Only schedules active during the period are included.
+ * Returns `isProRata: true` so the UI can label the value as an estimate.
+ */
+export function computeRepaymentsForPeriod(
+  schedules: RepaymentSchedule[],
+  from: string,
+  to: string,
+  calendarAligned: boolean,
+): { amount: number; isProRata: boolean } {
+  if (calendarAligned) {
+    return { amount: computeRepaymentsInRange(schedules, from, to), isProRata: false };
+  }
+
+  const fromDate = new Date(`${from}T00:00:00`);
+  const toDate = new Date(`${to}T00:00:00`);
+  const periodDays = Math.round((toDate.getTime() - fromDate.getTime()) / 86_400_000) + 1;
+
+  let monthlyTotal = 0;
+  for (const s of schedules) {
+    const [sy, sm, sd] = s.additionDate.split('-').map(Number);
+    const scheduleStart = new Date(sy, sm - 1, sd);
+    const lastM = sm - 1 + s.repaymentDurationMonths - 1;
+    const endYear = sy + Math.floor(lastM / 12);
+    const endMonth = lastM % 12;
+    const daysInEndMonth = new Date(endYear, endMonth + 1, 0).getDate();
+    const scheduleEnd = new Date(endYear, endMonth, Math.min(sd, daysInEndMonth));
+    if (scheduleStart <= toDate && scheduleEnd >= fromDate) {
+      monthlyTotal += s.monthlyRepayment;
+    }
+  }
+
+  const proRata = Math.round((monthlyTotal * 12 / 365 * periodDays) * 100) / 100;
+  return { amount: proRata, isProRata: proRata > 0 };
+}
+
 export function computePayoffOutlook(
   ctx: RangeFinanceContext,
   basisDate: string,

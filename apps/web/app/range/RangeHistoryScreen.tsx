@@ -20,7 +20,7 @@ import {
 import type { RangeSummaryPayload, RangeSeriesDay } from '@/src/range/types';
 import {
   computePayoffOutlook,
-  computeRepaymentsInRange,
+  computeRepaymentsForPeriod,
   type RangeFinanceContext,
   type RepaymentSchedule,
 } from '@/src/range/recovery';
@@ -324,6 +324,7 @@ export function RangeHistoryScreen({ payload, today, financeContext, initialMode
                   periodTotalSolarValue={kpis.totalSolarValue}
                   periodFrom={effectiveRange.from}
                   periodTo={effectiveRange.to}
+                  rangeMode={effectiveRange.mode}
                   hasTariff={kpis.hasTariff}
                   earliestSummaryDate={payload?.meta.earliestDate ?? null}
                   latestSummaryDate={lastCoveredDate}
@@ -761,6 +762,7 @@ function InvestmentInsightsPanel({
   periodTotalSolarValue,
   periodFrom,
   periodTo,
+  rangeMode,
   hasTariff,
   earliestSummaryDate,
   latestSummaryDate,
@@ -771,6 +773,7 @@ function InvestmentInsightsPanel({
   periodTotalSolarValue: number;
   periodFrom: string;
   periodTo: string;
+  rangeMode: RangeMode;
   hasTariff: boolean;
   earliestSummaryDate: string | null;
   latestSummaryDate: string | null;
@@ -797,7 +800,8 @@ function InvestmentInsightsPanel({
 
   const { totalSystemInvestment, earliestAdditionDate, allTimeSavings, allTimeCoveredDays, repaymentSchedules } = financeContext;
   const payoffOutlook = computePayoffOutlook(financeContext, latestSummaryDate ?? today);
-  const repaymentsInPeriod = computeRepaymentsInRange(repaymentSchedules, periodFrom, periodTo);
+  const calendarAligned = rangeMode === 'months' || rangeMode === 'years';
+  const { amount: repaymentsInPeriod, isProRata: repaymentsIsProRata } = computeRepaymentsForPeriod(repaymentSchedules, periodFrom, periodTo, calendarAligned);
 
   const recoveryPct = totalSystemInvestment > 0
     ? Math.min(100, Math.round((allTimeSavings / totalSystemInvestment) * 100))
@@ -852,6 +856,7 @@ function InvestmentInsightsPanel({
         <PeriodRepaymentCoverage
           periodTotalSolarValue={periodTotalSolarValue}
           periodPayments={repaymentsInPeriod}
+          rangeMode={rangeMode}
           currency={currency}
         />
       )}
@@ -867,12 +872,19 @@ function InvestmentInsightsPanel({
 function PeriodRepaymentCoverage({
   periodTotalSolarValue,
   periodPayments,
+  rangeMode,
   currency,
 }: {
   periodTotalSolarValue: number;
   periodPayments: number;
+  rangeMode: RangeMode;
   currency: string;
 }) {
+  const repaymentLabel =
+    rangeMode === 'months' ? 'monthly repayment' :
+    rangeMode === 'years'  ? 'yearly repayment'  :
+                             'pro-rata repayment for period';
+
   const isPositive = periodTotalSolarValue >= periodPayments;
   const coveragePct = periodPayments > 0
     ? Math.round((periodTotalSolarValue / periodPayments) * 100)
@@ -893,7 +905,7 @@ function PeriodRepaymentCoverage({
         {/* Repayments label stays in the header only for the negative/zero case */}
         {!hasGreenSurplus && periodPayments > 0 && (
           <span className="text-[11px] text-slate-400">
-            {formatCurrency(periodPayments, currency)} repayments due
+            {formatCurrency(periodPayments, currency)} {repaymentLabel}
           </span>
         )}
       </div>
@@ -915,7 +927,7 @@ function PeriodRepaymentCoverage({
             className="absolute bottom-0 -translate-x-1/2 whitespace-nowrap text-[10px] text-slate-400"
             style={{ left: `${repaymentBarFrac}%` }}
           >
-            {formatCurrency(periodPayments, currency)} due
+            {formatCurrency(periodPayments, currency)} {repaymentLabel}
           </span>
         )}
       </div>
@@ -942,11 +954,11 @@ function PeriodRepaymentCoverage({
           <span className={isPositive ? 'font-medium text-emerald-400' : 'font-medium text-slate-300'}>
             {formatCurrency(periodTotalSolarValue, currency)}
           </span>
-          . Repayments due{' '}
+          .{' '}
           <span className="font-medium text-slate-300">
             {formatCurrency(periodPayments, currency)}
           </span>
-          . Net position{' '}
+          {' '}{repaymentLabel}. Net position{' '}
           <span className={isPositive ? 'font-medium text-emerald-400' : 'font-medium text-rose-400'}>
             {isPositive ? '+' : ''}{formatCurrency(netSolarPosition, currency)}
           </span>
