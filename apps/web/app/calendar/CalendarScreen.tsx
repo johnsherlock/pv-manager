@@ -207,10 +207,18 @@ export function CalendarScreen({
 
     if (activeMetric === 'prorata_coverage') {
       let count = 0;
+      let evaluable = 0;
       for (const d of normalizedMap.values()) {
-        if (d.rawValue !== null && d.rawValue >= 1.0) count++;
+        if (d.rawValue !== null) {
+          evaluable++;
+          if (d.rawValue >= 1.0) count++;
+        }
       }
-      return { value: `${count} day${count !== 1 ? 's' : ''}`, label: 'Days that covered pro-rata payments' };
+      const pct = evaluable > 0 ? Math.round((count / evaluable) * 100) : 0;
+      const value = evaluable > 0
+        ? `${count} day${count !== 1 ? 's' : ''}, ${pct}%`
+        : `${count} day${count !== 1 ? 's' : ''}`;
+      return { value, label: 'Days that covered pro-rata payments' };
     }
 
     let sum = 0;
