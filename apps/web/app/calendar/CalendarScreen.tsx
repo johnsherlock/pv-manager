@@ -170,6 +170,14 @@ export function CalendarScreen({
     [normalizedMap, activeMetric],
   );
 
+  const bestDayLabel = useMemo(() => {
+    if (activeMetric === 'prorata_coverage' || bestDates.size === 0) return null;
+    const firstBestDate = [...bestDates].sort()[0];
+    const normalized = normalizedMap.get(firstBestDate);
+    if (!normalized || normalized.rawValue === null) return null;
+    return `${formatDayMD(firstBestDate)} (${formatDayValue(normalized.rawValue, activeMetric, currency)})`;
+  }, [bestDates, normalizedMap, activeMetric, currency]);
+
   // ---------------------------------------------------------------------------
   // Year total
   // ---------------------------------------------------------------------------
@@ -379,6 +387,9 @@ export function CalendarScreen({
                     <span className="font-mono text-lg font-semibold text-slate-100">{yearSummary.secondaryValue}</span>
                   </>
                 )}
+                {bestDayLabel && (
+                  <span className="text-[11px] text-slate-400">· Best day: {bestDayLabel}</span>
+                )}
               </div>
             )}
 
@@ -508,8 +519,8 @@ function CalendarGrid({
                   const cellContent = (
                     <div className="w-full h-16 relative flex items-end">
                       {isBestDay && (
-                        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
-                          <span className="text-[9px] leading-none select-none">🏆</span>
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center z-10">
+                          <span className="text-sm leading-none select-none">🏆</span>
                         </div>
                       )}
                       <div
@@ -650,4 +661,10 @@ function formatDateLabel(iso: string): string {
     month: 'short',
     year: 'numeric',
   }).format(new Date(`${iso}T12:00:00`));
+}
+
+/** Converts an ISO date (YYYY-MM-DD) to DD/MM display format. */
+function formatDayMD(iso: string): string {
+  const [, m, d] = iso.split('-');
+  return `${d}/${m}`;
 }
