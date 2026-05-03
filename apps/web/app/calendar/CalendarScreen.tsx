@@ -19,7 +19,8 @@ import {
   CALENDAR_METRICS,
   normalizeSeries,
   formatDayValue,
-  getMetricBarColor,
+  getMetricHue,
+  interpolateBarColor,
   type NormalizedDay,
 } from '@/src/calendar/metrics';
 import type { CalendarMetric } from '@/src/calendar/types';
@@ -223,8 +224,6 @@ export function CalendarScreen({
   const prevDisabled = activeYear <= earliestYear;
   const nextDisabled = activeYear >= currentYear;
 
-  const barColor = getMetricBarColor(activeMetric);
-
   return (
     <div
       className="min-h-screen font-sans text-slate-100 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.06),_transparent_30%),linear-gradient(180deg,#050b14_0%,#0b1220_100%)]"
@@ -357,7 +356,6 @@ export function CalendarScreen({
                 year={activeYear}
                 today={today}
                 normalizedMap={normalizedMap}
-                barColor={barColor}
                 activeMetric={activeMetric}
                 currency={currency}
                 repaymentSchedules={repaymentSchedules}
@@ -396,7 +394,6 @@ type CalendarGridProps = {
   year: number;
   today: string;
   normalizedMap: Map<string, NormalizedDay>;
-  barColor: string;
   activeMetric: CalendarMetric;
   currency: string;
   repaymentSchedules: RepaymentSchedule[];
@@ -409,10 +406,11 @@ function CalendarGrid({
   year,
   today,
   normalizedMap,
-  barColor,
+  activeMetric,
   onCellEnter,
   onCellLeave,
 }: CalendarGridProps) {
+  const metricHue = getMetricHue(activeMetric);
   return (
     <div className="rounded-[28px] border border-slate-800 bg-[#111b2b] p-4 sm:p-6">
       {/* Day header row */}
@@ -470,11 +468,13 @@ function CalendarGrid({
                   const cellContent = (
                     <div className="w-full h-16 flex items-end">
                       <div
-                        className={[
-                          'w-full rounded-t-sm transition-all duration-300',
-                          hasData ? barColor : 'bg-slate-800/40',
-                        ].join(' ')}
-                        style={{ height: hasData ? `${Math.max(2, height * 100)}%` : '2px' }}
+                        className="w-full rounded-t-sm transition-all duration-300"
+                        style={{
+                          height: hasData ? `${Math.max(2, height * 100)}%` : '2px',
+                          backgroundColor: hasData
+                            ? interpolateBarColor(metricHue, height)
+                            : 'rgba(30, 41, 59, 0.4)',
+                        }}
                       />
                     </div>
                   );

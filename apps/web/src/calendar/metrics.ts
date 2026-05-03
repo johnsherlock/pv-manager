@@ -170,20 +170,31 @@ export function formatDayValue(
 }
 
 // ---------------------------------------------------------------------------
-// Bar color
+// Heat-map bar colour
 // ---------------------------------------------------------------------------
 
-export function getMetricBarColor(metric: CalendarMetric): string {
+/** Base hue (degrees) for each metric's colour family. */
+export function getMetricHue(metric: CalendarMetric): number {
   switch (metric) {
-    case 'generation_kwh':      return 'bg-amber-400';
-    case 'self_consumed_kwh':   return 'bg-green-400';
-    case 'self_consumed_value': return 'bg-emerald-400';
-    case 'import_kwh':          return 'bg-rose-400';
-    case 'import_cost':         return 'bg-rose-500';
-    case 'export_kwh':          return 'bg-sky-400';
-    case 'export_value':        return 'bg-sky-500';
-    case 'immersion_kwh':       return 'bg-violet-400';
-    case 'net_solar_position':  return 'bg-emerald-500';
-    case 'prorata_coverage':    return 'bg-emerald-400';
+    case 'generation_kwh':      return 45;   // amber / yellow
+    case 'self_consumed_kwh':   return 140;  // green
+    case 'self_consumed_value': return 152;  // emerald
+    case 'import_kwh':          return 215;  // blue
+    case 'import_cost':         return 350;  // rose / red
+    case 'export_kwh':          return 198;  // sky
+    case 'export_value':        return 200;  // sky
+    case 'immersion_kwh':       return 270;  // violet
+    case 'net_solar_position':  return 152;  // emerald
+    case 'prorata_coverage':    return 145;  // green
   }
+}
+
+/**
+ * Interpolates a bar colour for a normalised value t ∈ [0, 1].
+ * t=0 → dark, muted low-end; t=1 → bright, fully saturated peak.
+ */
+export function interpolateBarColor(hue: number, t: number): string {
+  const s = Math.round(30 + t * 60);  // 30 % → 90 %
+  const l = Math.round(15 + t * 45);  // 15 % → 60 %
+  return `hsl(${hue}, ${s}%, ${l}%)`;
 }
