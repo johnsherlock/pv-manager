@@ -22,6 +22,7 @@ export const CALENDAR_METRICS: CalendarMetricDescriptor[] = [
   { id: 'import_kwh',           label: 'Import',               requiresTariff: false, requiresFinance: false },
   { id: 'import_cost',          label: 'Import cost',          requiresTariff: true,  requiresFinance: false },
   { id: 'export_kwh',           label: 'Export',               requiresTariff: false, requiresFinance: false },
+  { id: 'export_value',         label: 'Export value',         requiresTariff: true,  requiresFinance: false },
   { id: 'immersion_kwh',        label: 'Immersion',            requiresTariff: false, requiresFinance: false },
   { id: 'net_solar_position',   label: 'Net solar position',   requiresTariff: true,  requiresFinance: false },
   { id: 'prorata_coverage',     label: 'Repayment coverage',   requiresTariff: true,  requiresFinance: true  },
@@ -78,6 +79,9 @@ export function extractDayValue(
 
     case 'export_kwh':
       return day.exportKwh;
+
+    case 'export_value':
+      return day.billing?.exportCredit ?? null;
 
     case 'immersion_kwh':
       return day.immersionDivertedKwh ?? null;
@@ -140,8 +144,13 @@ export function normalizeSeries(
       : Math.max(0, ...rawValues.map((d) => d.raw ?? 0));
 
   return rawValues.map(({ date, raw }) => {
-    if (raw === null || raw < 0) {
+    if (raw === null) {
       return { date, normalizedHeight: null, rawValue: raw };
+    }
+    // Negative values are valid data (e.g. negative net position) — show as a
+    // zero-height bar so the tooltip still works rather than treating as missing.
+    if (raw < 0) {
+      return { date, normalizedHeight: 0, rawValue: raw };
     }
     const normalizedHeight = peak > 0 ? Math.min(1, raw / peak) : 0;
     return { date, normalizedHeight, rawValue: raw };
@@ -167,6 +176,7 @@ export function formatDayValue(
 
     case 'self_consumed_value':
     case 'import_cost':
+    case 'export_value':
     case 'net_solar_position':
       return new Intl.NumberFormat('en-IE', {
         style: 'currency',
@@ -225,6 +235,7 @@ export function getMetricHue(metric: CalendarMetric): number {
     case 'import_kwh':          return 215;  // blue
     case 'import_cost':         return 350;  // rose / red
     case 'export_kwh':          return 198;  // sky
+    case 'export_value':        return 175;  // teal
     case 'solar_coverage':      return 28;   // orange
     case 'immersion_kwh':       return 330;  // pink
     case 'net_solar_position':  return 152;  // emerald

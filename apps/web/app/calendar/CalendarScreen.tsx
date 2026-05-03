@@ -147,6 +147,22 @@ export function CalendarScreen({
     [activeYear],
   );
 
+  // Retry load for the active year — navigateYear short-circuits on same-year.
+  const retryCurrentYear = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    setTooltip(null);
+    try {
+      const payload = await fetchOrGetYear(String(activeYear));
+      setActiveSeries(payload.series);
+      if (payload.meta.earliestDate) setEarliestDate(payload.meta.earliestDate);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeYear]);
+
   // Reset warnings banner when year changes.
   useEffect(() => { setWarningsDismissed(false); }, [activeYear]);
 
@@ -390,7 +406,7 @@ export function CalendarScreen({
       {/* Main content                                                        */}
       {/* ------------------------------------------------------------------ */}
       <main className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6">
-        {error && <HardErrorCard onRetry={() => { setError(false); navigateYear(activeYear); }} />}
+        {error && <HardErrorCard onRetry={retryCurrentYear} />}
 
         {!error && (
           <>
@@ -555,6 +571,7 @@ function CalendarGrid({
                   const dateStr = isoDate(year, month, day);
 
                   if (!dateStr) {
+                    // Non-existent date (e.g. Feb 30) — leave fully blank.
                     return <div key={day} className="flex-1 h-16" />;
                   }
 
@@ -564,7 +581,13 @@ function CalendarGrid({
                   const height = hasData ? normalized.normalizedHeight! : 0;
 
                   if (isFuture) {
-                    return <div key={day} className="flex-1 h-16" />;
+                    // Future valid date — muted stub so users can distinguish from
+                    // non-existent dates.
+                    return (
+                      <div key={day} className="flex-1 h-16 flex items-end">
+                        <div className="w-full rounded-t-sm" style={{ height: '2px', backgroundColor: 'rgba(30, 41, 59, 0.35)' }} />
+                      </div>
+                    );
                   }
 
                   const isBestDay = dateStr !== null && bestDates.has(dateStr);
