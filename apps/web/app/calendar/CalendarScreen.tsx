@@ -331,7 +331,7 @@ export function CalendarScreen({
                     'shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
                     activeMetric === m.id
                       ? 'border-indigo-500 bg-indigo-600/80 text-white'
-                      : 'border-slate-700 bg-slate-900/70 text-slate-400 hover:border-slate-600 hover:text-slate-200',
+                      : 'border-slate-600 bg-slate-900/70 text-slate-300 hover:border-slate-500 hover:text-slate-100',
                   ].join(' ')}
                 >
                   {m.label}
@@ -342,7 +342,7 @@ export function CalendarScreen({
             {/* Year summary */}
             {yearSummary && (
               <div className="flex items-baseline gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                   {yearSummary.label}
                 </span>
                 <span className="font-mono text-lg font-semibold text-slate-100">{yearSummary.value}</span>
@@ -423,7 +423,7 @@ function CalendarGrid({
           {DAY_NUMBERS.map((d) => (
             <div
               key={d}
-              className="flex-1 text-center text-[9px] font-medium text-slate-600 leading-none"
+              className="flex-1 text-center text-[9px] font-medium text-slate-400 leading-none"
             >
               {d}
             </div>
@@ -442,7 +442,7 @@ function CalendarGrid({
               {/* Month label */}
               <Link
                 href={monthRangeUrl}
-                className="w-9 shrink-0 pr-1 text-right text-[10px] font-medium text-slate-500 hover:text-indigo-400 transition-colors leading-none pb-0.5 sm:w-11"
+                className="w-9 shrink-0 pr-1 text-right text-[10px] font-medium text-slate-300 hover:text-indigo-300 transition-colors leading-none pb-0.5 sm:w-11"
               >
                 {monthName}
               </Link>
@@ -465,19 +465,16 @@ function CalendarGrid({
                   if (isFuture) {
                     return (
                       <div key={day} className="flex-1 h-16 relative flex items-end">
-                        <div className="absolute inset-x-0 bottom-1/4 h-px bg-slate-800/40" />
-                        <div className="absolute inset-x-0 bottom-1/2 h-px bg-slate-800/50" />
-                        <div className="absolute inset-x-0 bottom-3/4 h-px bg-slate-800/40" />
-                        <div className="w-full h-px bg-slate-800/50" />
+                        <div className="absolute inset-x-0 top-0 h-px bg-slate-600/40" />
+                        <div className="w-full h-px bg-slate-600/40" />
                       </div>
                     );
                   }
 
                   const cellContent = (
                     <div className="w-full h-16 relative flex items-end">
-                      <div className="absolute inset-x-0 bottom-1/4 h-px bg-slate-800/40" />
-                      <div className="absolute inset-x-0 bottom-1/2 h-px bg-slate-800/50" />
-                      <div className="absolute inset-x-0 bottom-3/4 h-px bg-slate-800/40" />
+                      <div className="absolute inset-x-0 top-0 h-px bg-slate-600/40" />
+                      <div className="absolute inset-x-0 bottom-0 h-px bg-slate-600/40" />
                       <div
                         className={[
                           'w-full rounded-t-sm transition-all duration-300',
