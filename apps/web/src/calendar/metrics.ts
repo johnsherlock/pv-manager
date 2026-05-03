@@ -18,6 +18,7 @@ export const CALENDAR_METRICS: CalendarMetricDescriptor[] = [
   { id: 'generation_kwh',       label: 'Generation',          requiresTariff: false, requiresFinance: false },
   { id: 'self_consumed_kwh',    label: 'Self-consumed',        requiresTariff: false, requiresFinance: false },
   { id: 'self_consumed_value',  label: 'Solar value',          requiresTariff: true,  requiresFinance: false },
+  { id: 'solar_coverage',       label: 'Solar coverage',       requiresTariff: false, requiresFinance: false },
   { id: 'import_kwh',           label: 'Import',               requiresTariff: false, requiresFinance: false },
   { id: 'import_cost',          label: 'Import cost',          requiresTariff: true,  requiresFinance: false },
   { id: 'export_kwh',           label: 'Export',               requiresTariff: false, requiresFinance: false },
@@ -62,6 +63,12 @@ export function extractDayValue(
 
     case 'self_consumed_value':
       return day.billing?.selfConsumedSolarValue ?? null;
+
+    case 'solar_coverage': {
+      if (!day.consumedKwh || day.consumedKwh <= 0) return null;
+      const selfConsumed = Math.max(0, day.generatedKwh - day.exportKwh);
+      return selfConsumed / day.consumedKwh;
+    }
 
     case 'import_kwh':
       return day.importKwh;
@@ -128,7 +135,7 @@ export function normalizeSeries(
   }));
 
   const peak =
-    metric === 'prorata_coverage'
+    metric === 'prorata_coverage' || metric === 'solar_coverage'
       ? 1.0
       : Math.max(0, ...rawValues.map((d) => d.raw ?? 0));
 
@@ -168,6 +175,7 @@ export function formatDayValue(
         maximumFractionDigits: 2,
       }).format(rawValue);
 
+    case 'solar_coverage':
     case 'prorata_coverage':
       return `${Math.round(rawValue * 100)}%`;
   }
@@ -217,6 +225,7 @@ export function getMetricHue(metric: CalendarMetric): number {
     case 'import_kwh':          return 215;  // blue
     case 'import_cost':         return 350;  // rose / red
     case 'export_kwh':          return 198;  // sky
+    case 'solar_coverage':      return 28;   // orange
     case 'immersion_kwh':       return 330;  // pink
     case 'net_solar_position':  return 152;  // emerald
     case 'prorata_coverage':    return 145;  // green

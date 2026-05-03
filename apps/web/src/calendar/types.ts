@@ -2,6 +2,7 @@ export type CalendarMetric =
   | 'generation_kwh'
   | 'self_consumed_kwh'
   | 'self_consumed_value'
+  | 'solar_coverage'
   | 'import_kwh'
   | 'import_cost'
   | 'export_kwh'

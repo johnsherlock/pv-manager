@@ -102,6 +102,22 @@ describe('extractDayValue', () => {
     expect(extractDayValue(day, 'immersion_kwh', noSchedules)).toBeNull();
   });
 
+  it('solar_coverage returns selfConsumed / consumedKwh', () => {
+    // selfConsumed = 10 - 3 = 7; consumed = 12 → 7/12 ≈ 0.583
+    const value = extractDayValue(makeDay(), 'solar_coverage', noSchedules);
+    expect(value).toBeCloseTo(7 / 12, 3);
+  });
+
+  it('solar_coverage clamps selfConsumed to 0 when export > generation', () => {
+    const day = makeDay({ generatedKwh: 1, exportKwh: 3, consumedKwh: 10 });
+    expect(extractDayValue(day, 'solar_coverage', noSchedules)).toBe(0);
+  });
+
+  it('solar_coverage returns null when consumedKwh is 0', () => {
+    const day = makeDay({ consumedKwh: 0 });
+    expect(extractDayValue(day, 'solar_coverage', noSchedules)).toBeNull();
+  });
+
   it('net_solar_position returns billing.savings', () => {
     expect(extractDayValue(makeDay(), 'net_solar_position', noSchedules)).toBe(2.0);
   });
@@ -171,6 +187,13 @@ describe('normalizeSeries', () => {
     expect(result[1].normalizedHeight).toBe(0);
   });
 
+  it('solar_coverage uses absolute bars (peak = 1.0) so 60% day shows 0.6 height', () => {
+    const day = makeDay({ date: '2025-06-01', generatedKwh: 6, exportKwh: 0, consumedKwh: 10 });
+    const result = normalizeSeries([day], 'solar_coverage', noSchedules);
+    expect(result[0].normalizedHeight).toBeCloseTo(0.6, 3);
+    expect(result[0].rawValue).toBeCloseTo(0.6, 3);
+  });
+
   it('prorata_coverage caps normalizedHeight at 1 even when rawValue > 1', () => {
     const highSavingsDay = makeDay({
       date: '2025-06-01',
@@ -225,6 +248,10 @@ describe('formatDayValue', () => {
     const result = formatDayValue(3.5, 'import_cost', 'EUR');
     expect(result).toContain('3.50');
     expect(result).toContain('€');
+  });
+
+  it('formats solar_coverage as percentage', () => {
+    expect(formatDayValue(0.6, 'solar_coverage', 'EUR')).toBe('60%');
   });
 
   it('formats prorata_coverage as percentage', () => {
