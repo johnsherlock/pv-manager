@@ -165,7 +165,17 @@ export function CalendarScreen({
   // Year total
   // ---------------------------------------------------------------------------
 
-  const yearTotal = useMemo(() => {
+  const yearSummary = useMemo((): { value: string; label: string } | null => {
+    if (activeMetric === 'prorata_coverage') {
+      let count = 0;
+      for (const d of normalizedMap.values()) {
+        if (d.rawValue !== null && d.rawValue >= 1.0) count++;
+      }
+      return {
+        value: `${count} day${count !== 1 ? 's' : ''}`,
+        label: 'Days that covered pro-rata payments',
+      };
+    }
     let sum = 0;
     let hasAny = false;
     for (const d of normalizedMap.values()) {
@@ -175,9 +185,9 @@ export function CalendarScreen({
       }
     }
     if (!hasAny) return null;
-    if (activeMetric === 'prorata_coverage') return null; // Average doesn't make sense
-    return formatDayValue(sum, activeMetric, currency);
-  }, [normalizedMap, activeMetric, currency]);
+    const metricLabel = CALENDAR_METRICS.find((m) => m.id === activeMetric)?.label ?? '';
+    return { value: formatDayValue(sum, activeMetric, currency), label: `${metricLabel} — ${activeYear} total` };
+  }, [normalizedMap, activeMetric, currency, activeYear]);
 
   // ---------------------------------------------------------------------------
   // Tooltip handlers
@@ -329,13 +339,13 @@ export function CalendarScreen({
               ))}
             </div>
 
-            {/* Year total */}
-            {yearTotal && (
+            {/* Year summary */}
+            {yearSummary && (
               <div className="flex items-baseline gap-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  {CALENDAR_METRICS.find((m) => m.id === activeMetric)?.label} — {activeYear} total
+                  {yearSummary.label}
                 </span>
-                <span className="font-mono text-lg font-semibold text-slate-100">{yearTotal}</span>
+                <span className="font-mono text-lg font-semibold text-slate-100">{yearSummary.value}</span>
               </div>
             )}
 
@@ -409,7 +419,7 @@ function CalendarGrid({
       <div className="mb-2 flex">
         {/* Month label spacer */}
         <div className="w-9 shrink-0 sm:w-11" />
-        <div className="flex flex-1 gap-0.5">
+        <div className="flex flex-1 gap-1">
           {DAY_NUMBERS.map((d) => (
             <div
               key={d}
@@ -428,7 +438,7 @@ function CalendarGrid({
           const monthRangeUrl = buildMonthRangeUrl(year, month);
 
           return (
-            <div key={month} className="flex items-end gap-0.5">
+            <div key={month} className="flex items-end gap-1">
               {/* Month label */}
               <Link
                 href={monthRangeUrl}
@@ -438,7 +448,7 @@ function CalendarGrid({
               </Link>
 
               {/* Day cells */}
-              <div className="flex flex-1 gap-0.5">
+              <div className="flex flex-1 gap-1">
                 {DAY_NUMBERS.map((day) => {
                   const dateStr = isoDate(year, month, day);
 
@@ -454,7 +464,10 @@ function CalendarGrid({
 
                   if (isFuture) {
                     return (
-                      <div key={day} className="flex-1 h-16 flex items-end">
+                      <div key={day} className="flex-1 h-16 relative flex items-end">
+                        <div className="absolute inset-x-0 bottom-1/4 h-px bg-slate-800/40" />
+                        <div className="absolute inset-x-0 bottom-1/2 h-px bg-slate-800/50" />
+                        <div className="absolute inset-x-0 bottom-3/4 h-px bg-slate-800/40" />
                         <div className="w-full h-px bg-slate-800/50" />
                       </div>
                     );
@@ -462,6 +475,9 @@ function CalendarGrid({
 
                   const cellContent = (
                     <div className="w-full h-16 relative flex items-end">
+                      <div className="absolute inset-x-0 bottom-1/4 h-px bg-slate-800/40" />
+                      <div className="absolute inset-x-0 bottom-1/2 h-px bg-slate-800/50" />
+                      <div className="absolute inset-x-0 bottom-3/4 h-px bg-slate-800/40" />
                       <div
                         className={[
                           'w-full rounded-t-sm transition-all duration-300',
