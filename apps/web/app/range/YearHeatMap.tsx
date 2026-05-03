@@ -321,6 +321,7 @@ export function YearHeatMap({ series, year, today, repaymentSchedules, currency 
                   borderRadius: 2,
                   backgroundColor: bg,
                   cursor: isFuture ? 'default' : (hasData ? 'pointer' : 'default'),
+                  transition: 'background-color 300ms ease',
                 };
 
                 if (isFuture) {
