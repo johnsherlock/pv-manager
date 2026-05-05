@@ -231,7 +231,7 @@ export function DayTrendChart({
             Energy value
           </p>
           <p className="mt-1 text-sm text-slate-400">
-            Half-hour import cost, solar savings, and export value through the day.
+            Half-hour import cost, self-consumed solar value, and export value through the day.
           </p>
         </div>
         <div
@@ -300,12 +300,12 @@ export function DayValuePanel({
       tone: 'text-emerald-300',
     },
     {
-      label: 'Solar savings',
+      label: 'Self-consumed solar value',
       value: formatEuro(estimate.solarSavings),
       tone: 'text-amber-300',
     },
     {
-      label: 'Net bill impact',
+      label: 'Net energy bill',
       value: formatEuro(estimate.netBillImpact, true),
       tone: estimate.netBillImpact <= 0 ? 'text-emerald-300' : 'text-cyan-300',
     },
@@ -332,10 +332,10 @@ export function DayValuePanel({
           How these values are calculated
         </summary>
         <div className="mt-3 space-y-2 text-slate-300">
-          <p>Import cost = total imported kWh x active tariff rate x VAT.</p>
+          <p>Import cost = each half-hour imported kWh x that period&apos;s tariff rate x VAT, summed across the day.</p>
           <p>Export credit = total exported kWh x export rate.</p>
-          <p>Solar savings = generated minus exported kWh x active tariff rate x VAT.</p>
-          <p>Net bill impact = import cost - export credit.</p>
+          <p>Self-consumed solar value = each half-hour kWh used onsite from solar x that period&apos;s tariff rate x VAT, summed across the day.</p>
+          <p>Net energy bill = import cost - export credit.</p>
         </div>
       </details>
     </div>

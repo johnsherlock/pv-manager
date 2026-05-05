@@ -7,6 +7,7 @@ import {
   getLastReadingLocalTime,
   getCurrentMetrics,
   computeFinancialEstimate,
+  computeFinancialEstimateFromCostPoints,
   minuteDataToFiveMinPoints,
   minuteDataToChartPoints,
   periodDataToChartPoints,
@@ -272,6 +273,24 @@ describe('computeFinancialEstimate', () => {
     const summary = makeSummary({ totalImportKwh: 1, totalExportKwh: 10, totalGeneratedKwh: 10 });
     const estimate = computeFinancialEstimate(summary, baseTariff);
     expect(estimate.netBillImpact).toBeLessThan(0);
+  });
+});
+
+describe('computeFinancialEstimateFromCostPoints', () => {
+  it('aggregates interval-priced cost points into a day-value estimate', () => {
+    const estimate = computeFinancialEstimateFromCostPoints([
+      { time: '07:30', importCost: 0.22, exportCredit: 0.04, savings: 0.52 },
+      { time: '12:00', importCost: 0.44, exportCredit: 0, savings: 0.18 },
+      { time: '17:00', importCost: 0.65, exportCredit: 0.10, savings: 0.30 },
+    ]);
+
+    expect(estimate).toEqual({
+      importCost: 1.31,
+      exportCredit: 0.14,
+      solarSavings: 1,
+      netBillImpact: 1.17,
+      note: 'interval-priced-half-hour',
+    });
   });
 });
 

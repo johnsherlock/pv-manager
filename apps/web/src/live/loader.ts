@@ -41,8 +41,8 @@ export type FinancialEstimate = {
   exportCredit: number;
   solarSavings: number;
   netBillImpact: number;
-  /** Estimate uses the day rate for all intervals — time-of-use splitting requires interval data. */
-  note: 'simplified-daily-rate';
+  /** Describes whether the estimate is interval-priced or uses the fallback flat day rate. */
+  note: 'interval-priced-half-hour' | 'simplified-daily-rate';
 };
 
 export type CurrentMetrics = {
@@ -262,6 +262,15 @@ export function computeFinancialEstimate(
   const netBillImpact = r2(importCost - exportCredit);
 
   return { importCost, exportCredit, solarSavings, netBillImpact, note: 'simplified-daily-rate' };
+}
+
+export function computeFinancialEstimateFromCostPoints(costPoints: CostPoint[]): FinancialEstimate {
+  const importCost = r2(costPoints.reduce((sum, point) => sum + point.importCost, 0));
+  const exportCredit = r2(costPoints.reduce((sum, point) => sum + point.exportCredit, 0));
+  const solarSavings = r2(costPoints.reduce((sum, point) => sum + point.savings, 0));
+  const netBillImpact = r2(importCost - exportCredit);
+
+  return { importCost, exportCredit, solarSavings, netBillImpact, note: 'interval-priced-half-hour' };
 }
 
 // ---------------------------------------------------------------------------
