@@ -5,6 +5,7 @@ import {
   loadProviderConnection,
   loadTariffContext,
   computeFinancialEstimate,
+  computeFinancialEstimateFromCostPoints,
   getLastReadingLocalTime,
   minuteDataToChartPoints,
   periodDataToChartPoints,
@@ -106,11 +107,6 @@ export default async function HistoricalDayPage({
         ? 'warning'
         : 'healthy';
 
-  const financialEstimate =
-    tariffContext && screenState !== 'disconnected'
-      ? computeFinancialEstimate(dayDetail.summary, tariffContext)
-      : null;
-
   const minuteChartData = minuteDataToChartPoints(minuteData);
   const halfHourChartData = periodDataToChartPoints(dayDetail.halfHourData, 30);
   const hourChartData = periodDataToChartPoints(dayDetail.hourData, 60);
@@ -118,6 +114,13 @@ export default async function HistoricalDayPage({
     tariffContext && screenState !== 'disconnected'
       ? periodDataToCostPoints(dayDetail.halfHourData, date, tariffContext)
       : [];
+
+  const financialEstimate =
+    tariffContext && screenState !== 'disconnected'
+      ? costChartData.length > 0
+        ? computeFinancialEstimateFromCostPoints(costChartData)
+        : computeFinancialEstimate(dayDetail.summary, tariffContext)
+      : null;
 
   const dayTotals =
     screenState !== 'disconnected'
