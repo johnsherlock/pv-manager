@@ -1869,6 +1869,7 @@ export function LiveScreen({
                     mode="live"
                     totals={todayTotals}
                     screenState={displayScreenState}
+                    selectedDate={selectedDate}
                     trends={liveDayTotalTrends}
                   />
                   <SolarCoveragePanel

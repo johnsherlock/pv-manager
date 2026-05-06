@@ -377,9 +377,9 @@ export function DayValuePanel({
           Keep the live energy view useful now, then layer in cost, export value, and savings once
           the tariff setup is complete.
         </p>
-        <button className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-300">
+        <Link href="/settings/tariffs" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-300">
           Add tariff details <ChevronRight size={14} />
-        </button>
+        </Link>
       </div>
     );
   }
@@ -396,7 +396,7 @@ export function DayValuePanel({
       label: 'Export credit',
       value: formatEuro(estimate.exportCredit),
       tone: 'text-emerald-300',
-      metric: 'export_kwh' as const,
+      metric: 'export_credit' as const,
       trendKey: 'export_credit',
     },
     {
@@ -629,10 +629,10 @@ export function DayTotalsPanel({
           Current-day totals may still change once the live feed stabilizes again.
         </div>
       )}
-      {mode === 'live' && (
-        <button className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-300">
+      {mode === 'live' && selectedDate && (
+        <Link href={`/history/${selectedDate}`} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-300">
           View full day <ChevronRight size={14} />
-        </button>
+        </Link>
       )}
     </div>
   );
