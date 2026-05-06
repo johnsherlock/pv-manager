@@ -201,7 +201,7 @@ export function buildHistoricalNotesModel({
 
   return {
     heading: 'Day story',
-    summary: 'A calm interpretation of the selected day using only that day’s energy and trust signals.',
+    summary: '',
     notes: [generationNote, gridNote, mixNote, trustNote, financialNote],
   };
 }

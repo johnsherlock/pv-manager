@@ -8,6 +8,7 @@ import {
   getCurrentMetrics,
   computeFinancialEstimate,
   computeFinancialEstimateFromCostPoints,
+  computeTariffBreakdown,
   minuteDataToFiveMinPoints,
   minuteDataToChartPoints,
   periodDataToChartPoints,
@@ -93,6 +94,8 @@ const baseTariff: TariffContext = {
   nightEndLocalTime: null,
   peakStartLocalTime: null,
   peakEndLocalTime: null,
+  weeklySchedule: null,
+  pricePeriods: [],
 };
 
 // ---------------------------------------------------------------------------
@@ -454,5 +457,32 @@ describe('periodDataToCostPoints', () => {
     const points = periodDataToCostPoints(periods, '2026-03-30', touTariff);
 
     expect(points.map((point) => point.importCost)).toEqual([0.22, 0.65, 0.44]);
+  });
+});
+
+describe('computeTariffBreakdown', () => {
+  it('groups import cost by day, night, and peak periods', () => {
+    const touTariff: TariffContext = {
+      ...baseTariff,
+      nightRate: 0.2,
+      peakRate: 0.6,
+      nightStartLocalTime: '23:00',
+      nightEndLocalTime: '08:00',
+      peakStartLocalTime: '17:00',
+      peakEndLocalTime: '19:00',
+    };
+
+    const periods = [
+      makePeriod(7, 30, { importKwh: 1 }),
+      makePeriod(12, 0, { importKwh: 1 }),
+      makePeriod(17, 0, { importKwh: 1 }),
+    ];
+
+    const result = computeTariffBreakdown(periods, '2026-03-30', touTariff);
+
+    expect(result.map((slice) => slice.label).sort()).toEqual(['Day', 'Night', 'Peak']);
+    expect(result.find((slice) => slice.label === 'Night')?.importCost).toBe(0.22);
+    expect(result.find((slice) => slice.label === 'Day')?.importCost).toBe(0.44);
+    expect(result.find((slice) => slice.label === 'Peak')?.importCost).toBe(0.65);
   });
 });

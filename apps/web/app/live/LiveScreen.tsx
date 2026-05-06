@@ -51,7 +51,6 @@ import {
   MINUTE_DEFAULT_SERIES,
   applyViewMode,
   applyCostViewMode,
-  formatClockTime,
   formatKw,
   formatW,
   formatEuro,
@@ -69,12 +68,21 @@ import { RangePickerPopover } from '@/src/components/RangePickerPopover';
 import type { NavigationTarget } from '@/src/components/RangePickerPopover';
 import { StaleTariffBanner } from '@/src/components/StaleTariffBanner';
 import type { StaleTariffWarning } from '@/src/tariffs/stale-check';
+import { LiveClockChip } from '@/src/components/LiveClockChip';
+import * as dayCache from '@/src/live/dayCache';
+import type { HistoricalDayPayload } from '@/app/api/history/[date]/route';
 
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
 type ScreenState = 'healthy' | 'stale' | 'warning' | 'disconnected';
+type TrendDirection = 'up' | 'down' | 'same';
+type TrendStrength = 'light' | 'medium' | 'strong';
+type TrendIndicatorData = {
+  direction: TrendDirection;
+  strength: TrendStrength;
+};
 
 export type LiveScreenProps = {
   today: string;
@@ -210,6 +218,49 @@ function isSeriesKey(value: string): value is SeriesKey {
 
 function buildLiveUrl(pathname: string, date: string, today: string): string {
   return date === today ? pathname : `${pathname}?date=${date}`;
+}
+
+function buildTrend(current: number | null | undefined, previous: number | null | undefined): TrendIndicatorData | undefined {
+  if (current == null || previous == null) return undefined;
+
+  const diff = current - previous;
+  const scale = Math.max(Math.abs(previous), Math.abs(current), 1);
+  const relativeDiff = Math.abs(diff) / scale;
+
+  if (Math.abs(diff) < 0.01 || relativeDiff < 0.02) {
+    return { direction: 'same', strength: relativeDiff < 0.005 ? 'light' : 'medium' };
+  }
+
+  const strength: TrendStrength =
+    relativeDiff >= 0.25 ? 'strong' : relativeDiff >= 0.1 ? 'medium' : 'light';
+
+  return {
+    direction: diff > 0 ? 'up' : 'down',
+    strength,
+  };
+}
+
+function sumUpToMinute<T extends { time: string }>(
+  points: T[],
+  cutoffMinute: string,
+  getter: (point: T) => number,
+): number {
+  return Math.round(
+    points
+      .filter((point) => point.time <= cutoffMinute)
+      .reduce((sum, point) => sum + getter(point), 0) * 100,
+  ) / 100;
+}
+
+function getSunMarkerPhase(sunEvents: { sunriseUtc: string; solarNoonUtc: string; sunsetUtc: string } | null): number {
+  if (!sunEvents) return 0;
+
+  const now = Date.now();
+  let phase = 0;
+  if (new Date(sunEvents.sunriseUtc).getTime() <= now) phase += 1;
+  if (new Date(sunEvents.solarNoonUtc).getTime() <= now) phase += 1;
+  if (new Date(sunEvents.sunsetUtc).getTime() <= now) phase += 1;
+  return phase;
 }
 
 // ---------------------------------------------------------------------------
@@ -822,6 +873,30 @@ function formatDayLabel(localDate: string): string {
   );
 }
 
+function snapMarkerTime(availableTimes: string[], utcIso: string, timezone: string): string | null {
+  if (availableTimes.length === 0) return null;
+
+  const targetTime = formatSunTime(utcIso, timezone);
+  if (availableTimes.includes(targetTime)) {
+    return targetTime;
+  }
+
+  const targetMinutes = Number(targetTime.slice(0, 2)) * 60 + Number(targetTime.slice(3, 5));
+  let closestTime = availableTimes[0];
+  let closestDistance = Number.POSITIVE_INFINITY;
+
+  for (const time of availableTimes) {
+    const timeMinutes = Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+    const distance = Math.abs(timeMinutes - targetMinutes);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestTime = time;
+    }
+  }
+
+  return closestTime;
+}
+
 function SolarContextPanel({
   weatherResult,
   timezone,
@@ -1149,8 +1224,9 @@ export function LiveScreen({
   const [warningDetailsOpen, setWarningDetailsOpen] = useState(false);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [dismissedIncidentIds, setDismissedIncidentIds] = useState<string[]>([]);
-  const [liveTime, setLiveTime] = useState(initialLiveTime);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [currentMinute, setCurrentMinute] = useState(initialLiveTime.slice(0, 5));
+  const [yesterdayData, setYesterdayData] = useState<HistoricalDayPayload | null>(null);
 
   // Swipe navigation — disabled; charts need free touch for drag/zoom
   const SWIPE_NAVIGATION_ENABLED = false;
@@ -1171,6 +1247,49 @@ export function LiveScreen({
     () => applyCostViewMode(costChartData, viewMode),
     [costChartData, viewMode],
   );
+  const liveSunEvents =
+    weatherResult.status === 'no-location'
+      ? null
+      : weatherResult.status === 'ok'
+        ? weatherResult.data.sunEvents
+        : weatherResult.sunEvents;
+  const sunMarkerPhase = useMemo(
+    () => getSunMarkerPhase(liveSunEvents),
+    [liveSunEvents, currentMinute],
+  );
+  const liveSunMarkers = useMemo(() => {
+    if (weatherResult.status === 'no-location') {
+      return { energy: [], cost: [] };
+    }
+
+    const sunEvents = liveSunEvents;
+    if (!sunEvents) {
+      return { energy: [], cost: [] };
+    }
+
+    const energyTimes = baseChartData.map((point) => point.time);
+    const costTimes = valueChartData.map((point) => point.time);
+    const markerSpecs = [
+      { utcIso: sunEvents.sunriseUtc, label: 'Sunrise' },
+      { utcIso: sunEvents.solarNoonUtc, label: 'Solar noon' },
+      { utcIso: sunEvents.sunsetUtc, label: 'Sunset' },
+    ].slice(0, sunMarkerPhase);
+
+    return {
+      energy: markerSpecs
+        .map((marker) => ({
+          time: snapMarkerTime(energyTimes, marker.utcIso, timezone),
+          label: marker.label,
+        }))
+        .filter((marker): marker is { time: string; label: string } => marker.time != null),
+      cost: markerSpecs
+        .map((marker) => ({
+          time: snapMarkerTime(costTimes, marker.utcIso, timezone),
+          label: marker.label,
+        }))
+        .filter((marker): marker is { time: string; label: string } => marker.time != null),
+    };
+  }, [baseChartData, timezone, valueChartData, liveSunEvents, sunMarkerPhase, weatherResult.status]);
   const overallSolarCoverage =
     todayTotals && todayTotals.consumedKwh > 0
       ? Math.round(
@@ -1183,6 +1302,138 @@ export function LiveScreen({
           ),
         )
       : null;
+
+  useEffect(() => {
+    const yesterday = addDays(today, -1);
+    dayCache.prefetch(yesterday, today);
+    const cached = dayCache.get(yesterday);
+    if (!cached) return;
+
+    let cancelled = false;
+    cached
+      .then((payload) => {
+        if (!cancelled) {
+          setYesterdayData(payload);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setYesterdayData(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [today]);
+
+  const yesterdayComparable = useMemo(() => {
+    if (!yesterdayData) return null;
+
+    const generatedKwh = sumUpToMinute(
+      yesterdayData.minuteChartData,
+      currentMinute,
+      (point) => point.generation * point.intervalHours,
+    );
+    const consumedKwh = sumUpToMinute(
+      yesterdayData.minuteChartData,
+      currentMinute,
+      (point) => point.consumption * point.intervalHours,
+    );
+    const importKwh = sumUpToMinute(
+      yesterdayData.minuteChartData,
+      currentMinute,
+      (point) => point.import * point.intervalHours,
+    );
+    const exportKwh = sumUpToMinute(
+      yesterdayData.minuteChartData,
+      currentMinute,
+      (point) => point.export * point.intervalHours,
+    );
+    const immersionDivertedKwh = sumUpToMinute(
+      yesterdayData.minuteChartData,
+      currentMinute,
+      (point) => point.immersion * point.intervalHours,
+    );
+
+    const importCost = sumUpToMinute(
+      yesterdayData.costChartData,
+      currentMinute,
+      (point) => point.importCost,
+    );
+    const exportCredit = sumUpToMinute(
+      yesterdayData.costChartData,
+      currentMinute,
+      (point) => point.exportCredit,
+    );
+    const solarSavings = sumUpToMinute(
+      yesterdayData.costChartData,
+      currentMinute,
+      (point) => point.savings,
+    );
+    const netBillImpact = Math.round((importCost - exportCredit) * 100) / 100;
+
+    return {
+      totals: {
+        generatedKwh,
+        consumedKwh,
+        importKwh,
+        exportKwh,
+        immersionDivertedKwh,
+      },
+      financialEstimate:
+        yesterdayData.costChartData.length > 0
+          ? {
+              importCost,
+              exportCredit,
+              solarSavings,
+              netBillImpact,
+            }
+          : null,
+    };
+  }, [currentMinute, yesterdayData]);
+
+  const liveDayValueTrends = useMemo(() => ({
+    import_cost: buildTrend(
+      financialEstimate?.importCost ?? null,
+      yesterdayComparable?.financialEstimate?.importCost ?? null,
+    ),
+    export_credit: buildTrend(
+      financialEstimate?.exportCredit ?? null,
+      yesterdayComparable?.financialEstimate?.exportCredit ?? null,
+    ),
+    onsite_solar_value: buildTrend(
+      financialEstimate?.solarSavings ?? null,
+      yesterdayComparable?.financialEstimate?.solarSavings ?? null,
+    ),
+    net_energy_bill: buildTrend(
+      financialEstimate?.netBillImpact ?? null,
+      yesterdayComparable?.financialEstimate?.netBillImpact ?? null,
+    ),
+  }), [financialEstimate, yesterdayComparable]);
+
+  const liveDayTotalTrends = useMemo(() => ({
+    generation_kwh: buildTrend(
+      todayTotals?.generatedKwh ?? null,
+      yesterdayComparable?.totals.generatedKwh ?? null,
+    ),
+    consumed_kwh: buildTrend(
+      todayTotals?.consumedKwh ?? null,
+      yesterdayComparable?.totals.consumedKwh ?? null,
+    ),
+    import_kwh: buildTrend(
+      todayTotals?.importKwh ?? null,
+      yesterdayComparable?.totals.importKwh ?? null,
+    ),
+    export_kwh: buildTrend(
+      todayTotals?.exportKwh ?? null,
+      yesterdayComparable?.totals.exportKwh ?? null,
+    ),
+    immersion_kwh: buildTrend(
+      todayTotals?.immersionDivertedKwh ?? null,
+      yesterdayComparable?.totals.immersionDivertedKwh ?? null,
+    ),
+  }), [todayTotals, yesterdayComparable]);
 
   const dismissalStorageKey = useMemo(
     () => getDismissalStorageKey(selectedDate, timezone),
@@ -1290,12 +1541,35 @@ export function LiveScreen({
     }
   }, [dismissalStorageKey, dismissedIncidentIds, health.incidents]);
 
-  // Clock ticks independently of whether the user is on Live or Historical Day.
+  // Keep time-based chart markers current without re-rendering the whole page every second.
   useEffect(() => {
-    const updateClock = () => setLiveTime(formatClockTime(new Date(), timezone));
-    updateClock();
-    const clockIntervalId = window.setInterval(updateClock, 1_000);
-    return () => window.clearInterval(clockIntervalId);
+    const updateMinute = () =>
+      setCurrentMinute(
+        new Intl.DateTimeFormat('en-GB', {
+          timeZone: timezone,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        }).format(new Date()),
+      );
+
+    updateMinute();
+
+    const now = new Date();
+    const delayMs = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+    let intervalId: number | null = null;
+
+    const timeoutId = window.setTimeout(() => {
+      updateMinute();
+      intervalId = window.setInterval(updateMinute, 60_000);
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (intervalId != null) {
+        window.clearInterval(intervalId);
+      }
+    };
   }, [timezone]);
 
   // Auto-refresh every few minutes to keep the live view current.
@@ -1483,9 +1757,11 @@ export function LiveScreen({
 
           {/* Right: live time + uptime (desktop only) */}
           <div className="flex flex-1 items-center justify-end gap-2 text-xs text-slate-400">
-            <span className="hidden sm:inline-flex min-w-[92px] justify-center rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1.5">
-              {liveTime}
-            </span>
+            <LiveClockChip
+              timezone={timezone}
+              initialTime={initialLiveTime}
+              className="hidden sm:inline-flex min-w-[92px] justify-center rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1.5"
+            />
             <span className="hidden sm:inline-flex">
               <UptimeBadge
                 uptimePercent={health.uptimePercent}
@@ -1582,6 +1858,7 @@ export function LiveScreen({
                   mode="live"
                   data={chartData}
                   costData={valueChartData}
+                  sunMarkers={liveSunMarkers}
                   screenState={displayScreenState}
                   resolution={resolution}
                   onResolutionChange={setResolution}
@@ -1596,15 +1873,18 @@ export function LiveScreen({
                     mode="live"
                     hasTariff={hasTariff}
                     estimate={financialEstimate}
+                    trends={liveDayValueTrends}
                   />
                   <DayTotalsPanel
                     mode="live"
                     totals={todayTotals}
                     screenState={displayScreenState}
+                    trends={liveDayTotalTrends}
                   />
                   <SolarCoveragePanel
                     mode="live"
                     chartData={baseChartData}
+                    sunMarkers={liveSunMarkers.energy}
                     currentSolarShare={currentMetrics?.solarShare ?? 0}
                     overallSolarCoverage={overallSolarCoverage}
                     currentGridDraw={currentMetrics?.gridShare ?? 100}

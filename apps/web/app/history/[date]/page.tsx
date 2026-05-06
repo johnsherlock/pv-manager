@@ -4,13 +4,19 @@ import {
   loadInstallationContext,
   loadProviderConnection,
   loadTariffContext,
+  loadHistoricalMetricRanksForYear,
   computeFinancialEstimate,
   computeFinancialEstimateFromCostPoints,
+  computeDaylightCoverage,
+  computeHistoricalSunEvents,
+  computeTariffBreakdown,
   getLastReadingLocalTime,
   minuteDataToChartPoints,
   periodDataToChartPoints,
   periodDataToCostPoints,
 } from '@/src/live/loader';
+import { loadRangeInstallationContext } from '@/src/range/loader';
+import { computeRepaymentsForPeriod } from '@/src/range/recovery';
 import type { MinuteReading } from '@/src/live/types';
 import { fetchDayRecords } from '@/src/providers/myenergi/client';
 import { normaliseEddiRecords } from '@/src/providers/myenergi/adapter';
@@ -72,6 +78,7 @@ export default async function HistoricalDayPage({
   const installationContext = await loadInstallationContext(installationId);
   const effectiveTimezone = installationContext?.timezone ?? 'Europe/Dublin';
   const today = getTodayLocalDate(effectiveTimezone);
+  const comparisonEndDate = date.slice(0, 4) < today.slice(0, 4) ? `${date.slice(0, 4)}-12-31` : today;
 
   // Redirect today or future to live
   if (date >= today) {
@@ -80,10 +87,18 @@ export default async function HistoricalDayPage({
 
   const fetchedAt = now.toISOString();
 
-  const [tariffContext, providerConnection, staleTariffWarning] = await Promise.all([
+  const rangeInstallationContext = await loadRangeInstallationContext(installationId);
+
+  const [tariffContext, providerConnection, staleTariffWarning, ytdMetricRanks] = await Promise.all([
     loadTariffContext(installationId, date),
     loadProviderConnection(installationId),
     loadStaleTariffWarning(installationId, effectiveTimezone),
+    loadHistoricalMetricRanksForYear(
+      installationId,
+      date,
+      comparisonEndDate,
+      rangeInstallationContext?.repaymentSchedules ?? [],
+    ),
   ]);
 
   const credentials = resolveMyEnergiCredentials(providerConnection?.credentialRef);
@@ -121,6 +136,20 @@ export default async function HistoricalDayPage({
         ? computeFinancialEstimateFromCostPoints(costChartData)
         : computeFinancialEstimate(dayDetail.summary, tariffContext)
       : null;
+  const dailyRepayment = computeRepaymentsForPeriod(
+    rangeInstallationContext?.repaymentSchedules ?? [],
+    date,
+    date,
+    false,
+  ).amount;
+  const totalSolarValue = financialEstimate ? financialEstimate.solarSavings + financialEstimate.exportCredit : null;
+  const repaymentCoverage =
+    totalSolarValue != null && dailyRepayment > 0
+      ? {
+          amount: Math.round(totalSolarValue * 100) / 100,
+          percent: Math.round((totalSolarValue / dailyRepayment) * 100),
+        }
+      : null;
 
   const dayTotals =
     screenState !== 'disconnected'
@@ -150,6 +179,8 @@ export default async function HistoricalDayPage({
           ? {
               name: installationContext.name,
               arrayCapacityKw: installationContext.arrayCapacityKw,
+              locationLatitude: installationContext.locationLatitude,
+              locationLongitude: installationContext.locationLongitude,
             }
           : null
       }
@@ -177,7 +208,26 @@ export default async function HistoricalDayPage({
       hourChartData={hourChartData}
       costChartData={costChartData}
       dayTotals={dayTotals}
+      ytdMetricRanks={ytdMetricRanks}
+      daylightCoverage={computeDaylightCoverage(
+        date,
+        effectiveTimezone,
+        installationContext?.locationLatitude ?? null,
+        installationContext?.locationLongitude ?? null,
+        minuteChartData,
+      )}
+      historicalSunEvents={computeHistoricalSunEvents(
+        date,
+        installationContext?.locationLatitude ?? null,
+        installationContext?.locationLongitude ?? null,
+      )}
+      tariffBreakdown={
+        tariffContext && screenState !== 'disconnected'
+          ? computeTariffBreakdown(dayDetail.halfHourData, date, tariffContext)
+          : []
+      }
       financialEstimate={financialEstimate}
+      repaymentCoverage={repaymentCoverage}
       staleTariffWarning={staleTariffWarning}
     />
   );
