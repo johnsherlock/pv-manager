@@ -35,7 +35,8 @@ import {
 import type { LiveWeatherResult } from '@/src/weather/types';
 import { getWmoInfo } from '@/src/weather/wmoCode';
 import { formatDaylightStatus } from '@/src/weather/sunPosition';
-import type { CurrentMetrics, FinancialEstimate, LivePoint } from '@/src/live/loader';
+import type { CurrentMetrics, FinancialEstimate, LivePoint, TariffContext } from '@/src/live/loader';
+import { getTariffStateAt } from '@/src/live/tariffState';
 import {
   DayTrendChart,
   DayValuePanel,
@@ -117,6 +118,7 @@ export type LiveScreenProps = {
     } | null;
   };
   hasTariff: boolean;
+  tariffContext: TariffContext | null;
   weatherResult: LiveWeatherResult;
   hasCapacity: boolean;
   currentMetrics: CurrentMetrics | null;
@@ -266,44 +268,6 @@ function getSunMarkerPhase(sunEvents: { sunriseUtc: string; solarNoonUtc: string
 // ---------------------------------------------------------------------------
 // Sub-components (Live-screen-only, not shared with Historical Day)
 // ---------------------------------------------------------------------------
-
-function CapabilityBar({
-  hasTariff,
-  hasCoordinates,
-  hasCapacity,
-}: {
-  hasTariff: boolean;
-  hasCoordinates: boolean;
-  hasCapacity: boolean;
-}) {
-  const items = [
-    { key: 'tariff', label: 'Tariff linked', active: hasTariff },
-    { key: 'coordinates', label: 'Coordinates added', active: hasCoordinates },
-    { key: 'capacity', label: 'Array capacity known', active: hasCapacity },
-  ];
-
-  return (
-    <div className="hidden sm:block border-b border-slate-800 bg-[#08111f] px-4 py-2 text-xs">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2.5">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-          Setup
-        </span>
-        {items.map((item) => (
-          <span
-            key={item.key}
-            className={`rounded-full border px-3 py-1 font-medium ${
-              item.active
-                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-                : 'border-slate-700 text-slate-500'
-            }`}
-          >
-            {item.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function NavBar({
   screenState,
@@ -666,6 +630,30 @@ function SectionHeader({
       </div>
       {action}
     </div>
+  );
+}
+
+function TariffStateChip({
+  tariffState,
+}: {
+  tariffState: { label: string; ratePerKwh: number; isFreeImport: boolean } | null;
+}) {
+  if (!tariffState) return null;
+
+  const normalizedLabel = tariffState.label.trim() || 'Tariff';
+  const text = tariffState.isFreeImport
+    ? 'Free import now'
+    : `${normalizedLabel} rate now`;
+  const rate = tariffState.isFreeImport ? null : `${formatEuro(tariffState.ratePerKwh)}/kWh`;
+
+  return (
+    <Link
+      href="/settings/tariffs"
+      className="inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-200 transition-colors hover:border-cyan-400/40 hover:bg-cyan-500/15 hover:text-cyan-100"
+    >
+      <span>{text}</span>
+      {rate && <span className="font-mono text-cyan-100">{rate}</span>}
+    </Link>
   );
 }
 
@@ -1201,6 +1189,7 @@ export function LiveScreen({
   screenState,
   health,
   hasTariff,
+  tariffContext,
   weatherResult,
   hasCapacity,
   currentMetrics,
@@ -1434,6 +1423,11 @@ export function LiveScreen({
       yesterdayComparable?.totals.immersionDivertedKwh ?? null,
     ),
   }), [todayTotals, yesterdayComparable]);
+
+  const currentTariffState = useMemo(() => {
+    if (!tariffContext) return null;
+    return getTariffStateAt(tariffContext, selectedDate, currentMinute);
+  }, [currentMinute, selectedDate, tariffContext]);
 
   const dismissalStorageKey = useMemo(
     () => getDismissalStorageKey(selectedDate, timezone),
@@ -1693,11 +1687,6 @@ export function LiveScreen({
           />
         </div>
       )}
-      <CapabilityBar
-        hasTariff={hasTariff}
-        hasCoordinates={hasCoordinates}
-        hasCapacity={hasCapacity}
-      />
       <NavBar
         screenState={displayScreenState}
         health={displayHealth}
@@ -1717,8 +1706,9 @@ export function LiveScreen({
 
       <div className="sticky top-14 z-30 border-b border-slate-800 bg-[#0c1422]/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center px-4 py-3 sm:px-6">
-          {/* Left spacer */}
-          <div className="flex-1" />
+          <div className="flex flex-1 items-center">
+            <TariffStateChip tariffState={currentTariffState} />
+          </div>
 
           {/* Center: date navigation */}
           <div className="relative flex items-center gap-2 text-xs text-slate-400">
@@ -1850,7 +1840,7 @@ export function LiveScreen({
               <SectionHeader
                 eyebrow="Today"
                 title="What today has meant so far"
-                description="Live trend, same-day totals, and financial interpretation without turning the page into a billing dashboard."
+                description=""
               />
 
               <div className="grid gap-4 xl:grid-cols-[1.7fr_1fr]">
@@ -1897,7 +1887,7 @@ export function LiveScreen({
               <SectionHeader
                 eyebrow="Next"
                 title="What is likely to happen over the next few hours"
-                description="Daylight, weather, and near-term solar context — unlocked once coordinates are added."
+                description=""
               />
 
               <div className="grid gap-4 xl:grid-cols-2">

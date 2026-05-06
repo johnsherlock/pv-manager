@@ -176,6 +176,7 @@ export default async function LivePage({
       }}
       timezone={effectiveTimezone}
       hasTariff={tariffContext !== null}
+      tariffContext={tariffContext}
       weatherResult={weatherResult}
       hasCapacity={installationContext?.arrayCapacityKw != null}
       currentMetrics={currentMetrics}

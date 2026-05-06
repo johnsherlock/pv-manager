@@ -5,6 +5,7 @@ import {
   calculateIntervalImportCost,
   calculateIntervalImportCostScheduled,
   calculateWithoutSolarImportKwh,
+  getScheduledRateForInterval,
   getPricePeriodForSlot,
   type TariffPricePeriod,
   type IntervalReading,
@@ -315,6 +316,25 @@ function getEffectiveTariffPeriods(
     tariffVersion,
     pricePeriods: migrated.periods,
     weeklySchedule: migrated.schedule,
+  };
+}
+
+export function getTariffStateAt(
+  tariff: TariffContext,
+  date: string,
+  time: string,
+): { label: string; ratePerKwh: number; isFreeImport: boolean } {
+  const { tariffVersion, pricePeriods, weeklySchedule } = getEffectiveTariffPeriods(tariff, date);
+  const localDateTime = `${date}T${time}`;
+  const matchedPeriod = getPricePeriodForSlot(pricePeriods, weeklySchedule, localDateTime);
+  const ratePerKwh = matchedPeriod
+    ? getScheduledRateForInterval(pricePeriods, weeklySchedule, localDateTime)
+    : tariffVersion.dayRate;
+
+  return {
+    label: matchedPeriod?.periodLabel ?? 'Day',
+    ratePerKwh,
+    isFreeImport: matchedPeriod?.isFreeImport ?? ratePerKwh === 0,
   };
 }
 
