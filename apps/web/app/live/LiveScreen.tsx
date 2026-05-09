@@ -1373,13 +1373,6 @@ export function LiveScreen({
     };
   }, [currentMinute, yesterdayData, yesterdayRepaymentAmount]);
 
-  const liveNow = useMemo(() => {
-    const [hours, minutes] = currentMinute.split(':').map((value) => Number(value));
-    const now = new Date();
-    now.setHours(Number.isFinite(hours) ? hours : 0, Number.isFinite(minutes) ? minutes : 0, 0, 0);
-    return now;
-  }, [currentMinute]);
-
   const liveDayValueTrends = useMemo(() => ({
     import_cost: buildLiveTrendIndicator({
       current: financialEstimate?.importCost ?? null,
@@ -1456,8 +1449,8 @@ export function LiveScreen({
   }), [todayTotals, yesterdayComparable]);
 
   const liveDayTotalsHeading = useMemo(
-    () => getLiveDayTotalsHeading(liveSunEvents, liveNow),
-    [liveNow, liveSunEvents],
+    () => getLiveDayTotalsHeading(liveSunEvents, new Date()),
+    [liveSunEvents, currentMinute],
   );
 
   const currentTariffState = useMemo(() => {
