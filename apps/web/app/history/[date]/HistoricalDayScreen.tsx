@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
@@ -1052,6 +1053,15 @@ export function HistoricalDayScreen(props: HistoricalDayScreenProps) {
             <span className="text-slate-700">/</span>
             <span className="text-sm font-semibold text-slate-100">Historical Day</span>
           </>
+        }
+        actions={
+          <Link
+            href="/calendar"
+            title="Calendar"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200 transition-colors"
+          >
+            <Calendar size={14} />
+          </Link>
         }
       />
 

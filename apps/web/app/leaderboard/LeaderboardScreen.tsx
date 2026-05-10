@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronLeft, Home, Trophy } from 'lucide-react';
+import { CalendarDays, ChevronLeft, Home, Trophy } from 'lucide-react';
 import { SignedInHeader } from '@/src/components/SignedInHeader';
 import { describeMetric } from '@/src/calendar/metrics';
 import type { MetricLeaderboard } from '@/src/leaderboard/ranking';
@@ -111,6 +111,15 @@ export function LeaderboardScreen({
               <span className="text-sm font-semibold text-slate-100">Leaderboard</span>
             </div>
           </>
+        }
+        actions={
+          <Link
+            href="/calendar"
+            title="Calendar"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200 transition-colors"
+          >
+            <CalendarDays size={14} />
+          </Link>
         }
       />
 
