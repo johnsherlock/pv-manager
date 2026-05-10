@@ -2,26 +2,26 @@
 
 import { db } from '@/src/db/client';
 import { users } from '@/src/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { requireAdmin } from '@/src/auth-helpers';
+import { requireAdminSession } from '@/src/admin-auth';
 import { sendApprovalEmail } from '@/src/email/approval';
 import { UserStatus } from '@/src/user-constants';
 
 export async function approveUser(userId: string) {
-  const session = await requireAdmin();
+  const adminSession = await requireAdminSession();
 
   const [approved] = await db
     .update(users)
     .set({
       status: UserStatus.Approved,
       approvedAt: new Date(),
-      approvedBy: session.userId,
+      approvedBy: adminSession.adminId,
       updatedAt: new Date(),
     })
-    .where(and(eq(users.id, userId), eq(users.status, UserStatus.AwaitingApproval)))
+    .where(eq(users.id, userId))
     .returning({ email: users.email });
 
   if (!approved) throw new Error('User not found or not awaiting approval');
@@ -35,7 +35,7 @@ export async function approveUser(userId: string) {
 }
 
 export async function startImpersonation(targetUserId: string) {
-  await requireAdmin();
+  await requireAdminSession();
 
   const [target] = await db
     .select({ id: users.id, email: users.email })
@@ -61,7 +61,7 @@ export async function startImpersonation(targetUserId: string) {
 }
 
 export async function stopImpersonation() {
-  await requireAdmin();
+  await requireAdminSession();
 
   const cookieStore = await cookies();
   cookieStore.delete('impersonating_user_id');
