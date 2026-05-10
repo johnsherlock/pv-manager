@@ -26,12 +26,14 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
 
-    // Admin impersonation: a valid admin session + impersonation cookie lets the
-    // operator view user-facing routes as a specific user.
+    // Admin impersonation check runs before token-based routing. A stale NextAuth
+    // cookie must not redirect the operator away from the user-facing route they
+    // are intentionally viewing as an impersonated user.
+    const adminValid = await isValidAdminSession(req);
+    const impersonating = req.cookies.has('impersonating_user_id');
+    if (adminValid && impersonating) return NextResponse.next();
+
     if (!token) {
-      const adminValid = await isValidAdminSession(req);
-      const impersonating = req.cookies.has('impersonating_user_id');
-      if (adminValid && impersonating) return NextResponse.next();
       return NextResponse.redirect(new URL('/sign-in', req.url));
     }
 

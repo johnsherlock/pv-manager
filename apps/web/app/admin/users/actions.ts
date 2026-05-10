@@ -2,7 +2,7 @@
 
 import { db } from '@/src/db/client';
 import { users } from '@/src/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -21,7 +21,7 @@ export async function approveUser(userId: string) {
       approvedBy: adminSession.adminId,
       updatedAt: new Date(),
     })
-    .where(eq(users.id, userId))
+    .where(and(eq(users.id, userId), eq(users.status, UserStatus.AwaitingApproval)))
     .returning({ email: users.email });
 
   if (!approved) throw new Error('User not found or not awaiting approval');
