@@ -57,6 +57,7 @@ import { buildRangeUrl } from '@/src/range/presets';
 import { RangePickerPopover } from '@/src/components/RangePickerPopover';
 import type { NavigationTarget } from '@/src/components/RangePickerPopover';
 import type { SunEvents } from '@/src/weather/types';
+import { SignedInHeader } from '@/src/components/SignedInHeader';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1037,9 +1038,9 @@ export function HistoricalDayScreen(props: HistoricalDayScreenProps) {
         </div>
       )}
       {/* Nav bar */}
-      <header className="sticky top-0 z-40 border-b border-slate-800 bg-[#101826]">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
+      <SignedInHeader
+        left={
+          <>
             <button
               type="button"
               onClick={() => startTransition(() => router.push('/live'))}
@@ -1050,15 +1051,9 @@ export function HistoricalDayScreen(props: HistoricalDayScreenProps) {
             </button>
             <span className="text-slate-700">/</span>
             <span className="text-sm font-semibold text-slate-100">Historical Day</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-xs font-bold text-slate-200">
-              J
-            </div>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <WarningBanner
         screenState={displayScreenState}
