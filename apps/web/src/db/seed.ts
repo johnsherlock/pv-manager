@@ -1,3 +1,7 @@
+import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
 import { sql } from 'drizzle-orm';
 import { db, pool } from './client';
 import {
