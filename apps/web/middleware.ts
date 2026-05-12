@@ -33,6 +33,9 @@ export default withAuth(
     const impersonating = req.cookies.has('impersonating_user_id');
     if (adminValid && impersonating) return NextResponse.next();
 
+    // Public landing page is accessible without auth
+    if (pathname === '/') return NextResponse.next();
+
     if (!token) {
       return NextResponse.redirect(new URL('/sign-in', req.url));
     }
