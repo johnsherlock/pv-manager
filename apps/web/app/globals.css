@@ -87,3 +87,9 @@ code {
     border-radius: 18px;
   }
 }
+
+/* Keyframe used by the landing page hero via inline animation style */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
