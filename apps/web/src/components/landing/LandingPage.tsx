@@ -467,8 +467,8 @@ function RangeValueSection() {
                 ))}
               </div>
               <div className="grid grid-cols-12 gap-1">
-                {['J','F','M','A','M','J','J','A','S','O','N','D'].map((m) => (
-                  <p key={m} className="text-center text-[8px] text-slate-700">{m}</p>
+                {['J','F','M','A','M','J','J','A','S','O','N','D'].map((m, i) => (
+                  <p key={i} className="text-center text-[8px] text-slate-700">{m}</p>
                 ))}
               </div>
 
