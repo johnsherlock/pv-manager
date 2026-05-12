@@ -160,23 +160,23 @@ function HeroSection() {
             style={{ animation: 'fadeIn 0.8s ease-out 1.05s both' }}
           >
             <Link
-              href="/live"
+              href="/sign-in"
               className="rounded-full bg-amber-400 px-6 py-3 text-sm font-semibold text-slate-950 transition-all hover:bg-amber-300 hover:shadow-[0_0_24px_rgba(245,158,11,0.35)]"
             >
-              View demo
+              Sign in for beta
             </Link>
             <Link
               href="/sign-in"
               className="rounded-full border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-300 transition-all hover:border-slate-500 hover:text-slate-100"
             >
-              Sign in for beta
+              Request access
             </Link>
           </div>
           <p
             className="mt-3 text-xs text-slate-600"
             style={{ animation: 'fadeIn 0.6s ease-out 1.2s both' }}
           >
-            Invite-only beta · MyEnergi supported first
+            Invite-only beta · MyEnergi supported first · Google sign-in required
           </p>
         </div>
 
@@ -647,27 +647,9 @@ function ConversionBand() {
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {/* Demo — exploratory */}
+          {/* Sign in — primary */}
           <div className={`group rounded-3xl border border-amber-500/20 bg-amber-500/5 p-8 transition-all duration-500 hover:border-amber-500/40 hover:bg-amber-500/8 ${visible ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 translate-y-6'} transition-all duration-700 ease-out`}>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-500/70">
-              No sign-in required
-            </p>
-            <h3 className="mt-3 text-2xl font-semibold text-slate-100">View the demo</h3>
-            <p className="mt-3 text-sm leading-relaxed text-slate-400">
-              Explore the full product experience with sample data. Read-only — nothing is stored, no account needed.
-            </p>
-            <Link
-              href="/live"
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-amber-400 px-6 py-3 text-sm font-semibold text-slate-950 transition-all hover:bg-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)]"
-            >
-              View demo
-              <span aria-hidden>→</span>
-            </Link>
-          </div>
-
-          {/* Sign in — committed */}
-          <div className={`group rounded-3xl border border-slate-700 bg-[#0d1726] p-8 transition-all duration-500 hover:border-slate-600 hover:bg-[#111b2b] ${visible ? 'opacity-100 translate-y-0 delay-200' : 'opacity-0 translate-y-6'} transition-all duration-700 ease-out`}>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
               Invite-only beta
             </p>
             <h3 className="mt-3 text-2xl font-semibold text-slate-100">Request beta access</h3>
@@ -677,11 +659,33 @@ function ConversionBand() {
             </p>
             <Link
               href="/sign-in"
-              className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-600 px-6 py-3 text-sm font-semibold text-slate-300 transition-all hover:border-slate-400 hover:text-slate-100"
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-amber-400 px-6 py-3 text-sm font-semibold text-slate-950 transition-all hover:bg-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)]"
             >
               Sign in for beta
               <span aria-hidden>→</span>
             </Link>
+          </div>
+
+          {/* What to expect */}
+          <div className={`group rounded-3xl border border-slate-700 bg-[#0d1726] p-8 transition-all duration-500 hover:border-slate-600 hover:bg-[#111b2b] ${visible ? 'opacity-100 translate-y-0 delay-200' : 'opacity-0 translate-y-6'} transition-all duration-700 ease-out`}>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+              What to expect
+            </p>
+            <h3 className="mt-3 text-2xl font-semibold text-slate-100">How beta access works</h3>
+            <p className="mt-3 text-sm leading-relaxed text-slate-400">
+              Sign in with your Google account to join the waitlist. Once approved, connect your
+              MyEnergi hub and the full product experience unlocks.
+            </p>
+            <ol className="mt-5 space-y-2">
+              {['Sign in with Google', 'Wait for approval email', 'Connect your MyEnergi hub'].map((step, i) => (
+                <li key={step} className="flex items-center gap-3 text-sm text-slate-400">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-700 text-[10px] font-semibold text-slate-600">
+                    {i + 1}
+                  </span>
+                  {step}
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
       </div>
@@ -706,14 +710,8 @@ function FooterCTA() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
-              href="/live"
-              className="rounded-full bg-amber-400 px-6 py-3 text-sm font-semibold text-slate-950 transition-all hover:bg-amber-300 hover:shadow-[0_0_24px_rgba(245,158,11,0.3)]"
-            >
-              View demo
-            </Link>
-            <Link
               href="/sign-in"
-              className="rounded-full border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-300 transition-all hover:border-slate-500 hover:text-slate-100"
+              className="rounded-full bg-amber-400 px-6 py-3 text-sm font-semibold text-slate-950 transition-all hover:bg-amber-300 hover:shadow-[0_0_24px_rgba(245,158,11,0.3)]"
             >
               Sign in for beta
             </Link>
