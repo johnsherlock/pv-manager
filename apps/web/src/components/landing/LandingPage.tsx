@@ -175,17 +175,20 @@ function useWordGlow() {
 function WaitlistForm() {
   const [state, action, isPending] = useActionState(joinWaitlist, null);
 
+  if (state?.success) {
+    return (
+      <div className="signup-success">
+        <span className="signup-success-icon">✓</span>
+        <span>You&rsquo;re on the list — we&rsquo;ll be in touch.</span>
+      </div>
+    );
+  }
+
   return (
     <form className="signup-form" action={action}>
-      {state?.success ? (
-        <p style={{ flex: 1, padding: '0 14px', fontSize: '15px', color: 'var(--text-dim)', textAlign: 'left' }}>
-          You&rsquo;re on the list ✓
-        </p>
-      ) : (
-        <input type="email" name="email" placeholder="you@example.com" required />
-      )}
-      <button type="submit" disabled={isPending || !!state?.success}>
-        {state?.success ? 'Request sent' : isPending ? 'Sending…' : 'Request invite'}
+      <input type="email" name="email" placeholder="you@example.com" required />
+      <button type="submit" disabled={isPending}>
+        {isPending ? 'Sending…' : 'Request invite'}
       </button>
     </form>
   );
